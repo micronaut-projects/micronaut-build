@@ -84,7 +84,7 @@ publishing {
                 url  "https://oss.sonatype.org/content/repositories/snapshots"
             }
             else {
-                url "https://repo.micronaut.io/artifactory/libs-releases-local"
+                url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
             }
         }
     }
