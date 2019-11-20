@@ -253,7 +253,7 @@ and progress through process manually -> Close -> Publish ... under staging repo
     }
 }
 
-if (!project.version.endsWith("-SNAPSHOT") {
+if (!project.version.endsWith("-SNAPSHOT")) {
    // Releases published to bintray
    publish.enabled = false
 }
