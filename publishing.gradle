@@ -27,6 +27,7 @@ import static groovyx.net.http.ContentType.*
 
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
+apply plugin: 'com.bmuschko.nexus'
 
 ext.extraPomInfo = {}
 ext.pomInfo = {
@@ -60,6 +61,12 @@ ext.pomInfo = {
     }
     ext.extraPomInfo.delegate = delegate
     ext.extraPomInfo.call()
+}
+
+
+
+modifyPom {
+    project(pomInfo)
 }
 
 publishing {
