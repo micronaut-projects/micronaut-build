@@ -23,13 +23,10 @@ buildscript {
     }
 }
 
-
-import groovyx.net.http.RESTClient
-import static groovyx.net.http.ContentType.*
-
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.bmuschko.nexus'
 apply plugin: 'io.codearte.nexus-staging'
+apply plugin: "de.marcphilipp.nexus-publish"
 
 ext.extraPomInfo = {}
 ext.pomInfo = {
@@ -64,8 +61,6 @@ ext.pomInfo = {
     ext.extraPomInfo.delegate = delegate
     ext.extraPomInfo.call()
 }
-
-
 
 modifyPom {
     project(pomInfo)
@@ -180,7 +175,6 @@ def bintrayUser = System.getenv("BINTRAY_USER") ?: project.hasProperty("bintrayU
 def bintrayKey = System.getenv("BINTRAY_KEY") ?: project.hasProperty("bintrayKey") ? project.bintrayKey : ''
 def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
 def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
-
 
 bintray {
 
