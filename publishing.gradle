@@ -14,10 +14,12 @@
 
 buildscript {
     repositories {
+        mavenCentral()
         maven { url "https://repo.grails.org/grails/core" }
     }
     dependencies {
-        classpath "org.codehaus.groovy.modules.http-builder:http-builder:0.7.1"
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.21.2"
+        classpath "de.marcphilipp.gradle:nexus-publish-plugin:0.4.0"
     }
 }
 
@@ -25,9 +27,9 @@ buildscript {
 import groovyx.net.http.RESTClient
 import static groovyx.net.http.ContentType.*
 
-apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.bmuschko.nexus'
+apply plugin: 'io.codearte.nexus-staging'
 
 ext.extraPomInfo = {}
 ext.pomInfo = {
@@ -212,50 +214,15 @@ bintray {
     }
 }
 
-task synchronizeWithMavenCentral() {
-    description = "Syncs with Maven Central/Sonatype"
-    doLast {
-        boolean ongoing = true
+nexusStaging {
+    stagingProfileId = "io.micronaut"
+}
 
-        println """
-Synchronizing with Maven central. This may take a few minutes ...
-If this fails, log on to http://oss.sonatype.org/ using the centralUser credentials
-and progress through process manually -> Close -> Publish ... under staging repositories
-"""
-        // this hack is here to keep Travis from thinking this is
-        // a stalled build
-        Thread.start {
-            while(ongoing) {
-                sleep 5000
-                println "Still Publishing. Please wait..."
-            }
-        }
-        try {
-            try {
-                def mavenClent = new RESTClient("https://repo.maven.apache.org/maven2/")
-                mavenClent.get(path:"${project.group.replace('.','/')}/micronaut-$project.name/$project.version/micronaut-$project.name-${project.version}.jar")
-            } catch(groovyx.net.http.HttpResponseException e) {
-                // doesn't exist.. try sync
-                def client = new RESTClient('https://api.bintray.com/maven_central_sync/micronaut/core-releases-local/')
-                client.headers['Authorization'] = 'Basic ' + "$bintrayUser:$bintrayKey".getBytes('iso-8859-1').encodeBase64()
-                def body = /{}/
-                def resp = client.post(
-                        path: "$bintray.pkg.name/versions/$project.version",
-                        body: body,
-                        requestContentType: JSON
-                )
-                assert resp.status == 200
-
-                println resp.data.status
-                println resp.data.messages.join('\n')
-            }
-        } catch (groovyx.net.http.HttpResponseException e) {
-            println "Error: $e"
-            println "Message: $e.message"
-            println "Body: $e.response.data"
-            throw e
-        } finally {
-            ongoing = false
+nexusPublishing {
+    repositories {
+        sonatype {
+            username = ossUser
+            password = ossPass
         }
     }
 }
