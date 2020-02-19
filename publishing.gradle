@@ -197,12 +197,6 @@ bintray {
     }
 }
 
-nexusStaging {
-    username = ossUser
-    password = ossPass
-    packageGroup = "io.micronaut"
-}
-
 nexusPublishing {
     repositories {
         sonatype {
