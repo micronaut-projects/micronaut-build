@@ -198,6 +198,8 @@ bintray {
 }
 
 nexusStaging {
+    username = ossUser
+    password = ossPass
     stagingProfileId = "io.micronaut"
 }
 
