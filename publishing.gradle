@@ -14,7 +14,6 @@
 
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.bmuschko.nexus'
-apply plugin: 'io.codearte.nexus-staging'
 apply plugin: "de.marcphilipp.nexus-publish"
 
 ext.extraPomInfo = {}
