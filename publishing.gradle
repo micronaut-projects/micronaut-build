@@ -203,6 +203,8 @@ bintray {
     }
 }
 
+import java.time.Duration
+
 nexusPublishing {
     repositories {
         sonatype {
@@ -210,6 +212,12 @@ nexusPublishing {
             password = ossPass
         }
     }
+    connectTimeout = Duration.ofMinutes(5)
+    clientTimeout = Duration.ofMinutes(5)
+}
+
+initializeSonatypeStagingRepository {
+    timeout = Duration.ofMinutes(5)
 }
 
 if (!project.version.endsWith("-SNAPSHOT")) {
