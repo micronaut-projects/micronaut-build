@@ -1,20 +1,24 @@
 /**
- * To use this when setting up Travis run the following commands to encrypt
- * the necessary environment variables for publishing to work
+ * To use this when setting up GitHub Actions, make sure to define the following secrets:
  *
- * $ travis encrypt SIGNING_PASSPHRASE=...
- * $ travis encrypt SONATYPE_USERNAME=...
- * $ travis encrypt SONATYPE_PASSWORD=...
- * $ travis encrypt ARTIFACTORY_USERNAME=...
- * $ travis encrypt ARTIFACTORY_PASSWORD=...
- * $ travis encrypt BINTRAY_USER=...
- * $ travis encrypt BINTRAY_KEY=...
+ * SONATYPE_USERNAME
+ * SONATYPE_PASSWORD
+ * BINTRAY_USER
+ * BINTRAY_KEY
+ * GPG_KEY_ID
+ * GPG_PASSWORD
  *
+ * For the GPG file, encode it as Base 64:
+ * $ base64 ~/.gnupg/secring.gpg | pbcopy
+ *
+ * Then store that as a secret named GPG_FILE. Finally, as part of the workflow, restore the file in the project root as:
+ * echo $GPG_FILE | base64 -d > secring.gpg 
  */
 
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.bmuschko.nexus'
 apply plugin: "de.marcphilipp.nexus-publish"
+apply plugin: 'signing'
 
 ext.extraPomInfo = {}
 ext.pomInfo = {
@@ -101,8 +105,7 @@ publishing {
                             dependencyNode.appendNode('artifactId', it.name)
                             dependencyNode.appendNode('version', it.version)
                             dependencyNode.appendNode('scope', 'compile')
-                        }
-                        else if(it instanceof ProjectDependency) {
+                        } else if(it instanceof ProjectDependency) {
                             def dependencyNode = dependenciesNode.appendNode('dependency')
                             dependencyNode.appendNode('groupId', project.group)
                             dependencyNode.appendNode('artifactId', "micronaut-$it.name")
@@ -118,8 +121,7 @@ publishing {
                             dependencyNode.appendNode('artifactId', it.name)
                             dependencyNode.appendNode('version', it.version)
                             dependencyNode.appendNode('scope', 'runtime')
-                        }
-                        else if(it instanceof ProjectDependency) {
+                        } else if(it instanceof ProjectDependency) {
                             def dependencyNode = dependenciesNode.appendNode('dependency')
                             dependencyNode.appendNode('groupId', project.group)
                             dependencyNode.appendNode('artifactId', "micronaut-$it.name")
@@ -140,8 +142,7 @@ publishing {
                     }
                 }
 
-            }
-            else {
+            } else {
                 from components.java
                 afterEvaluate {
                     artifact source: sourcesJar, classifier: "sources"
@@ -163,6 +164,18 @@ def bintrayUser = System.getenv("BINTRAY_USER") ?: project.hasProperty("bintrayU
 def bintrayKey = System.getenv("BINTRAY_KEY") ?: project.hasProperty("bintrayKey") ? project.bintrayKey : ''
 def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
 def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
+ext."signing.keyId" = System.getenv("GPG_KEY_ID") ?: project.hasProperty("signing.keyId") ? project.getProperty('signing.keyId') : ''
+ext."signing.password" = System.getenv("GPG_PASSWORD") ?: project.hasProperty("signing.password") ? project.getProperty('signing.password') : ''
+
+if (file("${rootDir}/secring.gpg").exists()) {
+    ext."signing.secretKeyRingFile" = file("${rootDir}/secring.gpg").absolutePath
+} else {
+    ext."signing.secretKeyRingFile" = "${System.getenv('HOME')}/.gnupg/secring.gpg"
+}
+
+signing {
+    sign publishing.publications.maven
+}
 
 bintray {
 
@@ -186,12 +199,6 @@ bintray {
                 sign = true
                 passphrase = System.getenv("SIGNING_PASSPHRASE") ?: project.hasProperty("signingPassphrase") ? project.signingPassphrase : ''
             }
-            mavenCentralSync {
-                sync = project.hasProperty("mavenCentralSync") ? project.mavenCentralSync.toBoolean() : false
-                user = ossUser
-                password = ossPass
-            }
-
         }
     }
 }
