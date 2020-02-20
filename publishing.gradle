@@ -212,12 +212,12 @@ nexusPublishing {
             password = ossPass
         }
     }
-    connectTimeout = Duration.ofMinutes(5)
-    clientTimeout = Duration.ofMinutes(5)
+    connectTimeout = Duration.ofMinutes(30)
+    clientTimeout = Duration.ofMinutes(30)
 }
 
 initializeSonatypeStagingRepository {
-    timeout = Duration.ofMinutes(5)
+    timeout = Duration.ofMinutes(30)
 }
 
 if (!project.version.endsWith("-SNAPSHOT")) {
