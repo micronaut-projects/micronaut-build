@@ -17,8 +17,6 @@
 
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.bmuschko.nexus'
-apply plugin: "de.marcphilipp.nexus-publish"
-apply plugin: 'signing'
 
 ext.extraPomInfo = {}
 ext.pomInfo = {
@@ -173,12 +171,39 @@ if (file("${rootDir}/secring.gpg").exists()) {
     ext."signing.secretKeyRingFile" = file("${System.getenv('HOME')}/.gnupg/secring.gpg").absolutePath
 }
 
-signing {
-    sign publishing.publications.maven
-}
+if (ossUser && ossPass && ext."signing.keyId" && ext."signing.password") {
+    apply plugin: "de.marcphilipp.nexus-publish"
+    apply plugin: 'signing'
 
-tasks.withType(Sign) {
-    onlyIf { ossUser && ossPass && ext."signing.keyId" && ext."signing.password" }
+    signing {
+        sign publishing.publications.maven
+    }
+
+    rootProject.plugins.apply('io.codearte.nexus-staging')
+    def extension = rootProject.extensions.getByName("nexusStaging")
+    extension.with {
+        username = ossUser
+        password = ossPass
+        packageGroup = "io.micronaut"
+        numberOfRetries = 500
+    }
+
+    import java.time.Duration
+
+    nexusPublishing {
+        repositories {
+            sonatype {
+                username = ossUser
+                password = ossPass
+            }
+        }
+        connectTimeout = Duration.ofMinutes(30)
+        clientTimeout = Duration.ofMinutes(30)
+    }
+
+    initializeSonatypeStagingRepository {
+        timeout = Duration.ofMinutes(30)
+    }
 }
 
 bintray {
@@ -205,32 +230,6 @@ bintray {
             }
         }
     }
-}
-
-rootProject.plugins.apply('io.codearte.nexus-staging')
-def extension = rootProject.extensions.getByName("nexusStaging")
-extension.with {
-    username = ossUser
-    password = ossPass
-    packageGroup = "io.micronaut"
-    numberOfRetries = 500
-}
-
-import java.time.Duration
-
-nexusPublishing {
-    repositories {
-        sonatype {
-            username = ossUser
-            password = ossPass
-        }
-    }
-    connectTimeout = Duration.ofMinutes(30)
-    clientTimeout = Duration.ofMinutes(30)
-}
-
-initializeSonatypeStagingRepository {
-    timeout = Duration.ofMinutes(30)
 }
 
 if (!project.version.endsWith("-SNAPSHOT")) {
