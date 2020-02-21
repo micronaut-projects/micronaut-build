@@ -15,15 +15,6 @@
  * echo $GPG_FILE | base64 -d > secring.gpg 
  */
 
- buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.21.2"
-    }
-}
-
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.bmuschko.nexus'
 apply plugin: "de.marcphilipp.nexus-publish"
@@ -212,10 +203,8 @@ bintray {
     }
 }
 
-import io.codearte.gradle.nexus.NexusStagingExtension
-
 rootProject.plugins.apply('io.codearte.nexus-staging')
-NexusStagingExtension extension = rootProject.extensions.getByType(NexusStagingExtension)
+def extension = rootProject.extensions.getByName("nexusStaging")
 extension.with {
     username = ossUser
     password = ossPass
