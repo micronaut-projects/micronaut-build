@@ -174,8 +174,11 @@ if (file("${rootDir}/secring.gpg").exists()) {
 }
 
 signing {
-    onlyIf { ossUser && ossPass && ext."signing.keyId" && ext."signing.password" }
     sign publishing.publications.maven
+}
+
+tasks.withType(Sign) {
+    onlyIf { ossUser && ossPass && ext."signing.keyId" && ext."signing.password" }
 }
 
 bintray {
