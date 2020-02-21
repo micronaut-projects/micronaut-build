@@ -203,6 +203,15 @@ bintray {
     }
 }
 
+rootProject.plugins.apply('io.codearte.nexus-staging')
+def extension = rootProject.extensions.getByType(io.codearte.gradle.nexus.NexusStagingExtension)
+extension.with {
+    username = ossUser
+    password = ossPass
+    packageGroup = "io.micronaut"
+    numberOfRetries = 500
+}
+
 import java.time.Duration
 
 nexusPublishing {
