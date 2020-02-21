@@ -170,6 +170,8 @@ if (file("${rootDir}/secring.gpg").exists()) {
 } else if (file("${System.getenv('HOME')}/.gnupg/secring.gpg").exists()){
     ext."signing.secretKeyRingFile" = file("${System.getenv('HOME')}/.gnupg/secring.gpg").absolutePath
 }
+    
+import java.time.Duration
 
 if (ossUser && ossPass && ext."signing.keyId" && ext."signing.password") {
     apply plugin: "de.marcphilipp.nexus-publish"
@@ -187,8 +189,6 @@ if (ossUser && ossPass && ext."signing.keyId" && ext."signing.password") {
         packageGroup = "io.micronaut"
         numberOfRetries = 500
     }
-
-    import java.time.Duration
 
     nexusPublishing {
         repositories {
