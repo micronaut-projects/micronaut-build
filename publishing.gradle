@@ -203,8 +203,10 @@ bintray {
     }
 }
 
+import io.codearte.gradle.nexus.NexusStagingExtension
+
 rootProject.plugins.apply('io.codearte.nexus-staging')
-def extension = rootProject.extensions.getByType(io.codearte.gradle.nexus.NexusStagingExtension)
+NexusStagingExtension extension = rootProject.extensions.getByType(NexusStagingExtension)
 extension.with {
     username = ossUser
     password = ossPass
