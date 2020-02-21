@@ -17,6 +17,7 @@
 
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'com.bmuschko.nexus'
+apply plugin: 'maven-publish'
 
 ext.extraPomInfo = {}
 ext.pomInfo = {
