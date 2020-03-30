@@ -2,6 +2,10 @@
 /build/
 target/
 .mvn/
+.settings/
+.classpath
+.project
+.factorypath
 
 # Ignore Gradle GUI config
 gradle-app.setting
