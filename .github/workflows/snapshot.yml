@@ -1,0 +1,41 @@
+name: Snapshots
+
+on:
+  push:
+    branches:
+      - maven-plugin
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Install Java and Maven and set up Apache Maven Central
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+          server-password: GH_TOKEN
+
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Deploy site
+        run: mvn site -Dsite.path=micronaut-maven-plugin/snapshot
+        working-directory: ./micronaut-maven-plugin
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Deploy snapshot
+        uses: samuelmeuli/action-maven-publish@v1
+        with:
+          directory: micronaut-maven-plugin
+          gpg_private_key: ${{ secrets.GPG_FILE }}
+          gpg_passphrase: ${{ secrets.GPG_PASSWORD }}
+          nexus_username: ${{ secrets.SONATYPE_USERNAME }}
+          nexus_password: ${{ secrets.SONATYPE_PASSWORD }}
