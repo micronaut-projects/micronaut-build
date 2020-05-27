@@ -37,3 +37,4 @@ jobs:
             micronaut-projects/micronaut-azure
             micronaut-projects/micronaut-groovy
             micronaut-projects/micronaut-test
+            micronaut-projects/micronaut-netflix
