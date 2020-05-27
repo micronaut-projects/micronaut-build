@@ -190,7 +190,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             spotless {
                 java {
                     licenseHeaderFile rootProject.file('config/spotless.license.java')
-                    target '**/*.java'
                     targetExclude 'src/test/**', 'build/generated-src/**'
                 }
             }
