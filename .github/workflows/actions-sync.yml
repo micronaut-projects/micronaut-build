@@ -1,0 +1,43 @@
+name: Actions sync
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/**"
+jobs:
+
+  sync-workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: adrianjost/files-sync-action@v1.1.0
+        with:
+          COMMIT_MESSAGE: "Update GitHub Actions"
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GIT_USERNAME: micronaut-build
+          GIT_EMAIL: "micronaut-build@users.noreply.github.com"
+          SRC_REPO: micronaut-projects/micronaut-project-template
+          FILE_PATTERNS: |-
+            ^\.github\/workflows\/central-sync\.yml$
+            ^\.github\/workflows\/dependency-check\.yml$
+            ^\.github\/workflows\/gradle\.yml$
+            ^\.github\/workflows\/label-sync\.yml$
+            ^\.github\/workflows\/release-notes\.yml$
+          TARGET_REPOS: |-
+            micronaut-projects/micronaut-rabbitmq
+            micronaut-projects/micronaut-sql
+
+  sync-release:
+    runs-on: ubuntu-latest
+    steps:    
+      - uses: adrianjost/files-sync-action@v1.1.0
+        with:
+          COMMIT_MESSAGE: "Update GitHub Actions"
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GIT_USERNAME: micronaut-build
+          GIT_EMAIL: "micronaut-build@users.noreply.github.com"
+          SRC_REPO: micronaut-projects/micronaut-project-template
+          FILE_PATTERNS: |-
+            ^\.github\/workflows\/release\.yml$
+          TARGET_REPOS: |-
+            micronaut-projects/micronaut-rabbitmq
