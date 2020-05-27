@@ -28,3 +28,4 @@ jobs:
             micronaut-projects/micronaut-rabbitmq
             micronaut-projects/micronaut-sql
             micronaut-projects/micronaut-data
+            micronaut-projects/micronaut-servlet
