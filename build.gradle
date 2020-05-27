@@ -1,0 +1,50 @@
+plugins {
+    id 'groovy-gradle-plugin'
+    id 'groovy'
+    id 'maven-publish'
+}
+
+repositories {
+    jcenter()
+    maven { url "https://repo.grails.org/grails/core" }
+}
+
+dependencies {
+    implementation "org.grails:grails-docs:$grailsVersion"
+    implementation 'io.github.groovylang.groovydoc:groovydoc-gradle-plugin:1.0.1'
+    implementation "io.micronaut.docs:micronaut-docs-asciidoc-extensions:$micronautDocsVersion"
+    implementation "io.micronaut.docs:micronaut-docs-gradle-plugins:$micronautDocsVersion"
+    implementation "io.spring.nohttp:nohttp-gradle:0.0.4.RELEASE"
+    implementation "com.github.ben-manes:gradle-versions-plugin:0.28.0"
+    implementation "gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:0.15.0"
+    implementation "com.diffplug.spotless:spotless-plugin-gradle:4.0.1"
+    implementation "com.adarshr:gradle-test-logger-plugin:2.0.0"
+}
+
+gradlePlugin {
+    // Define the plugins
+    plugins {
+        common {
+            id = 'io.micronaut.build.common'
+            implementationClass = 'io.micronaut.build.MicronautBuildCommonPlugin'
+        }
+    }
+}
+
+version project.projectVersion
+group "io.micronaut.build"
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group
+            artifactId = 'micronaut-gradle-plugins'
+            version = project.version
+
+            from components.java
+        }
+    }
+}
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
