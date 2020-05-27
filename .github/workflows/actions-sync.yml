@@ -26,7 +26,7 @@ jobs:
           TARGET_REPOS: |-
             micronaut-projects/micronaut-rabbitmq
             micronaut-projects/micronaut-sql
-
+            micronaut-projects/micronaut-data
   sync-release:
     runs-on: ubuntu-latest
     steps:    
