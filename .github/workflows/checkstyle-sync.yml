@@ -1,4 +1,4 @@
-name: Actions sync
+name: Checkstyle sync
 on:
   push:
     branches:
@@ -7,7 +7,7 @@ on:
       - ".github/workflows/**"
 jobs:
 
-  sync-workflows:
+  sync-checkstyle:
     runs-on: ubuntu-latest
     steps:
       - uses: adrianjost/files-sync-action@v1.1.0
