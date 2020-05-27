@@ -29,3 +29,4 @@ jobs:
             micronaut-projects/micronaut-sql
             micronaut-projects/micronaut-data
             micronaut-projects/micronaut-servlet
+            micronaut-projects/micronaut-nats
