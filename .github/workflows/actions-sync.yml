@@ -29,6 +29,7 @@ jobs:
             micronaut-projects/micronaut-sql
             micronaut-projects/micronaut-data
             micronaut-projects/micronaut-servlet
+            micronaut-projects/micronaut-micrometer
             micronaut-projects/micronaut-nats
             micronaut-projects/micronaut-gcp
             micronaut-projects/micronaut-kafka
