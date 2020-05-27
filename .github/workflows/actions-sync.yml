@@ -32,6 +32,7 @@ jobs:
             micronaut-projects/micronaut-nats
             micronaut-projects/micronaut-gcp
             micronaut-projects/micronaut-kafka
+            micronaut-projects/micronaut-kotlin
             micronaut-projects/micronaut-azure
             micronaut-projects/micronaut-groovy
             micronaut-projects/micronaut-test
