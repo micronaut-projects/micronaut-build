@@ -33,3 +33,4 @@ jobs:
             micronaut-projects/micronaut-gcp
             micronaut-projects/micronaut-kafka
             micronaut-projects/micronaut-azure
+            micronaut-projects/micronaut-groovy
