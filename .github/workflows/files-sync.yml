@@ -1,4 +1,4 @@
-name: Actions sync
+name: Files sync
 on:
   push:
     branches:
@@ -6,13 +6,12 @@ on:
     paths:
       - ".github/workflows/**"
 jobs:
-
-  sync-workflows:
+  sync-files:
     runs-on: ubuntu-latest
     steps:
       - uses: adrianjost/files-sync-action@v1.1.0
         with:
-          COMMIT_MESSAGE: "Update GitHub Actions"
+          COMMIT_MESSAGE: "Update common files"
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           GIT_USERNAME: micronaut-build
           GIT_EMAIL: "micronaut-build@users.noreply.github.com"
@@ -24,6 +23,7 @@ jobs:
             ^\.github\/workflows\/label-sync\.yml$
             ^\.github\/workflows\/release-notes\.yml$
             ^\.github\/workflows\/release\.yml$
+            ^config/.*$
           TARGET_REPOS: |-
             micronaut-projects/micronaut-rabbitmq
             micronaut-projects/micronaut-sql
