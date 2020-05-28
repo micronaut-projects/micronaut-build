@@ -12,12 +12,14 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         project.with {
+            MicronautBuildExtension micronautBuildExtension = extensions.getByType(MicronautBuildExtension)
+
             apply plugin: "com.github.ben-manes.versions"
             dependencyUpdates {
                 checkForGradleUpdate = true
                 checkConstraints = true
                 rejectVersionIf { mod ->
-                    mod.candidate.version ==~ /.+(-|\.?)(b|M|RC)\d.*/ ||
+                    mod.candidate.version ==~ micronautBuildExtension.dependencyUpdatesPattern ||
                             ["alpha", "beta", "milestone", "preview"].any { mod.candidate.version.toLowerCase(Locale.ENGLISH).contains(it) } ||
                             mod.candidate.group == 'io.micronaut' // managed by the micronaut version
                 }

@@ -1,6 +1,5 @@
 package io.micronaut.build
 
-import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Plugin
 import org.gradle.api.artifacts.DependencyResolveDetails
@@ -19,6 +18,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
     void apply(Project project) {
         project.repositories.jcenter()
         project.version project.findProperty("projectVersion")
+        project.extensions.create('micronautBuild', MicronautBuildExtension)
         configureJavaPlugin(project)
         configureDependencies(project)
         configureTasks(project)
@@ -78,9 +78,11 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         project.apply plugin:"java-library"
 
         JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
+        MicronautBuildExtension micronautBuildExtension = project.extensions.getByType(MicronautBuildExtension)
+
         convention.with {
-            sourceCompatibility = '1.8'
-            targetCompatibility = '1.8'
+            sourceCompatibility = micronautBuildExtension.sourceCompatibility
+            targetCompatibility = micronautBuildExtension.targetCompatibility
         }
 
         project.tasks.withType(Test) {
@@ -128,10 +130,11 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
 
     void configureCheckstyle(Project project) {
         project.with {
+            MicronautBuildExtension micronautBuildExtension = extensions.getByType(MicronautBuildExtension)
             apply plugin: 'checkstyle'
             checkstyle {
                 configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
-                toolVersion = 8.32
+                toolVersion = micronautBuildExtension.checkstyleVersion
 
                 // Per submodule
                 maxErrors = 1
