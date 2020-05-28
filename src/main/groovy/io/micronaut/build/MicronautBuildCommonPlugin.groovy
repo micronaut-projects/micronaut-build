@@ -86,13 +86,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         project.tasks.withType(Test) {
             jvmArgs '-Duser.country=US'
             jvmArgs '-Duser.language=en'
-            testLogging {
-                exceptionFormat = 'full'
-            }
-            afterSuite {
-                System.out.print(".")
-                System.out.flush()
-            }
 
             reports.html.enabled = !System.getenv("GITHUB_ACTIONS")
             reports.junitXml.enabled = !System.getenv("GITHUB_ACTIONS")
