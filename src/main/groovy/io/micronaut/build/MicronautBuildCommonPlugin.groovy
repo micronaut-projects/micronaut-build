@@ -24,7 +24,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         configureTasks(project)
         configureIdeaPlugin(project)
         configureCheckstyle(project)
-        configureDependencyUpdates(project)
         configureLicensePlugin(project)
         configureTestLoggerPlugin(project)
     }
@@ -148,39 +147,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 showViolations = true
             }
             checkstyleTest.enabled = false
-        }
-    }
-
-    void configureDependencyUpdates(Project project) {
-        project.with {
-            apply plugin: "com.github.ben-manes.versions"
-            dependencyUpdates {
-                checkForGradleUpdate = true
-                checkConstraints = true
-                rejectVersionIf { mod ->
-                    mod.candidate.version ==~ /.+(-|\.?)(b|M|RC)\d.*/ ||
-                            ["alpha", "beta", "milestone", "preview"].any { mod.candidate.version.toLowerCase(Locale.ENGLISH).contains(it) } ||
-                            mod.candidate.group == 'io.micronaut' // managed by the micronaut version
-                }
-                outputFormatter = { result ->
-                    if (!result.outdated.dependencies.isEmpty()) {
-                        def upgradeVersions = result.outdated.dependencies
-                        if (!upgradeVersions.isEmpty()) {
-                            println "\nThe following dependencies have later ${revision} versions:"
-                            upgradeVersions.each { dep ->
-                                def currentVersion = dep.version
-                                println " - ${dep.group}:${dep.name} [${currentVersion} -> ${dep.available[revision]}]"
-                                if (dep.projectUrl != null) {
-                                    println "     ${dep.projectUrl}"
-                                }
-                            }
-                            throw new GradleException('Abort, there are dependencies to update.')
-                        }
-                    }
-                }
-            }
-
-            project.tasks.getByName("check").dependsOn('dependencyUpdates')
         }
     }
 

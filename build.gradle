@@ -37,6 +37,10 @@ gradlePlugin {
             id = 'io.micronaut.build.publishing'
             implementationClass = 'io.micronaut.build.MicronautPublishingPlugin'
         }
+        dependencyUpdates {
+            id = 'io.micronaut.build.dependency-updates'
+            implementationClass = 'io.micronaut.build.MicronautDependencyUpdatesPlugin'
+        }
     }
 }
 
