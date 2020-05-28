@@ -172,3 +172,12 @@
 - color: eaa4b3
   description: A task that needs to be completed
   name: 'type: task'
+- color: cfd3d7
+  description: Something has been deprecated
+  name: 'type: deprecated'
+- color: d85052
+  description: Something has been removed
+  name: 'type: removed'
+- color: fbca04
+  description: Introduces a breaking change
+  name: 'type: breaking'
