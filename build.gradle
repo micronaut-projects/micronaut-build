@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     implementation "org.grails:grails-docs:$grailsVersion"
-    implementation 'io.github.groovylang.groovydoc:groovydoc-gradle-plugin:1.0.1'
+    implementation "io.github.groovylang.groovydoc:groovydoc-gradle-plugin:1.0.1"
     implementation "io.micronaut.docs:micronaut-docs-asciidoc-extensions:$micronautDocsVersion"
     implementation "io.micronaut.docs:micronaut-docs-gradle-plugins:$micronautDocsVersion"
     implementation "io.spring.nohttp:nohttp-gradle:0.0.4.RELEASE"
@@ -20,6 +20,10 @@ dependencies {
     implementation "gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:0.15.0"
     implementation "com.diffplug.spotless:spotless-plugin-gradle:4.0.1"
     implementation "com.adarshr:gradle-test-logger-plugin:2.0.0"
+    implementation "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5"
+    implementation "de.marcphilipp.gradle:nexus-publish-plugin:0.4.0"
+    implementation "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.21.2"
+    implementation "com.bmuschko:gradle-nexus-plugin:2.3.1"
 }
 
 gradlePlugin {
@@ -28,6 +32,10 @@ gradlePlugin {
         common {
             id = 'io.micronaut.build.common'
             implementationClass = 'io.micronaut.build.MicronautBuildCommonPlugin'
+        }
+        publishing {
+            id = 'io.micronaut.build.publishing'
+            implementationClass = 'io.micronaut.build.MicronautPublishingPlugin'
         }
     }
 }
