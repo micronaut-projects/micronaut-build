@@ -2,6 +2,7 @@ plugins {
     id 'groovy-gradle-plugin'
     id 'groovy'
     id 'maven-publish'
+    id "com.jfrog.bintray" version "1.8.5"
 }
 
 repositories {
@@ -34,7 +35,22 @@ gradlePlugin {
 version project.projectVersion
 group "io.micronaut.build"
 
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+def bintrayUser = System.getenv("BINTRAY_USER") ?: project.hasProperty("bintrayUser") ? project.bintrayUser : ''
+def bintrayKey = System.getenv("BINTRAY_KEY") ?: project.hasProperty("bintrayKey") ? project.bintrayKey : ''
+
 publishing {
+    repositories {
+        maven {
+            credentials {
+                username = bintrayUser
+                password = bintrayKey
+            }
+            url  "https://oss.jfrog.org/oss-snapshot-local"
+        }
+    }
     publications {
         maven(MavenPublication) {
             groupId = project.group
@@ -46,5 +62,28 @@ publishing {
     }
 }
 
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+bintray {
+    user = bintrayUser
+    key = bintrayKey
+    publications = ['maven']
+    publish = true
+    pkg {
+        repo = 'core-releases-local'
+        userOrg = 'micronaut'
+        name = project.name
+        desc = "${project.title} - ${project.projectDesc} - ${project.name} module".toString()
+        websiteUrl = projectUrl
+        issueTrackerUrl = "https://github.com/$githubSlug/issues"
+        vcsUrl = "https://github.com/$githubSlug"
+        licenses = ['Apache-2.0']
+        publicDownloadNumbers = true
+        version {
+            name = project.version
+            gpg {
+                sign = true
+                passphrase = System.getenv("SIGNING_PASSPHRASE") ?: project.hasProperty("signingPassphrase") ? project.signingPassphrase : ''
+            }
+        }
+    }
+}
+
