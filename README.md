@@ -56,14 +56,7 @@ micronautBuild {
 Also, to pin a dependency to a particular version:
 
 ```groovy
-configurations {
-    all {
-        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-            String group = details.requested.group
-            if(group == 'com.rabbitmq') {
-                details.useVersion(rabbitVersion)
-            }
-        }
-    }
+micronautBuild {    
+    requiredDependencyVersion "com.rabbitmq:amqp-client:${rabbitVersion}"      
 }
 ```
