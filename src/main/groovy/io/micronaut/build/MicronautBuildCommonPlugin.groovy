@@ -47,10 +47,10 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         }
 
         project.dependencies {
-            annotationProcessor enforcedPlatform("io.micronaut:micronaut-bom:${micronautVersion}")
-            implementation enforcedPlatform("io.micronaut:micronaut-bom:${micronautVersion}")
-            testAnnotationProcessor enforcedPlatform("io.micronaut:micronaut-bom:${micronautVersion}")
-            testImplementation enforcedPlatform("io.micronaut:micronaut-bom:${micronautVersion}")
+            annotationProcessor platform("io.micronaut:micronaut-bom:${micronautVersion}")
+            implementation platform("io.micronaut:micronaut-bom:${micronautVersion}")
+            testAnnotationProcessor platform("io.micronaut:micronaut-bom:${micronautVersion}")
+            testImplementation platform("io.micronaut:micronaut-bom:${micronautVersion}")
 
             documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
             documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"
