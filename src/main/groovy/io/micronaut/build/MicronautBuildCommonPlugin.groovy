@@ -26,6 +26,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         configureCheckstyle(project, micronautBuild)
         configureLicensePlugin(project)
         configureTestLoggerPlugin(project)
+        configureMiscPlugins(project)
     }
 
     private void configureDependencies(Project project) {
@@ -172,5 +173,9 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 showFailedStandardStreams true
             }
         }
+    }
+
+    void configureMiscPlugins(Project project) {
+        project.apply plugin: "io.spring.nohttp"
     }
 }
