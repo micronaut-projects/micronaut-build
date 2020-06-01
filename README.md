@@ -37,6 +37,9 @@ Then, apply the individual plugins as desired
     
 * `io.micronaut.build.publishing`:
     * Configures publishing to JFrog OSS, Bintray and Maven Central.
+
+* `io.micronaut.build.docs`:
+    * Configures the guide publishing stuff.
     
 ## Configuration options
 

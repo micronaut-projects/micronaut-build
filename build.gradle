@@ -41,6 +41,10 @@ gradlePlugin {
             id = 'io.micronaut.build.dependency-updates'
             implementationClass = 'io.micronaut.build.MicronautDependencyUpdatesPlugin'
         }
+        docs {
+            id = 'io.micronaut.build.docs'
+            implementationClass = 'io.micronaut.build.MicronautDocsPlugin'
+        }
     }
 }
 
