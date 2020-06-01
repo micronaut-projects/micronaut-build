@@ -23,13 +23,15 @@ jobs:
             ^\.github\/workflows\/label-sync\.yml$
             ^\.github\/workflows\/release-notes\.yml$
             ^\.github\/workflows\/release\.yml$
-            ^config/.*$
             ^gradle/.*$
             ^.gitignore$
             ^gradlew$
             ^gradlew.bat$
             ^ISSUE_TEMPLATE.md$
             ^LICENSE$
+            ^config\/HEADER$
+            ^config\/spotless\.license\.java$
+            ^config\/checkstyle\/checkstyle\.xml$
           TARGET_REPOS: |-
             micronaut-projects/micronaut-rabbitmq
             micronaut-projects/micronaut-sql
