@@ -56,7 +56,11 @@ micronautBuild {
 Also, to pin a dependency to a particular version:
 
 ```groovy
-micronautBuild {    
-    requiredDependencyVersion "com.rabbitmq:amqp-client:${rabbitVersion}"      
+micronautBuild {
+    resolutionStrategy {
+        force "com.rabbitmq:amqp-client:${rabbitVersion}"
+    }    
 }
 ```
+
+You can use [the same DSL as in Gradle](https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.ResolutionStrategy.html).

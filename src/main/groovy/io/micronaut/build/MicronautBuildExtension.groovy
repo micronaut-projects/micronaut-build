@@ -1,7 +1,5 @@
 package io.micronaut.build
 
-import org.gradle.api.Action
-
 class MicronautBuildExtension {
 
     String sourceCompatibility = '1.8'
@@ -11,11 +9,10 @@ class MicronautBuildExtension {
 
     String dependencyUpdatesPattern = /.+(-|\.?)(b|M|RC)\d.*/
 
-    List<String> forceDependencies = []
+    Closure resolutionStrategy
 
-    void requiredDependencyVersion(String id) {
-        if (id) {
-            forceDependencies.add(id)
-        }
+    void resolutionStrategy(Closure closure) {
+        this.resolutionStrategy = closure
     }
+
 }

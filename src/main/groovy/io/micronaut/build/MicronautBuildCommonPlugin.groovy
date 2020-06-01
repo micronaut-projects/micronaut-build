@@ -17,13 +17,13 @@ import org.groovy.lang.groovydoc.tasks.GroovydocTask
 class MicronautBuildCommonPlugin implements Plugin<Project> {
     void apply(Project project) {
         project.repositories.jcenter()
-        project.version project.findProperty("projectVersion")
-        project.extensions.create('micronautBuild', MicronautBuildExtension)
-        configureJavaPlugin(project)
+        project.setVersion project.findProperty("projectVersion")
+        MicronautBuildExtension micronautBuild = project.extensions.create('micronautBuild', MicronautBuildExtension)
+        configureJavaPlugin(project, micronautBuild)
         configureDependencies(project)
         configureTasks(project)
         configureIdeaPlugin(project)
-        configureCheckstyle(project)
+        configureCheckstyle(project, micronautBuild)
         configureLicensePlugin(project)
         configureTestLoggerPlugin(project)
     }
@@ -73,16 +73,16 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         }
     }
 
-    private void configureJavaPlugin(Project project) {
+    private void configureJavaPlugin(Project project, MicronautBuildExtension micronautBuildExtension) {
         project.apply plugin:"groovy"
         project.apply plugin:"java-library"
 
-        JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
-        MicronautBuildExtension micronautBuildExtension = project.extensions.getByType(MicronautBuildExtension)
-
-        convention.with {
-            sourceCompatibility = micronautBuildExtension.sourceCompatibility
-            targetCompatibility = micronautBuildExtension.targetCompatibility
+        project.afterEvaluate {
+            JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
+            convention.with {
+                sourceCompatibility = micronautBuildExtension.sourceCompatibility
+                targetCompatibility = micronautBuildExtension.targetCompatibility
+            }
         }
 
         project.tasks.withType(Test) {
@@ -128,21 +128,22 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         }
     }
 
-    void configureCheckstyle(Project project) {
-        project.with {
-            MicronautBuildExtension micronautBuildExtension = extensions.getByType(MicronautBuildExtension)
-            apply plugin: 'checkstyle'
-            checkstyle {
-                configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
-                toolVersion = micronautBuildExtension.checkstyleVersion
+    void configureCheckstyle(Project project, MicronautBuildExtension micronautBuildExtension) {
+        project.afterEvaluate {
+            project.with {
+                apply plugin: 'checkstyle'
+                checkstyle {
+                    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+                    toolVersion = micronautBuildExtension.checkstyleVersion
 
-                // Per submodule
-                maxErrors = 1
-                maxWarnings = 10
+                    // Per submodule
+                    maxErrors = 1
+                    maxWarnings = 10
 
-                showViolations = true
+                    showViolations = true
+                }
+                checkstyleTest.enabled = false
             }
-            checkstyleTest.enabled = false
         }
     }
 
