@@ -21,6 +21,7 @@ jobs:
           FILE_PATTERNS: |-
             ^\.github\/workflows\/central-sync\.yml$
             ^\.github\/workflows\/dependency-check\.yml$
+            ^\.github\/workflows\/dependency-update\.yml$
             ^\.github\/workflows\/gradle\.yml$
             ^\.github\/workflows\/label-sync\.yml$
             ^\.github\/workflows\/release-notes\.yml$
