@@ -202,7 +202,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                         'grailsapi': 'http://docs.grails.org/latest/api/',
                         'gormapi': 'http://gorm.grails.org/latest/api/',
                         'springapi': 'https://docs.spring.io/spring/docs/current/javadoc-api/',
-                        'kafka-version': rootProject.properties['kafkaVersion']
+                        'kafka-version': rootProject.hasProperty('kafkaVersion') ? rootProject.properties['kafkaVersion'] : 'N/A'
                 ]
                 doLast {
                     ant.move(file:"${buildDir}/docs/guide/single.html",
