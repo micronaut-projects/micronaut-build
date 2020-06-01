@@ -50,7 +50,7 @@ micronautBuild {
     sourceCompatibility = '1.8'
     targetCompatibility = '1.8'
 
-    checkstyleVersion = '8.32'
+    checkstyleVersion = '8.33'
 
     dependencyUpdatesPattern = /.+(-|\.?)(b|M|RC)\d.*/
 }
