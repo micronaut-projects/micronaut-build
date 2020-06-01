@@ -1,4 +1,4 @@
-# micronaut-build
+# micronaut-build [![Download](https://api.bintray.com/packages/micronaut/core-releases-local/micronaut-build/images/download.svg) ](https://bintray.com/micronaut/core-releases-local/micronaut-build)
 
 Micronaut internal Gradle plugins. Not intended to be used in user's projects.
 
