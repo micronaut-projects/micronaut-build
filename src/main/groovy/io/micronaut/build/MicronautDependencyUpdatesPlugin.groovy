@@ -14,6 +14,7 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         project.apply plugin: "com.github.ben-manes.versions"
+        project.apply plugin: "se.patrikerdes.use-latest-versions"
 
         project.afterEvaluate {
             MicronautBuildExtension micronautBuildExtension = project.extensions.getByType(MicronautBuildExtension)
@@ -45,11 +46,16 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
                                         println "     ${dep.projectUrl}"
                                     }
                                 }
-                                throw new GradleException('Abort, there are dependencies to update.')
+                                throw new GradleException('Abort, there are dependencies to update. Run ./gradlew useLatestVersions to update them in place')
                             }
                         }
                     }
                 }
+
+                useLatestVersions {
+                    updateRootProperties = true
+                }
+
                 tasks.getByName("checkstyleMain").dependsOn('dependencyUpdates')
             }
         }

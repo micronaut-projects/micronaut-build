@@ -20,10 +20,25 @@ dependencies {
     implementation "gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:0.15.0"
     implementation "com.diffplug.spotless:spotless-plugin-gradle:4.0.1"
     implementation "com.adarshr:gradle-test-logger-plugin:2.0.0"
-    implementation "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5"
+    implementation "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5", {
+        exclude group: 'xerces', module: 'xercesImpl'
+    }
     implementation "de.marcphilipp.gradle:nexus-publish-plugin:0.4.0"
-    implementation "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.21.2"
+    implementation "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.21.2", {
+        exclude group: 'xerces', module: 'xercesImpl'
+    }
     implementation "com.bmuschko:gradle-nexus-plugin:2.3.1"
+    implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.14"
+}
+
+configurations.all {
+    resolutionStrategy {
+        componentSelection {
+            withModule("xerces:xercesImpl") { ComponentSelection selection ->
+                selection.reject("No xerces")
+            }
+        }
+    }
 }
 
 gradlePlugin {
