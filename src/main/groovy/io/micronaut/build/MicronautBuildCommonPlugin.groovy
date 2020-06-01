@@ -23,10 +23,10 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         configureDependencies(project)
         configureTasks(project)
         configureIdeaPlugin(project)
-        configureCheckstyle(project, micronautBuild)
         configureLicensePlugin(project)
         configureTestLoggerPlugin(project)
         configureMiscPlugins(project)
+        configureCheckstyle(project, micronautBuild)
     }
 
     private void configureDependencies(Project project) {
@@ -144,6 +144,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     showViolations = true
                 }
                 checkstyleTest.enabled = false
+                checkstyleMain.dependsOn('spotlessCheck')
             }
         }
     }

@@ -14,7 +14,6 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         project.apply plugin: "com.github.ben-manes.versions"
-        project.tasks.getByName("check").dependsOn('dependencyUpdates')
 
         project.afterEvaluate {
             MicronautBuildExtension micronautBuildExtension = project.extensions.getByType(MicronautBuildExtension)
@@ -51,6 +50,7 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
                         }
                     }
                 }
+                tasks.getByName("checkstyleMain").dependsOn('dependencyUpdates')
             }
         }
     }
