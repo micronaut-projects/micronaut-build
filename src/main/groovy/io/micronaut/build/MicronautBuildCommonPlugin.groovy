@@ -32,8 +32,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
     private void configureDependencies(Project project) {
         String micronautVersion = project.findProperty("micronautVersion")
         String groovyVersion = project.findProperty("groovyVersion")
-        String spockVersion = project.findProperty("spockVersion")
-        String micronautTestVersion = project.findProperty("micronautTestVersion")
 
         project.configurations {
             documentation
@@ -56,12 +54,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
             documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"
 
-            testImplementation("org.spockframework:spock-core:${spockVersion}") {
-                exclude module:'groovy-all'
-            }
-
             testImplementation "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
-            testImplementation "io.micronaut.test:micronaut-test-spock:$micronautTestVersion"
             testImplementation "cglib:cglib-nodep:3.3.0"
             testImplementation "org.objenesis:objenesis:3.1"
 

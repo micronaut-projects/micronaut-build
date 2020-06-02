@@ -25,8 +25,8 @@ Then, apply the individual plugins as desired
     * Defines `jcenter()` as a project repository.
     * Configures the version to the `projectVersion` property (usually defined in `gradle.properties`).
     * Configures Java / Groovy compilation options.
-    * Configures dependencies, enforcing the Micronaut BOM defined in `micronautVersion` property, as well as the versions
-      defined in `groovyVersion`, `spockVersion` and `micronautTestVersion`.
+    * Configures dependencies, enforcing the Micronaut BOM defined in `micronautVersion` property, as well as the version
+      defined in `groovyVersion`.
     * Configures the IDEA plugin.
     * Configures Checkstyle.
     * Configures the Spotless plugin, to apply license headers.
