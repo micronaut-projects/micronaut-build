@@ -31,6 +31,9 @@ class MicronautDocsPlugin implements Plugin<Project> {
             def commonGithubSlug = 'grails-common-build'
             def commonBranch = 'master'
             def docResourcesDir = "${buildDir}/resources/${commonGithubSlug}-${commonBranch}/src/main/resources"
+            def projectVersion = project.findProperty('projectVersion')
+            def projectDesc = project.findProperty('projectDesc')
+            def githubSlug = project.findProperty('githubSlug')
             logger.quiet("Configuring micronaut documentation tasks for subprojects.")
             logger.quiet("Add skipDocumentation=true to a submodule gradle.properties to skip docs")
             subprojects { subproject ->
@@ -112,7 +115,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 group = 'Documentation'
 
                 destinationDir = file("$buildDir/docs/api")
-                title = "$name $version API"
+                title = "$name ${projectVersion} API"
                 options.author true
                 List links = []
                 for( p in properties ) {
@@ -189,7 +192,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 properties = [
                         'safe':'UNSAFE',
                         'source-highlighter':'highlightjs',
-                        'version': version,
+                        'version': projectVersion,
                         'subtitle': projectDesc,
                         'github': 'https://github.com/micronaut-projects/micronaut-core',
                         'api': '../api',
@@ -221,7 +224,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
             }
             tasks.register("zipDocs", Zip) { task ->
                 task.group(DOCUMENTATION_GROUP)
-                archiveBaseName = "${name}-${version}"
+                archiveBaseName = "${name}-${projectVersion}"
                 destinationDirectory = new File(buildDir, "distributions")
                 from files("${buildDir}/docs")
             }
