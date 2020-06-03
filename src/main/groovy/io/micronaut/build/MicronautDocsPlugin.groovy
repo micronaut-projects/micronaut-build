@@ -34,8 +34,8 @@ class MicronautDocsPlugin implements Plugin<Project> {
             def projectVersion = project.findProperty('projectVersion')
             def projectDesc = project.findProperty('projectDesc')
             def githubSlug = project.findProperty('githubSlug')
-            logger.quiet("Configuring micronaut documentation tasks for subprojects.")
-            logger.quiet("Add skipDocumentation=true to a submodule gradle.properties to skip docs")
+            logger.info("Configuring micronaut documentation tasks for subprojects.")
+            logger.info("Add skipDocumentation=true to a submodule gradle.properties to skip docs")
             subprojects { subproject ->
                 boolean skipDocs = hasProperty('skipDocumentation') ? property('skipDocumentation') as Boolean : false
                 if (tasks.findByName("classes") && !skipDocs) {
@@ -259,7 +259,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 task.onlyIf {
                     boolean existsLogo = new File(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/img/' + MicronautDocsResources.LOGO).exists()
                     if (existsLogo) {
-                        getLogger().info("skipping download resources, logo already exists")
+                        logger.info("skipping download resources, logo already exists")
                     }
                     !existsLogo
                 }
