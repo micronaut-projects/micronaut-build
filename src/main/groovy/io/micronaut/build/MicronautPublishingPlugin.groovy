@@ -6,6 +6,7 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.SelfResolvingDependency
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.bundling.Jar
 
 import java.time.Duration
 
@@ -19,7 +20,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
         project.with {
             apply plugin: 'maven-publish'
             apply plugin: 'com.jfrog.bintray'
-            apply plugin: 'com.bmuschko.nexus'
             ExtraPropertiesExtension ext = extensions.getByType(ExtraPropertiesExtension)
             def bintrayUser = System.getenv("BINTRAY_USER") ?: project.hasProperty("bintrayUser") ? project.bintrayUser : ''
             def bintrayKey = System.getenv("BINTRAY_KEY") ?: project.hasProperty("bintrayKey") ? project.bintrayKey : ''
@@ -28,6 +28,8 @@ class MicronautPublishingPlugin implements Plugin<Project> {
             ext."signing.keyId" = System.getenv("GPG_KEY_ID") ?: project.hasProperty("signing.keyId") ? project.getProperty('signing.keyId') : null
             ext."signing.password" = System.getenv("GPG_PASSWORD") ?: project.hasProperty("signing.password") ? project.getProperty('signing.password') : null
             def githubSlug = project.findProperty('githubSlug')
+            boolean isPlatform = project.plugins.findPlugin("java-platform") != null
+            println "project.plugins ${project.plugins.asList()}"
 
             ext.extraPomInfo = {}
             ext.pomInfo = {
@@ -63,8 +65,16 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 ext.extraPomInfo.call()
             }
 
-            modifyPom {
-                project(ext.pomInfo)
+            if (!isPlatform) {
+                project.task('sourcesJar', type:Jar) {
+                    archiveClassifier.set('sources')
+                    from project.sourceSets.main.allJava
+                }
+
+                project.task('javadocJar', type:Jar) {
+                    archiveClassifier.set('javadoc')
+                    from project.javadoc.destinationDir
+                }
             }
 
             publishing {
@@ -148,15 +158,25 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                             }
 
                         } else {
-                            from components.java
-                            afterEvaluate {
-                                artifact source: sourcesJar, classifier: "sources"
-                                artifact source: javadocJar, classifier: "javadoc"
-                            }
+                            if (isPlatform) {
+                                pom.withXml {
+                                    def xml = asNode()
 
-                            pom.withXml {
-                                def xml = asNode()
-                                xml.children().last() + ext.pomInfo
+                                    xml.children().find {
+                                        it.name().localPart == 'packaging'
+                                    } + ext.pomInfo
+                                }
+                            } else {
+                                from components.java
+                                afterEvaluate {
+                                    artifact source: sourcesJar, classifier: "sources"
+                                    artifact source: javadocJar, classifier: "javadoc"
+                                }
+
+                                pom.withXml {
+                                    def xml = asNode()
+                                    xml.children().last() + ext.pomInfo
+                                }
                             }
                         }
 
