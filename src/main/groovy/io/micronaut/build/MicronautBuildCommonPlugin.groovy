@@ -174,6 +174,12 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
     }
 
     void configureMiscPlugins(Project project) {
-        project.apply plugin: "io.spring.nohttp"
+        project.with {
+            apply plugin: "io.spring.nohttp"
+            nohttp {
+                source.exclude "src/test/**", "build/**"
+            }
+
+        }
     }
 }
