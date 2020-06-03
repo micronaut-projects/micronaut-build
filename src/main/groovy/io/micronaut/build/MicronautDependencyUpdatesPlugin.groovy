@@ -11,13 +11,22 @@ import org.gradle.api.artifacts.DependencyResolveDetails
  */
 class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
 
+
+    public static final String GRADLE_VERSIONS_PLUGIN = "com.github.ben-manes.versions"
+    public static final String USE_LATEST_VERSIONS_PLUGIN = "se.patrikerdes.use-latest-versions"
+
     @Override
     void apply(Project project) {
-        project.apply plugin: "com.github.ben-manes.versions"
-        project.apply plugin: "se.patrikerdes.use-latest-versions"
+        project.apply plugin: GRADLE_VERSIONS_PLUGIN
+        project.apply plugin: USE_LATEST_VERSIONS_PLUGIN
 
         project.afterEvaluate {
-            MicronautBuildExtension micronautBuildExtension = project.extensions.getByType(MicronautBuildExtension)
+            MicronautBuildExtension micronautBuildExtension
+            if (project.extensions.findByType(MicronautBuildExtension)) {
+                micronautBuildExtension = project.extensions.getByType(MicronautBuildExtension)
+            } else {
+                micronautBuildExtension = project.extensions.create('micronautBuild', MicronautBuildExtension)
+            }
 
             project.configurations.all { Configuration cfg ->
                 if (micronautBuildExtension.resolutionStrategy) {
@@ -28,6 +37,7 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
             project.with {
                 dependencyUpdates {
                     checkForGradleUpdate = true
+                    gradleReleaseChannel = "current"
                     checkConstraints = true
                     rejectVersionIf { mod ->
                         mod.candidate.version ==~ micronautBuildExtension.dependencyUpdatesPattern ||
@@ -56,7 +66,9 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
                     updateRootProperties = true
                 }
 
-                tasks.getByName("checkstyleMain").dependsOn('dependencyUpdates')
+                if (tasks.findByName("checkstyleMain")) {
+                    tasks.getByName("checkstyleMain").dependsOn('dependencyUpdates')
+                }
             }
         }
     }
