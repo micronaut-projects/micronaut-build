@@ -158,6 +158,7 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
                         } else {
                             if (isPlatform) {
+                                from components.javaPlatform
                                 pom.withXml {
                                     def xml = asNode()
 
