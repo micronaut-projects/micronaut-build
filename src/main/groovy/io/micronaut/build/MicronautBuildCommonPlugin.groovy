@@ -46,24 +46,27 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             }
         }
 
-        project.dependencies {
-            String p = micronautBuild.enforcedPlatform ? "enforcedPlatform" : "platform"
-            annotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-            implementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-            testAnnotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-            testImplementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-            compileOnly "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+        project.afterEvaluate {
+            project.dependencies {
+                String p = micronautBuild.enforcedPlatform ? "enforcedPlatform" : "platform"
+                annotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                implementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                testAnnotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                testImplementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                compileOnly "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
 
-            documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
-            documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"
+                documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
+                documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"
 
-            testImplementation "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
-            testImplementation "cglib:cglib-nodep:3.3.0"
-            testImplementation "org.objenesis:objenesis:3.1"
+                testImplementation "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
+                testImplementation "cglib:cglib-nodep:3.3.0"
+                testImplementation "org.objenesis:objenesis:3.1"
 
-            testRuntimeOnly "ch.qos.logback:logback-classic:1.2.3"
-            testImplementation "org.codehaus.groovy:groovy-test:$groovyVersion"
+                testRuntimeOnly "ch.qos.logback:logback-classic:1.2.3"
+                testImplementation "org.codehaus.groovy:groovy-test:$groovyVersion"
+            }
         }
+
 
         project.tasks.withType(GroovydocTask) {
             classpath += project.configurations.documentation
