@@ -21,7 +21,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         project.setVersion project.findProperty("projectVersion")
         MicronautBuildExtension micronautBuild = project.extensions.create('micronautBuild', MicronautBuildExtension)
         configureJavaPlugin(project, micronautBuild)
-        configureDependencies(project)
+        configureDependencies(project, micronautBuild)
         configureTasks(project)
         configureIdeaPlugin(project)
         configureLicensePlugin(project)
@@ -30,7 +30,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         configureCheckstyle(project, micronautBuild)
     }
 
-    private void configureDependencies(Project project) {
+    private void configureDependencies(Project project, MicronautBuildExtension micronautBuild) {
         String micronautVersion = project.findProperty("micronautVersion")
         String groovyVersion = project.findProperty("groovyVersion")
 
@@ -47,10 +47,12 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         }
 
         project.dependencies {
-            annotationProcessor platform("io.micronaut:micronaut-bom:${micronautVersion}")
-            implementation platform("io.micronaut:micronaut-bom:${micronautVersion}")
-            testAnnotationProcessor platform("io.micronaut:micronaut-bom:${micronautVersion}")
-            testImplementation platform("io.micronaut:micronaut-bom:${micronautVersion}")
+            String p = micronautBuild.enforcedPlatform ? "enforcedPlatform" : "platform"
+            annotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+            implementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+            testAnnotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+            testImplementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+            compileOnly "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
 
             documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
             documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"

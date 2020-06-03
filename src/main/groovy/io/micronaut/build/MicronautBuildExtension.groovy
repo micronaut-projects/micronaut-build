@@ -11,6 +11,8 @@ class MicronautBuildExtension {
 
     Closure resolutionStrategy
 
+    boolean enforcedPlatform = false
+
     void resolutionStrategy(Closure closure) {
         this.resolutionStrategy = closure
     }
