@@ -4,6 +4,7 @@ import org.gradle.api.Project
 import org.gradle.api.Plugin
 import org.gradle.api.artifacts.DependencyResolveDetails
 import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.GroovyCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.diagnostics.DependencyReportTask
@@ -145,10 +146,25 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
     void configureLicensePlugin(Project project) {
         project.with {
             apply plugin: "com.diffplug.gradle.spotless"
+            boolean hasGroovySources = file("src/main/groovy").exists()
+            boolean hasKotlinSources = file("src/main/kotlin").exists()
+
             spotless {
                 java {
                     licenseHeaderFile rootProject.file('config/spotless.license.java')
-                    targetExclude 'src/test/**', 'build/generated-src/**'
+                    targetExclude 'src/test/**', 'build/**'
+                }
+                if (hasGroovySources) {
+                    groovy {
+                        licenseHeaderFile rootProject.file('config/spotless.license.java')
+                        targetExclude 'src/test/**', 'build/**'
+                    }
+                }
+                if (hasKotlinSources) {
+                    kotlin {
+                        licenseHeaderFile rootProject.file('config/spotless.license.java')
+                        targetExclude 'src/test/**', 'build/**'
+                    }
                 }
                 format 'javaMisc', {
                     target 'src/**/package-info.java', 'src/**/module-info.java'
