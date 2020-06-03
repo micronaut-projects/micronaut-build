@@ -29,7 +29,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
             ext."signing.password" = System.getenv("GPG_PASSWORD") ?: project.hasProperty("signing.password") ? project.getProperty('signing.password') : null
             def githubSlug = project.findProperty('githubSlug')
             boolean isPlatform = project.plugins.findPlugin("java-platform") != null
-            println "project.plugins ${project.plugins.asList()}"
 
             ext.extraPomInfo = {}
             ext.pomInfo = {
