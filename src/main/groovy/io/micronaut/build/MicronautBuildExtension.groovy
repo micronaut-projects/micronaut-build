@@ -1,5 +1,7 @@
 package io.micronaut.build
 
+import org.gradle.api.artifacts.ResolutionStrategy
+
 class MicronautBuildExtension {
 
     String sourceCompatibility = '1.8'
@@ -13,7 +15,7 @@ class MicronautBuildExtension {
 
     boolean enforcedPlatform = false
 
-    void resolutionStrategy(Closure closure) {
+    void resolutionStrategy(@DelegatesTo(ResolutionStrategy) Closure closure) {
         this.resolutionStrategy = closure
     }
 
