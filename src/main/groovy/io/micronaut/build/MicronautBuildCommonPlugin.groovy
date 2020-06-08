@@ -50,9 +50,15 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             project.dependencies {
                 String p = micronautBuild.enforcedPlatform ? "enforcedPlatform" : "platform"
                 annotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                annotationProcessor "io.micronaut:micronaut-inject-java"
+
                 implementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+
                 testAnnotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                testAnnotationProcessor "io.micronaut:micronaut-inject-java"
+
                 testImplementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+
                 compileOnly "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
 
                 documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
