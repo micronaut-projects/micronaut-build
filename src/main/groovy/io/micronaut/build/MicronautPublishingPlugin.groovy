@@ -15,6 +15,9 @@ import java.time.Duration
  */
 class MicronautPublishingPlugin implements Plugin<Project> {
 
+
+    public static final String NEXUS_STAGING_PROFILE_ID = "4831469c7a1579"
+
     @Override
     void apply(Project project) {
         project.with {
@@ -205,6 +208,7 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                     password = ossPass
                     packageGroup = "io.micronaut"
                     numberOfRetries = 500
+                    stagingProfileId = NEXUS_STAGING_PROFILE_ID
                 }
 
                 nexusPublishing {
