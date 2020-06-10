@@ -4,7 +4,6 @@ import org.gradle.api.Project
 import org.gradle.api.Plugin
 import org.gradle.api.artifacts.DependencyResolveDetails
 import org.gradle.api.plugins.JavaPluginConvention
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.GroovyCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.diagnostics.DependencyReportTask
@@ -17,7 +16,7 @@ import org.groovy.lang.groovydoc.tasks.GroovydocTask
  */
 class MicronautBuildCommonPlugin implements Plugin<Project> {
     void apply(Project project) {
-        project.repositories.jcenter()
+        project.repositories.mavenCentral()
         project.setVersion project.findProperty("projectVersion")
         MicronautBuildExtension micronautBuild = project.extensions.create('micronautBuild', MicronautBuildExtension)
         configureJavaPlugin(project, micronautBuild)
