@@ -47,23 +47,24 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
 
         project.afterEvaluate {
             project.dependencies {
-                String p = micronautBuild.enforcedPlatform ? "enforcedPlatform" : "platform"
-                annotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-                annotationProcessor "io.micronaut:micronaut-inject-java"
+                if (micronautBuild.enableBom) {
+                    String p = micronautBuild.enforcedPlatform ? "enforcedPlatform" : "platform"
+                    annotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                    implementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                    testAnnotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                    testImplementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                    compileOnly "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                }
 
-                implementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-
-                testAnnotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-                testAnnotationProcessor "io.micronaut:micronaut-inject-java"
-
-                testImplementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-
-                compileOnly "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-
+                if (micronautBuild.enableProcessing) {
+                    annotationProcessor "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
+                    testAnnotationProcessor "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
+                }
+                
                 documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
                 documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"
 
-                testImplementation "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
+                testCompileOnly "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
                 testImplementation "cglib:cglib-nodep:3.3.0"
                 testImplementation "org.objenesis:objenesis:3.1"
 
@@ -106,6 +107,10 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         project.tasks.withType(JavaCompile){
             options.encoding = "UTF-8"
             options.compilerArgs.add('-parameters')
+            if (micronautBuildExtension.enableProcessing) {
+                options.compilerArgs.add("-Amicronaut.processing.group=$project.group")
+                options.compilerArgs.add("-Amicronaut.processing.module=micronaut-$project.name")
+            }
         }
 
         project.tasks.withType(Jar) {
