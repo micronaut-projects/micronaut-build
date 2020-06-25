@@ -97,8 +97,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             jvmArgs '-Duser.language=en'
 
             reports.html.enabled = !System.getenv("GITHUB_ACTIONS")
-            reports.junitXml.enabled = !System.getenv("GITHUB_ACTIONS")
-
+            reports.junitXml.enabled = true
         }
 
         project.tasks.withType(GroovyCompile) {
