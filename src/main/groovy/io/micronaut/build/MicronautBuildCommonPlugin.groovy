@@ -65,7 +65,10 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
                 documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"
 
-                testCompileOnly "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
+                if (project.hasProperty('micronautVersion')) {
+                    testCompileOnly "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
+                }
+
                 testImplementation "cglib:cglib-nodep:3.3.0"
                 testImplementation "org.objenesis:objenesis:3.1"
 
