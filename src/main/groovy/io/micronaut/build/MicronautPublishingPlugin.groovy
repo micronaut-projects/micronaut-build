@@ -2,6 +2,7 @@ package io.micronaut.build
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.SelfResolvingDependency
 import org.gradle.api.plugins.ExtraPropertiesExtension
@@ -79,110 +80,110 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 }
             }
 
-            publishing {
+            afterEvaluate {
+                publishing {
 
-                repositories {
-                    maven {
-                        credentials {
-                            username = bintrayUser
-                            password = bintrayKey
+                    repositories {
+                        maven {
+                            credentials {
+                                username = bintrayUser
+                                password = bintrayKey
+                            }
+                            url  "https://oss.jfrog.org/oss-snapshot-local"
                         }
-                        url  "https://oss.jfrog.org/oss-snapshot-local"
                     }
-                }
 
-                publications {
-                    maven(MavenPublication) { publication ->
-                        artifactId( "micronaut-" + project.name.substring(project.name.indexOf('/') + 1) )
-                        def shadowJar = tasks.findByName("shadowJar")
-                        if(shadowJar) {
-                            artifact(project.tasks.shadowJar) {
-                                classifier = null
-                            }
-                            pom.withXml { xml ->
-                                def xmlNode = xml.asNode()
-                                def dependenciesNode = xmlNode.appendNode('dependencies')
+                    publications {
+                        maven(MavenPublication) { publication ->
+                            artifactId( "micronaut-" + project.name.substring(project.name.indexOf('/') + 1) )
 
-                                project.configurations.shadow.allDependencies.each {
-                                    if (! (it instanceof SelfResolvingDependency)) {
-                                        def dependencyNode = dependenciesNode.appendNode('dependency')
-                                        dependencyNode.appendNode('groupId', it.group)
-                                        if (it.group.startsWith('io.micronaut')) {
-                                            dependencyNode.appendNode('artifactId', "micronaut-$it.name")
-                                        } else {
+                            if(project.shadowJarEnabled == true) {
+                                def shadowJar = tasks.findByName("shadowJar")
+                                artifact(project.tasks.shadowJar) {
+                                    classifier = null
+                                }
+                                pom.withXml { xml ->
+                                    def xmlNode = xml.asNode()
+                                    def dependenciesNode = xmlNode.appendNode('dependencies')
+                                    Set<Dependency> visited = new HashSet<>()
+
+                                    project.configurations.api.allDependencies.each {
+                                        if (!(it instanceof SelfResolvingDependency)) {
+                                            def dependencyNode = dependenciesNode.appendNode('dependency')
+                                            dependencyNode.appendNode('groupId', it.group)
                                             dependencyNode.appendNode('artifactId', it.name)
+                                            dependencyNode.appendNode('version', it.version)
+                                            dependencyNode.appendNode('scope', 'compile')
+                                        } else if (it instanceof ProjectDependency) {
+                                            def dependencyNode = dependenciesNode.appendNode('dependency')
+                                            dependencyNode.appendNode('groupId', project.group)
+                                            dependencyNode.appendNode('artifactId', "micronaut-$it.name")
+                                            dependencyNode.appendNode('version', project.version)
+                                            dependencyNode.appendNode('scope', 'compile')
                                         }
-                                        dependencyNode.appendNode('version', it.version)
-                                        dependencyNode.appendNode('scope', 'runtime')
+                                        visited.add(it)
                                     }
-                                }
-                                project.configurations.shadowCompile.allDependencies.each {
-                                    if (! (it instanceof SelfResolvingDependency)) {
-                                        def dependencyNode = dependenciesNode.appendNode('dependency')
-                                        dependencyNode.appendNode('groupId', it.group)
-                                        dependencyNode.appendNode('artifactId', it.name)
-                                        dependencyNode.appendNode('version', it.version)
-                                        dependencyNode.appendNode('scope', 'compile')
-                                    } else if(it instanceof ProjectDependency) {
-                                        def dependencyNode = dependenciesNode.appendNode('dependency')
-                                        dependencyNode.appendNode('groupId', project.group)
-                                        dependencyNode.appendNode('artifactId', "micronaut-$it.name")
-                                        dependencyNode.appendNode('version', project.version)
-                                        dependencyNode.appendNode('scope', 'compile')
+                                    def runtimeHandler = {
+                                        if (visited.contains(it)) {
+                                            return
+                                        }
+                                        if (!(it instanceof SelfResolvingDependency)) {
+                                            def dependencyNode = dependenciesNode.appendNode('dependency')
+                                            dependencyNode.appendNode('groupId', it.group)
+                                            dependencyNode.appendNode('artifactId', it.name)
+                                            dependencyNode.appendNode('version', it.version)
+                                            dependencyNode.appendNode('scope', 'runtime')
+                                        } else if (it instanceof ProjectDependency) {
+                                            def dependencyNode = dependenciesNode.appendNode('dependency')
+                                            dependencyNode.appendNode('groupId', project.group)
+                                            dependencyNode.appendNode('artifactId', "micronaut-$it.name")
+                                            dependencyNode.appendNode('version', project.version)
+                                            dependencyNode.appendNode('scope', 'runtime')
 
+                                        }
+                                        visited.add(it)
                                     }
+                                    project.configurations.implementation.allDependencies.each (runtimeHandler)
+                                    project.configurations.runtimeOnly.allDependencies.each (runtimeHandler)
                                 }
-                                project.configurations.shadowRuntime.allDependencies.each {
-                                    if (! (it instanceof SelfResolvingDependency)) {
-                                        def dependencyNode = dependenciesNode.appendNode('dependency')
-                                        dependencyNode.appendNode('groupId', it.group)
-                                        dependencyNode.appendNode('artifactId', it.name)
-                                        dependencyNode.appendNode('version', it.version)
-                                        dependencyNode.appendNode('scope', 'runtime')
-                                    } else if(it instanceof ProjectDependency) {
-                                        def dependencyNode = dependenciesNode.appendNode('dependency')
-                                        dependencyNode.appendNode('groupId', project.group)
-                                        dependencyNode.appendNode('artifactId', "micronaut-$it.name")
-                                        dependencyNode.appendNode('version', project.version)
-                                        dependencyNode.appendNode('scope', 'runtime')
 
-                                    }
+                                pom.withXml {
+                                    def xml = asNode()
+
+                                    xml.children().last() + pomInfo
                                 }
-                                xmlNode.children().last() + ext.pomInfo
-                            }
-                            afterEvaluate {
+
                                 artifact sourcesJar {
                                     classifier "sources"
                                 }
                                 artifact javadocJar {
                                     classifier "javadoc"
                                 }
-                            }
-
-                        } else {
-                            if (isPlatform) {
-                                from components.javaPlatform
-                                pom.withXml {
-                                    def xml = asNode()
-
-                                    xml.children().find {
-                                        it.name().localPart == 'packaging'
-                                    } + ext.pomInfo
-                                }
                             } else {
-                                from components.java
-                                afterEvaluate {
-                                    artifact source: sourcesJar, classifier: "sources"
-                                    artifact source: javadocJar, classifier: "javadoc"
-                                }
+                                if (isPlatform) {
+                                    from components.javaPlatform
+                                    pom.withXml {
+                                        def xml = asNode()
 
-                                pom.withXml {
-                                    def xml = asNode()
-                                    xml.children().last() + ext.pomInfo
+                                        xml.children().find {
+                                            it.name().localPart == 'packaging'
+                                        } + ext.pomInfo
+                                    }
+                                } else {
+                                    from components.java
+                                    afterEvaluate {
+                                        artifact source: sourcesJar, classifier: "sources"
+                                        artifact source: javadocJar, classifier: "javadoc"
+                                    }
+
+                                    pom.withXml {
+                                        def xml = asNode()
+                                        xml.children().last() + ext.pomInfo
+                                    }
                                 }
                             }
-                        }
 
+                        }
                     }
                 }
             }
@@ -197,8 +198,11 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 apply plugin: "de.marcphilipp.nexus-publish"
                 apply plugin: 'signing'
 
-                signing {
-                    sign publishing.publications.maven
+                afterEvaluate {
+                    signing {
+                        sign publishing.publications.maven
+                    }
+
                 }
 
                 rootProject.plugins.apply('io.codearte.nexus-staging')
