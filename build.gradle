@@ -14,7 +14,9 @@ dependencies {
     implementation "org.grails:grails-docs:$grailsVersion"
     implementation "io.github.groovylang.groovydoc:groovydoc-gradle-plugin:1.0.1"
     implementation "io.micronaut.docs:micronaut-docs-asciidoc-extensions:$micronautDocsVersion"
-    implementation "io.micronaut.docs:micronaut-docs-gradle-plugins:$micronautDocsVersion"
+    implementation "io.micronaut.docs:micronaut-docs-gradle-plugins:$micronautDocsVersion", {
+        exclude group: "com.github.jengelman.gradle.plugins"
+    }
     implementation "io.spring.nohttp:nohttp-gradle:0.0.4.RELEASE"
     implementation "com.github.ben-manes:gradle-versions-plugin:0.28.0"
     implementation "gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:0.15.0"
