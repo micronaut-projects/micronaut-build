@@ -211,7 +211,7 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 apply plugin: 'signing'
 
                 afterEvaluate {
-                    if (project.extensions.findByType(PublishingExtension).publications.findByName('name')) {
+                    if (project.extensions.findByType(PublishingExtension).publications.findByName('maven')) {
                         signing {
                             sign publishing.publications.maven
                         }
