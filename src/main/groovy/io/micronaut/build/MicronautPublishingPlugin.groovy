@@ -269,11 +269,13 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 }
             }
 
-            def publishTask = project.tasks.findByName('publishMavenPublicationToMavenRepository')
-            if (!project.version.endsWith("-SNAPSHOT") && publishTask) {
-                // disable remote publish for non-snapshot versions
-                // since releases are published to bintray
-                publishTask.enabled = false
+            afterEvaluate {
+                def publishTask = project.tasks.findByName('publishMavenPublicationToMavenRepository')
+                if (!project.version.endsWith("-SNAPSHOT") && publishTask) {
+                    // disable remote publish for non-snapshot versions
+                    // since releases are published to bintray
+                    publishTask.enabled = false
+                }
             }
         }
     }
