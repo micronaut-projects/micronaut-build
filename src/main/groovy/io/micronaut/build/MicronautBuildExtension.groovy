@@ -21,7 +21,7 @@ class MicronautBuildExtension {
     /**
      * The default dependency update pattern
      */
-    String dependencyUpdatesPattern = /.+(-|\.?)(b|M|RC)\d.*/
+    String dependencyUpdatesPattern = /(?i).+(-|\.?)(b|M|RC|Dev)\d.*/
 
     Closure resolutionStrategy
 
