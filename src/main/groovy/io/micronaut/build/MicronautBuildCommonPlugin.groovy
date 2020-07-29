@@ -101,6 +101,11 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
 
             reports.html.enabled = !System.getenv("GITHUB_ACTIONS")
             reports.junitXml.enabled = true
+
+            String groovyVersion = project.findProperty("groovyVersion")
+            if (groovyVersion?.startsWith("3")) {
+                useJUnitPlatform()
+            }
         }
 
         project.tasks.withType(GroovyCompile) {
