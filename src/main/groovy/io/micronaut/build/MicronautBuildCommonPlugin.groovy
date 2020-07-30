@@ -168,7 +168,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
 
     void configureLicensePlugin(Project project) {
         project.with {
-            apply plugin: "com.diffplug.gradle.spotless"
+            apply plugin: "com.diffplug.spotless"
             boolean hasGroovySources = file("src/main/groovy").exists()
             boolean hasKotlinSources = file("src/main/kotlin").exists()
 
