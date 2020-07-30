@@ -24,6 +24,7 @@ class MicronautBuildExtensionSpec extends Specification {
         "1.2.3-rc11"        | true
         "1.2.3-RC1"         | true
         "12.0.0.Dev01"      | true
+        "1.4.0-rc"          | true
     }
 
 }

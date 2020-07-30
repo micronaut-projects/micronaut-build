@@ -4,7 +4,6 @@ import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.DependencyResolveDetails
 
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
@@ -39,11 +38,16 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
                     checkForGradleUpdate = true
                     gradleReleaseChannel = "current"
                     checkConstraints = true
+                    revision = "release"
                     rejectVersionIf { mod ->
-                        mod.candidate.version ==~ micronautBuildExtension.dependencyUpdatesPattern ||
-                                ["alpha", "beta", "milestone", "preview"].any { mod.candidate.version.toLowerCase(Locale.ENGLISH).contains(it) } ||
+                        mod.candidate.version ==~
+                                micronautBuildExtension.dependencyUpdatesPattern ||
+                                ['alpha', 'beta', 'milestone', 'rc', 'cr', 'm', 'preview', 'b', 'ea'].any { qualifier ->
+                                    mod.candidate.version ==~ /(?i).*[.-]$qualifier[.\d-+]*/
+                                } ||
                                 mod.candidate.group == 'io.micronaut' // managed by the micronaut version
                     }
+
                     outputFormatter = { result ->
                         if (!result.outdated.dependencies.isEmpty()) {
                             def upgradeVersions = result.outdated.dependencies
