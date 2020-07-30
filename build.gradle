@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        gradlePluginPortal()
+        jcenter()
+        maven { url "https://dl.bintray.com/micronaut/core-releases-local" }
+        maven { url "https://repo.grails.org/grails/core" }
+    }
+    dependencies {
+        classpath "io.micronaut.build:micronaut-gradle-plugins:2.0.6"
+    }
+}
 plugins {
     id 'groovy-gradle-plugin'
     id 'groovy'
@@ -10,6 +21,8 @@ repositories {
     maven { url "https://repo.grails.org/grails/core" }
 }
 
+apply plugin: "io.micronaut.build.dependency-updates"
+
 dependencies {
     implementation "org.grails:grails-docs:$grailsVersion"
     implementation "io.github.groovylang.groovydoc:groovydoc-gradle-plugin:1.0.1"
@@ -20,11 +33,10 @@ dependencies {
         exclude group: "com.github.jengelman.gradle.plugins"
         exclude group: "org.codehaus.groovy"
     }
-    implementation "io.spring.nohttp:nohttp-gradle:0.0.4.RELEASE"
-    implementation "com.github.ben-manes:gradle-versions-plugin:0.28.0"
-    implementation "gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:0.15.0"
-    implementation "com.diffplug.spotless:spotless-plugin-gradle:4.0.1"
-    implementation "com.adarshr:gradle-test-logger-plugin:2.0.0"
+    implementation "io.spring.nohttp:nohttp-gradle:0.0.5.RELEASE"
+    implementation "com.github.ben-manes:gradle-versions-plugin:0.29.0"
+    implementation "com.diffplug.spotless:spotless-plugin-gradle:5.1.0"
+    implementation "com.adarshr:gradle-test-logger-plugin:2.1.0"
     implementation "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5", {
         exclude group: 'xerces', module: 'xercesImpl'
     }
@@ -45,6 +57,7 @@ configurations.all {
                 selection.reject("No xerces")
             }
         }
+        force "org.grails:grails-docs:${grailsVersion}"
     }
 }
 
