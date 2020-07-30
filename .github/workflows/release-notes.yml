@@ -22,11 +22,11 @@ jobs:
         id: release_notes
         with:
           token: ${{ secrets.GH_TOKEN }}
-          branch: ${{ env.githubBranch }}
+          branch: master
       - uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          commit: ${{ env.githubBranch }}
+          commit: master
           draft: true
           name: ${{ env.title }} ${{ steps.release_notes.outputs.next_version }}
           tag: v${{ steps.release_notes.outputs.next_version }}
