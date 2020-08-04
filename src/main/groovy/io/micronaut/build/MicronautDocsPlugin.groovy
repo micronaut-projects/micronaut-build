@@ -196,6 +196,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                         'subtitle': projectDesc,
                         'github': 'https://github.com/micronaut-projects/micronaut-core',
                         'api': '../api',
+                        'micronautapi': 'https://docs.micronaut.io/latest/api/io/micronaut/',
                         'sourceDir':rootProject.projectDir.absolutePath,
                         'sourcedir':rootProject.projectDir.absolutePath,
                         'includedir': "${rootProject.buildDir.absolutePath}/generated/",
