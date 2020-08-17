@@ -23,6 +23,8 @@ import org.gradle.api.tasks.javadoc.Javadoc
 class MicronautDocsPlugin implements Plugin<Project> {
 
     static final String DOCUMENTATION_GROUP = 'mndocs'
+    public static final String CONFIGURATION_REFERENCE_HTML = 'configurationreference.html'
+    public static final String INDEX_HTML = 'index.html'
 
     @Override
     void apply(Project project) {
@@ -143,7 +145,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
             tasks.register('cleanupPropertyReference') { task ->
                 task.group(DOCUMENTATION_GROUP)
                 task.doLast {
-                    File f = new File( "${rootProject.buildDir}/docs/guide/configurationreference.html" )
+                    File f = new File( "${rootProject.buildDir}/docs/guide/${CONFIGURATION_REFERENCE_HTML}" )
                     if(f.exists()) {
                         f.delete()
                     }
@@ -159,7 +161,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
             }
             tasks.register('publishConfigurationReference', PublishConfigurationReferenceTask) { task ->
                 inputFileName = "${rootProject.buildDir}/generated/propertyReference.adoc"
-                destinationFileName = "${rootProject.buildDir}/docs/guide/configurationreference.html"
+                destinationFileName = "${rootProject.buildDir}/docs/guide/${CONFIGURATION_REFERENCE_HTML}"
                 version = projectVersion
                 pageTemplate = file("${rootProject.projectDir}/src/main/docs/resources/style/page.html")
                 task.dependsOn tasks.named('mergeConfigurationReference')
@@ -170,7 +172,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 task.group(DOCUMENTATION_GROUP)
                 delete fileTree("${rootProject.buildDir}/docs/guide") {
                     include '*.html'
-                    exclude 'index.html'
+                    exclude INDEX_HTML
                     exclude publishConfigurationReference.destinationFileName
                 }
                 delete fileTree("${rootProject.buildDir}/docs/guide/pages") {
@@ -210,19 +212,20 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 ]
                 doLast {
                     ant.move(file:"${buildDir}/docs/guide/single.html",
-                            tofile:"${buildDir}/docs/guide/index.html", overwrite:true)
-                    new File(buildDir, "docs/index.html").text = '''
+                            tofile:"${buildDir}/docs/guide/${INDEX_HTML}", overwrite:true)
+                    new File(buildDir, "docs/${INDEX_HTML}").text = """
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
-<meta http-equiv="refresh" content="0; url=guide/index.html" />
+<meta http-equiv="refresh" content="0; url=guide/${INDEX_HTML}" />
 </head>
 
 </body>
 </html>
-'''
+"""
                 }
             }
+
             tasks.register("zipDocs", Zip) { task ->
                 task.group(DOCUMENTATION_GROUP)
                 archiveBaseName = "${name}-${projectVersion}"
@@ -279,10 +282,10 @@ class MicronautDocsPlugin implements Plugin<Project> {
             tasks.register("createReleasesDropdown", CreateReleasesDropdownTask) { task ->
                 slug = githubSlug as String
                 version = projectVersion
-                doc = file("${buildDir.absolutePath}/docs/guide/index.html")
+                doc = file("${buildDir.absolutePath}/docs/guide/${INDEX_HTML}")
                 task.mustRunAfter tasks.named("zipDocs")
                 task.onlyIf {
-                    new File("${buildDir.absolutePath}/docs/guide/index.html").exists()
+                    new File("${buildDir.absolutePath}/docs/guide/${INDEX_HTML}").exists()
                 }
             }
 
