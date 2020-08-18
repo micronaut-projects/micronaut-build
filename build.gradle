@@ -41,7 +41,7 @@ dependencies {
         exclude group: 'xerces', module: 'xercesImpl'
     }
     implementation "de.marcphilipp.gradle:nexus-publish-plugin:0.4.0"
-    implementation "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.21.2", {
+    implementation "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.22.0", {
         exclude group: 'xerces', module: 'xercesImpl'
     }
     implementation "com.bmuschko:gradle-nexus-plugin:2.3.1"
