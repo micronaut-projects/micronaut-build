@@ -24,6 +24,10 @@ class MicronautDocsPlugin implements Plugin<Project> {
 
     static final String DOCUMENTATION_GROUP = 'mndocs'
 
+    public static final String TASK_DELETE_INVIDUAL_PAGES = 'deleteInvidualPages'
+    public static final String CONFIGURATION_REFERENCE_HTML = 'configurationreference.html'
+    public static final String INDEX_HTML = 'index.html'
+
     @Override
     void apply(Project project) {
         project.with {
@@ -178,6 +182,15 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
 
+            tasks.register(TASK_DELETE_INVIDUAL_PAGES, Delete) {
+                group = DOCUMENTATION_GROUP
+                description = "delete HTML files under build/docs/guides except ${INDEX_HTML} and ${CONFIGURATION_REFERENCE_HTML}"
+                delete fileTree("${buildDir}/docs/guide") {
+                    include '**/*.html'
+                    exclude CONFIGURATION_REFERENCE_HTML
+                    exclude INDEX_HTML
+                }
+            }
             tasks.register('publishGuide', PublishGuide) {
                 group = DOCUMENTATION_GROUP
                 description = 'Generate Guide'
@@ -222,6 +235,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
 </html>
 '''
                 }
+                finalizedBy(TASK_DELETE_INVIDUAL_PAGES)
             }
             tasks.register("zipDocs", Zip) { task ->
                 task.group(DOCUMENTATION_GROUP)
