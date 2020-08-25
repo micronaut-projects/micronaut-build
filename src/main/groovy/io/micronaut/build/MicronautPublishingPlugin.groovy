@@ -22,6 +22,10 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+        if (project.name.contains("doc") || project.name.contains("example")) {
+            return
+        }
+
         project.with {
             apply plugin: 'maven-publish'
             apply plugin: 'com.jfrog.bintray'
