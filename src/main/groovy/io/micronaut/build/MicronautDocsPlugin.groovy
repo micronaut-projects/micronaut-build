@@ -27,8 +27,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
     public static final String INDEX_HTML = 'index.html'
 
     public static final String TASK_DELETE_INVIDUAL_PAGES = 'deleteInvidualPages'
-    public static final String CONFIGURATION_REFERENCE_HTML = 'configurationreference.html'
-    public static final String INDEX_HTML = 'index.html'
 
     @Override
     void apply(Project project) {
