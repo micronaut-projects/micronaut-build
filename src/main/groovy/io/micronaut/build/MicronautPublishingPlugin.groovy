@@ -252,7 +252,7 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 user = bintrayUser
                 key = bintrayKey
                 publications = ['maven']
-                publish = true
+                publish = System.getenv('BINTRAY_PUBLISH') ? System.getenv('BINTRAY_PUBLISH').toBoolean() : true
                 pkg {
                     repo = 'core-releases-local'
                     userOrg = 'micronaut'
