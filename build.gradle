@@ -45,7 +45,7 @@ dependencies {
         exclude group: 'xerces', module: 'xercesImpl'
     }
     implementation "com.bmuschko:gradle-nexus-plugin:2.3.1"
-    implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.14"
+    implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.15"
     testImplementation platform("org.spockframework:spock-bom:1.3-groovy-2.5")
     testImplementation "org.spockframework:spock-core"
 }
