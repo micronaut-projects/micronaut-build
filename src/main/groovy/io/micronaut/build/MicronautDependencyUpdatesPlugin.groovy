@@ -10,9 +10,12 @@ import org.gradle.api.artifacts.Configuration
  */
 class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
 
-
     public static final String GRADLE_VERSIONS_PLUGIN = "com.github.ben-manes.versions"
     public static final String USE_LATEST_VERSIONS_PLUGIN = "se.patrikerdes.use-latest-versions"
+
+    private static final List<String> PINNED_DEPENDENCIES = [
+            "jakarta.persistence:jakarta.persistence-api:2.2.3"
+    ]
 
     @Override
     void apply(Project project) {
@@ -31,6 +34,7 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
                 if (micronautBuildExtension.resolutionStrategy) {
                     cfg.resolutionStrategy(micronautBuildExtension.resolutionStrategy)
                 }
+                PINNED_DEPENDENCIES.each {cfg.resolutionStrategy.force it }
             }
 
             project.with {
