@@ -55,7 +55,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     }
                     String p = "platform"
                     annotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-                    implementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
                     testAnnotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
                     testImplementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
                     compileOnly "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
