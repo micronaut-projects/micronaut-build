@@ -1,5 +1,6 @@
 package io.micronaut.build
 
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Plugin
 import org.gradle.api.artifacts.DependencyResolveDetails
@@ -49,7 +50,10 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         project.afterEvaluate {
             project.dependencies {
                 if (micronautBuild.enableBom) {
-                    String p = micronautBuild.enforcedPlatform ? "enforcedPlatform" : "platform"
+                    if (micronautBuild.enforcedPlatform) {
+                        throw new GradleException("Do not use enforcedPlatform. Please remove the micronautBuild.enforcedPlatform setting")
+                    }
+                    String p = "platform"
                     annotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
                     implementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
                     testAnnotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
