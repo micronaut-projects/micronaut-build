@@ -78,7 +78,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
             }
             tasks.register("prepareDocResources") { task ->
                 group = DOCUMENTATION_GROUP
-                description = 'Downloads common documentation resoruces and unzips them to build folder'
+                description = 'Downloads common documentation resources and unzips them to build folder'
                 task.doLast {
                     ant.mkdir(dir:buildDir)
                     ant.get(src:"https://github.com/${commonGithubOrg}/${commonGithubSlug}/archive/${commonBranch}.zip", dest:"${buildDir}/resources.zip")
@@ -197,6 +197,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 dependsOn copyLocalDocResources
 
                 targetDir = file("${buildDir}/docs")
+                String githubBranch='git rev-parse --abbrev-ref HEAD'.execute()?.text ?: 'master'
                 sourceRepo = "https://github.com/${githubSlug}/edit/${githubBranch}/src/main/docs"
                 sourceDir = new File(projectDir, "src/main/docs")
                 propertiesFiles = [ new File(rootProject.projectDir, "gradle.properties") ]
