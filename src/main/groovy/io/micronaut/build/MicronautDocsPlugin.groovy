@@ -133,12 +133,15 @@ class MicronautDocsPlugin implements Plugin<Project> {
 
                 subprojects.each { proj ->
                     if(!proj.name != 'docs' && !proj.name.startsWith('examples') ) {
-
-                        proj.tasks.withType(Javadoc).each { javadocTask ->
-                            source += javadocTask.source
-                            classpath += javadocTask.classpath
-                            excludes += javadocTask.excludes
-                            includes += javadocTask.includes
+                        boolean skipDocs = proj.hasProperty('skipDocumentation') ? proj.property('skipDocumentation') as Boolean : false
+                        
+                        if (!skipDocs) {
+                            proj.tasks.withType(Javadoc).each { javadocTask ->
+                                source += javadocTask.source
+                                classpath += javadocTask.classpath
+                                excludes += javadocTask.excludes
+                                includes += javadocTask.includes
+                            }                            
                         }
                     }
                 }
