@@ -35,7 +35,7 @@ dependencies {
     }
     implementation "io.spring.nohttp:nohttp-gradle:0.0.5.RELEASE"
     implementation "com.github.ben-manes:gradle-versions-plugin:0.36.0"
-    implementation "com.diffplug.spotless:spotless-plugin-gradle:5.8.2"
+    implementation "com.diffplug.spotless:spotless-plugin-gradle:5.9.0"
     implementation "com.adarshr:gradle-test-logger-plugin:2.1.1"
     implementation "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5", {
         exclude group: 'xerces', module: 'xercesImpl'
