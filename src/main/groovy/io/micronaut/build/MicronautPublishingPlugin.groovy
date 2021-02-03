@@ -110,6 +110,15 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                             maven(MavenPublication) { publication ->
                                 artifactId( "micronaut-" + project.name.substring(project.name.indexOf('/') + 1) )
 
+                                versionMapping {
+                                    usage('java-api') {
+                                        fromResolutionResult()
+                                    }
+                                    usage('java-runtime') {
+                                        fromResolutionResult()
+                                    }
+                                }
+
                                 if(project.hasProperty('shadowJarEnabled') && project.shadowJarEnabled == true) {
                                     def shadowJar = tasks.findByName("shadowJar")
                                     artifact(project.tasks.shadowJar) {
