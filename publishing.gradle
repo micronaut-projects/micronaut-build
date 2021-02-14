@@ -163,6 +163,7 @@ publishing {
 def bintrayUser = System.getenv("BINTRAY_USER") ?: project.hasProperty("bintrayUser") ? project.bintrayUser : ''
 def bintrayKey = System.getenv("BINTRAY_KEY") ?: project.hasProperty("bintrayKey") ? project.bintrayKey : ''
 def bintrayRepo = System.getenv("BINTRAY_REPO") ?: project.hasProperty("bintrayRepo") ? project.bintrayRepo : 'core-releases-local'
+def bintrayUserOrg = System.getenv("BINTRAY_USERORG") ?: project.hasProperty("bintrayUserOrg") ? project.bintrayUserOrg : 'micronaut'
 def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
 def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
 ext."signing.keyId" = System.getenv("GPG_KEY_ID") ?: project.hasProperty("signing.keyId") ? project.getProperty('signing.keyId') : null
@@ -216,8 +217,8 @@ bintray {
     publications = ['maven']
     publish = true
     pkg {
-        userOrg = 'micronaut'
         repo = bintrayRepo
+        userOrg = bintrayUserOrg
         name = project.name
         desc = "${project.title} - ${project.projectDesc} - ${project.name} module".toString()
         websiteUrl = projectUrl
