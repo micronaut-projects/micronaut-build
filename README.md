@@ -1,18 +1,15 @@
-# micronaut-build [![Download](https://api.bintray.com/packages/micronaut/core-releases-local/micronaut-build/images/download.svg) ](https://bintray.com/micronaut/core-releases-local/micronaut-build)
+# micronaut-build [![Maven Central](https://img.shields.io/maven-central/v/io.micronaut.build.internal/micronaut-gradle-plugins.svg?label=Maven%20Central)](https://search.maven.org/artifact/io.micronaut.build.internal/micronaut-gradle-plugins)
 
 Micronaut internal Gradle plugins. Not intended to be used in user's projects.
 
 ## Usage
 
-The plugins are published in Bintray:
+The plugins are published in Maven Central:
 
 ```groovy
 buildscript {
-    repositories {
-        maven { url  "https://dl.bintray.com/micronaut/core-releases-local" }
-    }
     dependencies {
-        classpath "io.micronaut.build:micronaut-gradle-plugins:2.0.0.RC2"
+        classpath "io.micronaut.build:micronaut-gradle-plugins:3.0.0"
     }
 }
 ```
@@ -21,7 +18,7 @@ Then, apply the individual plugins as desired
 
 ## Available plugins
 
-* `io.micronaut.build.common`.
+* `io.micronaut.build.internal.common`.
     * Defines `jcenter()` as a project repository.
     * Configures the version to the `projectVersion` property (usually defined in `gradle.properties`).
     * Configures Java / Groovy compilation options.
@@ -32,13 +29,13 @@ Then, apply the individual plugins as desired
     * Configures the Spotless plugin, to apply license headers.
     * Configures the test logger plugin.
     
-* `io.micronaut.build.dependency-updates`:
+* `io.micronaut.build.internal.dependency-updates`:
     * Configures the `com.github.ben-manes.versions` plugin to check for outdated dependencies.
     
-* `io.micronaut.build.publishing`:
-    * Configures publishing to JFrog OSS, Bintray and Maven Central.
+* `io.micronaut.build.internal.publishing`:
+    * Configures publishing to Sonatype OSSRH and Maven Central.
 
-* `io.micronaut.build.docs`:
+* `io.micronaut.build.internal.docs`:
     * Configures the guide publishing stuff.
     
 ## Configuration options

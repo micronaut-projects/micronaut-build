@@ -24,6 +24,6 @@ jobs:
     - name: Publish to Sonatype OSSRH
       if: github.event_name == 'push'
       env:
-         BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-         BINTRAY_KEY: ${{ secrets.BINTRAY_KEY }}
+        SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       run: ./gradlew publish
