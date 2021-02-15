@@ -89,6 +89,13 @@ java {
 
 def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
 def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
+ext."signing.keyId" = System.getenv("GPG_KEY_ID") ?: project.hasProperty("signing.keyId") ? project.getProperty('signing.keyId') : null
+ext."signing.password" = System.getenv("GPG_PASSWORD") ?: project.hasProperty("signing.password") ? project.getProperty('signing.password') : null
+if (file("${rootDir}/secring.gpg").exists()) {
+    ext."signing.secretKeyRingFile" = file("${rootDir}/secring.gpg").absolutePath
+} else if (file("${System.getenv('HOME')}/.gnupg/secring.gpg").exists()){
+    ext."signing.secretKeyRingFile" = file("${System.getenv('HOME')}/.gnupg/secring.gpg").absolutePath
+}
 
 nexusPublishing {
     repositories {
