@@ -151,6 +151,9 @@ afterEvaluate {
         pub.pom pomInfo
     }
 
+    tasks.withType(Sign) {
+        onlyIf { !project.version.endsWith("-SNAPSHOT") }
+    }
 }
 
 //do not generate extra load on Nexus with new staging repository if signing fails
