@@ -21,9 +21,9 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: '8'
-    - name: Publish to JFrog OSS
+    - name: Publish to Sonatype OSSRH
       if: github.event_name == 'push'
       env:
          BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
          BINTRAY_KEY: ${{ secrets.BINTRAY_KEY }}
-      run: ./gradlew build publish
+      run: ./gradlew publish

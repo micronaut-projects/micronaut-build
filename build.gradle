@@ -2,7 +2,6 @@ buildscript {
     repositories {
         gradlePluginPortal()
         jcenter()
-        maven { url "https://dl.bintray.com/micronaut/core-releases-local" }
         maven { url "https://repo.grails.org/grails/core" }
     }
     dependencies {
@@ -13,7 +12,8 @@ plugins {
     id 'groovy-gradle-plugin'
     id 'groovy'
     id 'maven-publish'
-    id "com.jfrog.bintray" version "1.8.5"
+    id("io.github.gradle-nexus.publish-plugin") version "1.0.0"
+    id 'signing'
 }
 
 repositories {
@@ -37,9 +37,6 @@ dependencies {
     implementation "com.github.ben-manes:gradle-versions-plugin:0.36.0"
     implementation "com.diffplug.spotless:spotless-plugin-gradle:5.9.0"
     implementation "com.adarshr:gradle-test-logger-plugin:2.1.1"
-    implementation "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5", {
-        exclude group: 'xerces', module: 'xercesImpl'
-    }
     implementation "de.marcphilipp.gradle:nexus-publish-plugin:0.4.0"
     implementation "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.22.0", {
         exclude group: 'xerces', module: 'xercesImpl'
@@ -65,43 +62,75 @@ gradlePlugin {
     // Define the plugins
     plugins {
         common {
-            id = 'io.micronaut.build.common'
+            id = 'io.micronaut.build.internal.common'
             implementationClass = 'io.micronaut.build.MicronautBuildCommonPlugin'
         }
         publishing {
-            id = 'io.micronaut.build.publishing'
+            id = 'io.micronaut.build.internal.publishing'
             implementationClass = 'io.micronaut.build.MicronautPublishingPlugin'
         }
         dependencyUpdates {
-            id = 'io.micronaut.build.dependency-updates'
+            id = 'io.micronaut.build.internal.dependency-updates'
             implementationClass = 'io.micronaut.build.MicronautDependencyUpdatesPlugin'
         }
         docs {
-            id = 'io.micronaut.build.docs'
+            id = 'io.micronaut.build.internal.docs'
             implementationClass = 'io.micronaut.build.MicronautDocsPlugin'
         }
     }
 }
 
 version project.projectVersion
-group "io.micronaut.build"
+group "io.micronaut.build.internal"
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
-def bintrayUser = System.getenv("BINTRAY_USER") ?: project.hasProperty("bintrayUser") ? project.bintrayUser : ''
-def bintrayKey = System.getenv("BINTRAY_KEY") ?: project.hasProperty("bintrayKey") ? project.bintrayKey : ''
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
 
-publishing {
+def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
+def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
+
+nexusPublishing {
     repositories {
-        maven {
-            credentials {
-                username = bintrayUser
-                password = bintrayKey
-            }
-            url  "https://oss.jfrog.org/oss-snapshot-local"
+        sonatype {
+            username = ossUser
+            password = ossPass
+            nexusUrl = uri("https://s01.oss.sonatype.org/service/local/")
+            snapshotRepositoryUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            stagingProfileId = "11bd7bc41716aa" //can reduce execution time by even 10 seconds
         }
     }
+}
+
+Closure pomInfo = {
+    name = 'Micronaut internal build plugins'
+    description = "Micronaut internal build plugins. Not intended to be used in user's projects"
+    url = 'https://github.com/micronaut-projects/micronaut-build'
+    inceptionYear = '2020'
+    licenses {
+        license {
+            name = 'The Apache License, Version 2.0'
+            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+        }
+    }
+    developers {
+        developer {
+            id = 'alvarosanchez'
+            name = 'Álvaro Sánchez-Mariscal Arnaiz'
+        }
+    }
+    scm {
+        connection = 'scm:https://github.com/micronaut-projects/micronaut-build.git'
+        developerConnection = 'scm:git@github.com:micronaut-projects/micronaut-build.git'
+        url = 'https://github.com/micronaut-projects/micronaut-build'
+    }
+}
+
+publishing {
     publications {
         maven(MavenPublication) {
             groupId = project.group
@@ -109,32 +138,28 @@ publishing {
             version = project.version
 
             from components.java
+            pom pomInfo
         }
     }
 }
 
-bintray {
-    user = bintrayUser
-    key = bintrayKey
-    publications = ['maven']
-    publish = true
-    pkg {
-        repo = 'core-releases-local'
-        userOrg = 'micronaut'
-        name = project.name
-        desc = "${project.title} - ${project.projectDesc} - ${project.name} module".toString()
-        websiteUrl = projectUrl
-        issueTrackerUrl = "https://github.com/$githubSlug/issues"
-        vcsUrl = "https://github.com/$githubSlug"
-        licenses = ['Apache-2.0']
-        publicDownloadNumbers = true
-        version {
-            name = project.version
-            gpg {
-                sign = true
-                passphrase = System.getenv("SIGNING_PASSPHRASE") ?: project.hasProperty("signingPassphrase") ? project.signingPassphrase : ''
-            }
+afterEvaluate {
+    signing {
+        required { !project.version.endsWith("-SNAPSHOT") && !project.hasProperty("skipSigning") }
+        publishing.publications.each {
+            sign it
         }
     }
+
+    publishing.publications.withType(MavenPublication) { MavenPublication pub ->
+        pub.pom pomInfo
+    }
+
 }
+
+//do not generate extra load on Nexus with new staging repository if signing fails
+tasks.withType(io.github.gradlenexus.publishplugin.InitializeNexusStagingRepository).configureEach {
+    shouldRunAfter(tasks.withType(Sign))
+}
+
 
