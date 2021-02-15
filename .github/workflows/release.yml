@@ -26,11 +26,14 @@ jobs:
         uses: micronaut-projects/github-actions/pre-release@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish to Bintray
+      - name: Publish to Sonatype OSSRH
         env:
-          BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-          BINTRAY_KEY: ${{ secrets.BINTRAY_KEY }}
-        run: ./gradlew bintrayUpload
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+          GPG_PASSWORD: ${{ secrets.GPG_PASSWORD }}
+          GPG_FILE: ${{ secrets.GPG_FILE }}
+        run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
       - name: Run post-release
         if: success()
         uses: micronaut-projects/github-actions/post-release@master
