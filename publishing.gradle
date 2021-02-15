@@ -64,7 +64,6 @@ publishing {
             credentials {
                 def bintrayUser = System.getenv("BINTRAY_USER") ?: project.hasProperty("bintrayUser") ? project.bintrayUser : ''
                 def bintrayKey = System.getenv("BINTRAY_KEY") ?: project.hasProperty("bintrayKey") ? project.bintrayKey : ''
-
                 username = bintrayUser
                 password = bintrayKey
             }
@@ -74,7 +73,9 @@ publishing {
 
     publications {
         maven(MavenPublication) { publication ->
-            artifactId( "micronaut-" + project.name.substring(project.name.indexOf('/') + 1) )
+            String artifactIdPrefix = System.getenv("ARTIFACT_ID_PREFIX") ?: project.hasProperty("artifactIdPrefix") ? project.artifactIdPrefix : 'micronaut-'
+            String organizationGroup = System.getenv("ORGANIZATION_GROUP") ?: project.hasProperty("organizationGroup") ? project.organizationGroup : 'io.micronaut'
+            artifactId( artifactIdPrefix + project.name.substring(project.name.indexOf('/') + 1) )
             def shadowJar = tasks.findByName("shadowJar")
             if(shadowJar) {
                 artifact(project.tasks.shadowJar) {
@@ -88,8 +89,8 @@ publishing {
                         if (! (it instanceof SelfResolvingDependency)) {
                             def dependencyNode = dependenciesNode.appendNode('dependency')
                             dependencyNode.appendNode('groupId', it.group)
-                            if (it.group.startsWith('io.micronaut')) {
-                                dependencyNode.appendNode('artifactId', "micronaut-$it.name")
+                            if (it.group.startsWith(organizationGroup)) {
+                                dependencyNode.appendNode('artifactId', "${artifactIdPrefix}$it.name")
                             } else {
                                 dependencyNode.appendNode('artifactId', it.name)
                             }
@@ -107,7 +108,7 @@ publishing {
                         } else if(it instanceof ProjectDependency) {
                             def dependencyNode = dependenciesNode.appendNode('dependency')
                             dependencyNode.appendNode('groupId', project.group)
-                            dependencyNode.appendNode('artifactId', "micronaut-$it.name")
+                            dependencyNode.appendNode('artifactId', "${artifactIdPrefix}$it.name")
                             dependencyNode.appendNode('version', project.version)
                             dependencyNode.appendNode('scope', 'compile')
 
@@ -123,7 +124,7 @@ publishing {
                         } else if(it instanceof ProjectDependency) {
                             def dependencyNode = dependenciesNode.appendNode('dependency')
                             dependencyNode.appendNode('groupId', project.group)
-                            dependencyNode.appendNode('artifactId', "micronaut-$it.name")
+                            dependencyNode.appendNode('artifactId', "${artifactIdPrefix}$it.name")
                             dependencyNode.appendNode('version', project.version)
                             dependencyNode.appendNode('scope', 'runtime')
 
@@ -161,6 +162,9 @@ publishing {
 
 def bintrayUser = System.getenv("BINTRAY_USER") ?: project.hasProperty("bintrayUser") ? project.bintrayUser : ''
 def bintrayKey = System.getenv("BINTRAY_KEY") ?: project.hasProperty("bintrayKey") ? project.bintrayKey : ''
+def bintrayRepo = System.getenv("BINTRAY_REPO") ?: project.hasProperty("bintrayRepo") ? project.bintrayRepo : 'core-releases-local'
+def bintrayUserOrg = System.getenv("BINTRAY_USERORG") ?: project.hasProperty("bintrayUserOrg") ? project.bintrayUserOrg : 'micronaut'
+def organizationGroup = System.getenv("ORGANIZATION_GROUP") ?: project.hasProperty("organizationGroup") ? project.organizationGroup : 'io.micronaut'
 def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
 def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
 ext."signing.keyId" = System.getenv("GPG_KEY_ID") ?: project.hasProperty("signing.keyId") ? project.getProperty('signing.keyId') : null
@@ -187,7 +191,7 @@ if (ossUser && ossPass && ext."signing.keyId" && ext."signing.password") {
     extension.with {
         username = ossUser
         password = ossPass
-        packageGroup = "io.micronaut"
+        packageGroup = organizationGroup
         numberOfRetries = 500
     }
 
@@ -214,8 +218,8 @@ bintray {
     publications = ['maven']
     publish = true
     pkg {
-        repo = 'core-releases-local'
-        userOrg = 'micronaut'
+        repo = bintrayRepo
+        userOrg = bintrayUserOrg
         name = project.name
         desc = "${project.title} - ${project.projectDesc} - ${project.name} module".toString()
         websiteUrl = projectUrl
