@@ -1,5 +1,6 @@
 package io.micronaut.build
 
+import io.github.gradlenexus.publishplugin.NexusPublishExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
@@ -9,6 +10,7 @@ import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.bundling.Jar
+import org.gradle.plugins.signing.Sign
 
 import java.time.Duration
 
@@ -18,7 +20,7 @@ import java.time.Duration
 class MicronautPublishingPlugin implements Plugin<Project> {
 
 
-    public static final String NEXUS_STAGING_PROFILE_ID = "4831469c7a1579"
+    public static final String NEXUS_STAGING_PROFILE_ID = "11bd7bc41716aa"
 
     @Override
     void apply(Project project) {
@@ -206,7 +208,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
             }
 
             if (ossUser && ossPass && ext."signing.keyId" && ext."signing.password") {
-                apply plugin: "de.marcphilipp.nexus-publish"
                 apply plugin: 'signing'
 
                 afterEvaluate {
@@ -217,38 +218,29 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                     }
                 }
 
-                rootProject.plugins.apply('io.codearte.nexus-staging')
-                def extension = rootProject.extensions.getByName("nexusStaging")
-                extension.with {
-                    username = ossUser
-                    password = ossPass
-                    packageGroup = "io.micronaut"
-                    numberOfRetries = 500
-                    stagingProfileId = NEXUS_STAGING_PROFILE_ID
-                }
-
-                nexusPublishing {
-                    repositories {
-                        sonatype {
-                            username = ossUser
-                            password = ossPass
+                rootProject.plugins.apply('io.github.gradle-nexus.publish-plugin')
+                NexusPublishExtension nexusPublish = rootProject.extensions.getByType(NexusPublishExtension)
+                nexusPublish.with {
+                    if (repositories.isEmpty()) {
+                        repositoryDescription = "${project.group}:${rootProject.name}:${project.version}"
+                        useStaging = !project.version.endsWith("-SNAPSHOT")
+                        repositories {
+                            sonatype {
+                                username = ossUser
+                                password = ossPass
+                                nexusUrl = uri("https://s01.oss.sonatype.org/service/local/")
+                                snapshotRepositoryUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+                                stagingProfileId = NEXUS_STAGING_PROFILE_ID //can reduce execution time by even 10 seconds
+                            }
                         }
                     }
-                    connectTimeout = Duration.ofMinutes(30)
-                    clientTimeout = Duration.ofMinutes(30)
                 }
 
-                initializeSonatypeStagingRepository {
-                    timeout = Duration.ofMinutes(30)
+                //do not generate extra load on Nexus with new staging repository if signing fails
+                tasks.withType(io.github.gradlenexus.publishplugin.InitializeNexusStagingRepository).configureEach {
+                    shouldRunAfter(tasks.withType(Sign))
                 }
-            }
 
-            afterEvaluate {
-                def publishTask = project.tasks.findByName('publishMavenPublicationToMavenRepository')
-                if (!project.version.endsWith("-SNAPSHOT") && publishTask) {
-                    // disable remote publish for non-snapshot versions
-                    publishTask.enabled = false
-                }
             }
         }
     }
