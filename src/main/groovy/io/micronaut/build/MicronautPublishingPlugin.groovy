@@ -1,5 +1,6 @@
 package io.micronaut.build
 
+import io.github.gradlenexus.publishplugin.InitializeNexusStagingRepository
 import io.github.gradlenexus.publishplugin.NexusPublishExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -207,16 +208,22 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 ext."signing.secretKeyRingFile" = file("${System.getenv('HOME')}/.gnupg/secring.gpg").absolutePath
             }
 
-            if (ossUser && ossPass && ext."signing.keyId" && ext."signing.password") {
-                apply plugin: 'signing'
-
-                afterEvaluate {
-                    if (project.extensions.findByType(PublishingExtension).publications.findByName('maven')) {
-                        signing {
-                            sign publishing.publications.maven
+            if (ossUser && ossPass) {
+                if (ext."signing.keyId" && ext."signing.password") {
+                    apply plugin: 'signing'
+                    afterEvaluate {
+                        if (project.extensions.findByType(PublishingExtension).publications.findByName('maven')) {
+                            signing {
+                                required { !project.version.endsWith("-SNAPSHOT") && !project.hasProperty("skipSigning") }
+                                sign publishing.publications.maven
+                            }
+                            tasks.withType(Sign) {
+                                onlyIf { !project.version.endsWith("-SNAPSHOT") }
+                            }
                         }
                     }
                 }
+
 
                 rootProject.plugins.apply('io.github.gradle-nexus.publish-plugin')
                 NexusPublishExtension nexusPublish = rootProject.extensions.getByType(NexusPublishExtension)
@@ -237,8 +244,10 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 }
 
                 //do not generate extra load on Nexus with new staging repository if signing fails
-                tasks.withType(io.github.gradlenexus.publishplugin.InitializeNexusStagingRepository).configureEach {
-                    shouldRunAfter(tasks.withType(Sign))
+                tasks.withType(InitializeNexusStagingRepository).configureEach {
+                    if (!tasks.withType(Sign).empty) {
+                        shouldRunAfter(tasks.withType(Sign))
+                    }
                 }
 
             }
