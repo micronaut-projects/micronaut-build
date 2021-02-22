@@ -101,7 +101,7 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
                                 versionMapping {
                                     usage('java-api') {
-                                        fromResolutionResult()
+                                        fromResolutionOf('runtimeClasspath')
                                     }
                                     usage('java-runtime') {
                                         fromResolutionResult()

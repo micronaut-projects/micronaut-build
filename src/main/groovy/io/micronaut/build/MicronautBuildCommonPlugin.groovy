@@ -54,6 +54,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                         throw new GradleException("Do not use enforcedPlatform. Please remove the micronautBuild.enforcedPlatform setting")
                     }
                     String p = "platform"
+                    implementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
                     annotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
                     testAnnotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
                     testImplementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
