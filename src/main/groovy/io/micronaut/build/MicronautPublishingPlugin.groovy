@@ -99,12 +99,14 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                             maven(MavenPublication) { publication ->
                                 artifactId( "micronaut-" + project.name.substring(project.name.indexOf('/') + 1) )
 
-                                versionMapping {
-                                    usage('java-api') {
-                                        fromResolutionOf('runtimeClasspath')
-                                    }
-                                    usage('java-runtime') {
-                                        fromResolutionResult()
+                                if (!project.name.endsWith("bom")) {
+                                    versionMapping {
+                                        usage('java-api') {
+                                            fromResolutionOf('runtimeClasspath')
+                                        }
+                                        usage('java-runtime') {
+                                            fromResolutionResult()
+                                        }
                                     }
                                 }
 
