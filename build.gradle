@@ -33,7 +33,7 @@ dependencies {
         exclude group: "com.github.jengelman.gradle.plugins"
         exclude group: "org.codehaus.groovy"
     }
-    implementation "io.spring.nohttp:nohttp-gradle:0.0.5.RELEASE"
+    implementation "io.spring.nohttp:nohttp-gradle:0.0.6.RELEASE"
     implementation "com.github.ben-manes:gradle-versions-plugin:0.36.0"
     implementation "com.diffplug.spotless:spotless-plugin-gradle:5.12.0"
     implementation "com.adarshr:gradle-test-logger-plugin:3.0.0"
