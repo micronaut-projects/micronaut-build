@@ -15,7 +15,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v2
         with:
-          java-version: 1.8
+          distribution: 'adopt'
+          java-version: '8'
           ref: ${{ github.head_ref }}
       - name: Set the current release version
         id: release_version
