@@ -201,6 +201,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
 
                 targetDir = file("${buildDir}/docs")
                 String githubBranch='git rev-parse --abbrev-ref HEAD'.execute()?.text ?: 'master'
+                githubBranch = githubBranch.trim()
                 sourceRepo = "https://github.com/${githubSlug}/edit/${githubBranch}/src/main/docs"
                 sourceDir = new File(projectDir, "src/main/docs")
                 propertiesFiles = [ new File(rootProject.projectDir, "gradle.properties") ]
