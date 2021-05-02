@@ -1,11 +1,9 @@
 package io.micronaut.build
 
 import io.micronaut.docs.gradle.PublishGuide
-import io.micronaut.docs.CleanDocResourcesTask
 import io.micronaut.docs.CreateReleasesDropdownTask
 import io.micronaut.docs.JavaDocAtValueReplacementTask
 import io.micronaut.docs.MergeConfigurationReferenceTask
-import io.micronaut.docs.MicronautDocsResources
 import io.micronaut.docs.ProcessConfigPropsTask
 import io.micronaut.docs.PublishConfigurationReferenceTask
 import io.micronaut.docs.ReplaceAtLinkTask

@@ -17,7 +17,6 @@ import org.groovy.lang.groovydoc.tasks.GroovydocTask
  */
 class MicronautBuildCommonPlugin implements Plugin<Project> {
     void apply(Project project) {
-        project.repositories.jcenter()
         project.repositories.mavenCentral()
         project.setVersion project.findProperty("projectVersion")
         MicronautBuildExtension micronautBuild = project.extensions.create('micronautBuild', MicronautBuildExtension)
