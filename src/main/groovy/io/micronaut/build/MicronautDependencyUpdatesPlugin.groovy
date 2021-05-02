@@ -35,6 +35,9 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
 
             project.with {
                 dependencyUpdates {
+                    onlyIf {
+                        gradle.taskGraph.hasTask("useLatestVersions")
+                    }
                     checkForGradleUpdate = true
                     gradleReleaseChannel = "current"
                     checkConstraints = true
