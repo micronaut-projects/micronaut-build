@@ -1,9 +1,8 @@
 package io.micronaut.build
 
-import grails.doc.gradle.PublishGuide
+import io.micronaut.docs.gradle.PublishGuide
 import io.micronaut.docs.CleanDocResourcesTask
 import io.micronaut.docs.CreateReleasesDropdownTask
-import io.micronaut.docs.DownloadDocResourcesTask
 import io.micronaut.docs.JavaDocAtValueReplacementTask
 import io.micronaut.docs.MergeConfigurationReferenceTask
 import io.micronaut.docs.MicronautDocsResources
@@ -31,10 +30,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         project.with {
-            def commonGithubOrg = 'grails'
-            def commonGithubSlug = 'grails-common-build'
-            def commonBranch = 'master'
-            def docResourcesDir = "${buildDir}/resources/${commonGithubSlug}-${commonBranch}/src/main/resources"
             def projectVersion = project.findProperty('projectVersion')
             def projectDesc = project.findProperty('projectDesc')
             def githubSlug = project.findProperty('githubSlug')
@@ -76,23 +71,11 @@ class MicronautDocsPlugin implements Plugin<Project> {
                     javadoc.mustRunAfter tasks.named('assemble')
                 }
             }
-            tasks.register("prepareDocResources") { task ->
-                group = DOCUMENTATION_GROUP
-                description = 'Downloads common documentation resources and unzips them to build folder'
-                task.doLast {
-                    ant.mkdir(dir:buildDir)
-                    ant.get(src:"https://github.com/${commonGithubOrg}/${commonGithubSlug}/archive/${commonBranch}.zip", dest:"${buildDir}/resources.zip")
-                    ant.unzip(src:"${buildDir}/resources.zip", dest:"${buildDir}/resources")
-                }
-            }
 
             tasks.register("copyLocalDocResources", Copy) { task ->
                 group = DOCUMENTATION_GROUP
                 description = 'Copy local resources to build folder'
-                mustRunAfter prepareDocResources
                 from ('src/main/docs/resources')
-                into docResourcesDir
-                task.dependsOn tasks.named("prepareDocResources")
             }
 
             configurations {
@@ -134,14 +117,14 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 subprojects.each { proj ->
                     if(!proj.name != 'docs' && !proj.name.startsWith('examples') ) {
                         boolean skipDocs = proj.hasProperty('skipDocumentation') ? proj.property('skipDocumentation') as Boolean : false
-                        
+
                         if (!skipDocs) {
                             proj.tasks.withType(Javadoc).each { javadocTask ->
                                 source += javadocTask.source
                                 classpath += javadocTask.classpath
                                 excludes += javadocTask.excludes
                                 includes += javadocTask.includes
-                            }                            
+                            }
                         }
                     }
                 }
@@ -170,7 +153,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 version = projectVersion
                 pageTemplate = file("${rootProject.projectDir}/src/main/docs/resources/style/page.html")
                 task.dependsOn tasks.named('mergeConfigurationReference')
-                task.mustRunAfter tasks.named('downloadDocResources')
                 task.mustRunAfter tasks.named('publishGuide')
             }
             tasks.register('cleanupGuideFiles', Delete) { task ->
@@ -203,9 +185,9 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 String githubBranch='git rev-parse --abbrev-ref HEAD'.execute()?.text?.trim() ?: 'master'
                 sourceRepo = "https://github.com/${githubSlug}/edit/${githubBranch}/src/main/docs"
                 sourceDir = new File(projectDir, "src/main/docs")
+                resourcesDir = new File(project.buildDir, 'doc-resources')
                 propertiesFiles = [ new File(rootProject.projectDir, "gradle.properties") ]
                 asciidoc = true
-                resourcesDir = file(docResourcesDir)
                 properties = [
                         'safe':'UNSAFE',
                         'source-highlighter':'highlightjs',
@@ -256,9 +238,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
 
-            def processConfigPropsTask = tasks.register('processConfigProps') { task ->
-                task.mustRunAfter tasks.named("downloadDocResources")
-            }
+            def processConfigPropsTask = tasks.register('processConfigProps')
             subprojects.each { subproject ->
                 if (subproject.tasks.findByName("processConfigProps") != null) {
                     processConfigPropsTask.configure {
@@ -267,33 +247,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
 
-            tasks.register("downloadDocResources", DownloadDocResourcesTask) {  task ->
-                resourceFolder = file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources')
-                resourceFolders = [
-                        file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/css'),
-                        file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/css/highlight'),
-                        file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/js'),
-                        file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/img'),
-                        file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/style'),
-                ]
-                task.onlyIf {
-                    boolean existsLogo = new File(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/img/' + MicronautDocsResources.LOGO).exists()
-                    if (existsLogo) {
-                        logger.info("skipping download resources, logo already exists")
-                    }
-                    !existsLogo
-                }
-            }
-            tasks.register("cleanDocResources", CleanDocResourcesTask) {
-                resourceFolders = [
-                        file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/css'),
-                        file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/css/highlight'),
-                        file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/js'),
-                        file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/img'),
-                        file(getProject().getRootDir().getAbsolutePath() + '/src/main/docs/resources/style'),
-                ]
-            }
-            clean.dependsOn 'cleanDocResources'
 
             tasks.register("createReleasesDropdown", CreateReleasesDropdownTask) { task ->
                 slug = githubSlug as String
@@ -305,7 +258,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
 
-            publishGuide.mustRunAfter downloadDocResources
 
             tasks.register("docs") { task ->
                 task.dependsOn tasks.named("assemble")
@@ -313,7 +265,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 task.dependsOn tasks.named("publishGuide")
                 task.dependsOn tasks.named("processConfigProps")
                 task.dependsOn tasks.named("publishConfigurationReference")
-                task.dependsOn tasks.named("downloadDocResources")
                 task.finalizedBy tasks.named("zipDocs")
                 task.finalizedBy tasks.named("createReleasesDropdown")
             }

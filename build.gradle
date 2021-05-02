@@ -1,11 +1,6 @@
 buildscript {
     repositories {
         gradlePluginPortal()
-        jcenter()
-        maven { url "https://repo.grails.org/grails/core" }
-    }
-    dependencies {
-        classpath "io.micronaut.build:micronaut-gradle-plugins:2.0.16"
     }
 }
 plugins {
@@ -17,30 +12,41 @@ plugins {
 }
 
 repositories {
-    jcenter()
-    maven { url "https://repo.grails.org/grails/core" }
+    mavenCentral()
+    gradlePluginPortal()
 }
 
-apply plugin: "io.micronaut.build.dependency-updates"
 
 dependencies {
-    implementation "org.grails:grails-docs:$grailsVersion"
-    implementation "io.github.groovylang.groovydoc:groovydoc-gradle-plugin:1.0.1"
-    implementation "io.micronaut.docs:micronaut-docs-asciidoc-extensions:$micronautDocsVersion", {
-        exclude group: "org.codehaus.groovy"
-    }
-    implementation "io.micronaut.docs:micronaut-docs-gradle-plugins:$micronautDocsVersion", {
-        exclude group: "com.github.jengelman.gradle.plugins"
-        exclude group: "org.codehaus.groovy"
-    }
-    implementation "io.spring.nohttp:nohttp-gradle:0.0.6.RELEASE"
+    implementation "commons-lang:commons-lang:2.6",
+        'org.grails:grails-gdoc-engine:1.0.1',
+        'org.yaml:snakeyaml:1.28',
+        "org.codehaus.groovy:groovy-ant:$groovyVersion"
+    implementation "io.github.groovylang.groovydoc:io.github.groovylang.groovydoc.gradle.plugin:1.0.1"
+    implementation "io.micronaut:micronaut-inject:$micronautVersion"
+    // TODO: upgrade to new asciidoctor
+    implementation 'org.asciidoctor:asciidoctorj:1.5.6'
+    implementation "io.spring.nohttp:nohttp-gradle:0.0.7"
     implementation "com.github.ben-manes:gradle-versions-plugin:0.38.0"
     implementation "com.diffplug.spotless:spotless-plugin-gradle:5.12.4"
     implementation "com.adarshr:gradle-test-logger-plugin:3.0.0"
     implementation "io.github.gradle-nexus:publish-plugin:1.1.0"
     implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.16"
-    testImplementation platform("org.spockframework:spock-bom:1.3-groovy-2.5")
+    implementation('com.lowagie:itext:2.0.8')
+    implementation 'org.jsoup:jsoup:1.7.3'
+    implementation('org.xhtmlrenderer:core-renderer:8.0') {
+        exclude group: 'bouncycastle', module:'bcprov-jdk14'
+    }
+
+    testImplementation platform("org.spockframework:spock-bom:2.0-M5-groovy-3.0")
     testImplementation "org.spockframework:spock-core"
+
+    compileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
+    testCompileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
+}
+
+test {
+    useJUnitPlatform()
 }
 
 configurations.all {
@@ -50,9 +56,30 @@ configurations.all {
                 selection.reject("No xerces")
             }
         }
-        force "org.grails:grails-docs:${grailsVersion}"
+
+        eachDependency { details ->
+            if (details.requested.group == 'org.codehaus.groovy') {
+                details.useVersion groovyVersion
+                details.because 'Groovy 2.5.x not supported by Gradle 7.0+'
+            }
+        }
     }
 }
+
+task docFilesJar(type: Jar, description: 'Package up files used for generating documentation.') {
+    archiveVersion = null
+    archiveFileName = "grails-doc-files.jar"
+    from "src/main/template"
+    doLast {
+        copy {
+            from docFilesJar.archivePath
+            into "${buildDir}/classes/groovy/main"
+        }
+    }
+}
+
+jar.dependsOn docFilesJar
+
 
 gradlePlugin {
     // Define the plugins
@@ -167,5 +194,3 @@ afterEvaluate {
 tasks.withType(io.github.gradlenexus.publishplugin.InitializeNexusStagingRepository).configureEach {
     shouldRunAfter(tasks.withType(Sign))
 }
-
-
