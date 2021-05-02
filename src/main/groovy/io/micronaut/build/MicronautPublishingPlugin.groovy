@@ -25,8 +25,13 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        if (project.name.contains("doc") || project.name.contains("example")) {
-            return
+        def p = project.findProperty("micronautPublish")
+        // add option to force publishing
+        boolean doPublish = p != null && Boolean.valueOf(p.toString())
+        if (!doPublish) {
+            if (project.name.contains("doc") || project.name.contains("example")) {
+                return
+            }
         }
 
         project.with {
