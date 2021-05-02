@@ -1,8 +1,3 @@
-buildscript {
-    repositories {
-        gradlePluginPortal()
-    }
-}
 plugins {
     id 'groovy-gradle-plugin'
     id 'groovy'
@@ -11,11 +6,16 @@ plugins {
     id 'signing'
 }
 
+version project.projectVersion
+group "io.micronaut.build.internal"
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
 repositories {
     mavenCentral()
     gradlePluginPortal()
 }
-
 
 dependencies {
     implementation "commons-lang:commons-lang:2.6",
@@ -102,12 +102,6 @@ gradlePlugin {
         }
     }
 }
-
-version project.projectVersion
-group "io.micronaut.build.internal"
-
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
 
 java {
     withJavadocJar()
