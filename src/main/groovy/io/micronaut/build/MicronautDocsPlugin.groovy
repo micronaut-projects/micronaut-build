@@ -149,7 +149,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 inputFileName = "${rootProject.buildDir}/generated/propertyReference.adoc"
                 destinationFileName = "${rootProject.buildDir}/docs/guide/${CONFIGURATION_REFERENCE_HTML}"
                 version = projectVersion
-                pageTemplate = file("${rootProject.projectDir}/src/main/docs/resources/style/page.html")
+                pageTemplate = file("${rootProject.buildDir}/doc-resources/style/page.html")
                 task.dependsOn tasks.named('mergeConfigurationReference')
                 task.mustRunAfter tasks.named('publishGuide')
             }
