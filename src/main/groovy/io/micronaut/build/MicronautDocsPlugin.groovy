@@ -73,7 +73,8 @@ class MicronautDocsPlugin implements Plugin<Project> {
             tasks.register("copyLocalDocResources", Copy) { task ->
                 group = DOCUMENTATION_GROUP
                 description = 'Copy local resources to build folder'
-                from ('src/main/docs/resources')
+                from ("$project.projectDir/src/main/docs/resources")
+                destinationDir = project.file("${rootProject.buildDir}/doc-resources")
             }
 
             configurations {
