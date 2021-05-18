@@ -38,7 +38,7 @@ dependencies {
         exclude group: 'bouncycastle', module:'bcprov-jdk14'
     }
 
-    testImplementation platform("org.spockframework:spock-bom:2.0-M5-groovy-3.0")
+    testImplementation platform("org.spockframework:spock-bom:2.0-groovy-3.0")
     testImplementation "org.spockframework:spock-core"
 
     compileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
