@@ -16,6 +16,9 @@
 
 package io.micronaut.docs;
 
+import io.micronaut.core.annotation.NonNull;
+import io.micronaut.core.annotation.Nullable;
+
 import java.util.Map;
 
 /**
@@ -23,8 +26,6 @@ import java.util.Map;
  * @since 1.0
  */
 public class JeeApiMacro extends ApiMacro {
-
-    private static final String DEFAULT_URI = "https://docs.oracle.com/javaee/6/api";
 
     /**
      * @param macroName The macro name
@@ -35,16 +36,14 @@ public class JeeApiMacro extends ApiMacro {
     }
 
     @Override
-    protected String getBaseUri(Map<String, Object> attrs) {
-        Object jdkapi = attrs.get("jeeapi");
-        if (jdkapi != null) {
-            return jdkapi.toString();
-        }
-        return DEFAULT_URI;
+    public String getAttributeKey() {
+        return "jeeapi";
     }
 
+
     @Override
-    protected String getDefaultPackagePrefix() {
-        return null;
+    @NonNull
+    public JvmLibrary getJvmLibrary() {
+        return new Jee();
     }
 }

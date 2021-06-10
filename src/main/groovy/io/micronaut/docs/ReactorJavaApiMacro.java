@@ -1,11 +1,11 @@
 /*
- * Copyright 2017 original authors
+ * Copyright 2017-2021 original authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,32 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.docs
+package io.micronaut.docs;
 
-import io.micronaut.core.annotation.NonNull
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
 
+import java.util.Map;
+
 /**
- * @author Graeme Rocher
- * @since 1.0
+ * @author Sergio del Amo
+ * @since 4.0.1
  */
-class MicronautApiMacro extends ApiMacro {
+public class ReactorJavaApiMacro extends ApiMacro {
 
-    /**
-     * @param macroName The macro name
-     * @param config    The configuration
-     */
-    MicronautApiMacro(String macroName, Map<String, Object> config) {
-        super(macroName, config)
+    public ReactorJavaApiMacro(String macroName, Map<String, Object> config) {
+        super(macroName, config);
     }
 
+    @Override
     @Nullable
-    String getAttributeKey() {
-        "micronautApi"
+    public String getAttributeKey() {
+        return "reactorapi";
     }
 
+    @Override
     @NonNull
-    JvmLibrary getJvmLibrary() {
-        new MicronautCore()
+    public JvmLibrary getJvmLibrary() {
+        return new Reactor();
     }
 }

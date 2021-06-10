@@ -13,38 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.micronaut.docs
 
-package io.micronaut.docs;
-
-import java.util.Map;
+import groovy.transform.CompileStatic
+import io.micronaut.core.annotation.NonNull
+import io.micronaut.core.annotation.Nullable
 
 /**
  * @author Graeme Rocher
  * @since 1.0
  */
-public class RxJavaApiMacro extends ApiMacro {
-
-    private static final String DEFAULT_URI = "http://reactivex.io/RxJava/2.x/javadoc";
+@CompileStatic
+class RxJavaApiMacro extends ApiMacro {
 
     /**
      * @param macroName The macro name
      * @param config    The configuration
      */
-    public RxJavaApiMacro(String macroName, Map<String, Object> config) {
+    RxJavaApiMacro(String macroName, Map<String, Object> config) {
         super(macroName, config);
     }
 
     @Override
-    protected String getBaseUri(Map<String, Object> attrs) {
-        Object jdkapi = attrs.get("rxapi");
-        if (jdkapi != null) {
-            return jdkapi.toString();
-        }
-        return DEFAULT_URI;
+    @Nullable
+    String getAttributeKey() {
+        "rxapi";
     }
 
     @Override
-    protected String getDefaultPackagePrefix() {
-        return "io.reactivex.";
+    @NonNull
+    JvmLibrary getJvmLibrary() {
+        new RxJava()
     }
 }
