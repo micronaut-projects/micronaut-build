@@ -15,6 +15,8 @@
  */
 package io.micronaut.docs
 
+import io.micronaut.core.annotation.NonNull
+import io.micronaut.core.annotation.Nullable
 import org.asciidoctor.extension.*
 import org.asciidoctor.ast.*
 
@@ -75,27 +77,21 @@ class ApiMacro extends InlineMacroProcessor {
             }
         }
 
-        String defaultPackage = getDefaultPackagePrefix()
-        if(defaultPackage != null && !target.startsWith(defaultPackage)) {
-            target = "${defaultPackage}${target}" // allow excluding io.micronaut
-        }
-        String baseUri
 
+        JvmLibrary lib = getJvmLibrary()
+        String baseUri
         try {
-            baseUri = getBaseUri(parent.document.attributes)
+            baseUri = getBaseUri(parent.document.attributes, getAttributeKey(), lib)
         } catch (e) {
-            baseUri = getBaseUri(Collections.emptyMap())
+            baseUri = getBaseUri(Collections.emptyMap(), getAttributeKey(), lib)
         }
-        final Map options = [
-                type: ':link',
-                target: "${baseUri}/${target.replace('.','/')}.html${methodRef}${propRef}".toString()
-        ] as Map<String, Object>
-        options.target = options.target.replaceAll('\\$', '.')
+
 
         if (attributes.text) {
             shortName = attributes.text
         }
 
+        Map<String, Object> options = inlineAnchorOptions(baseUri, target, methodRef, propRef, lib)
         // Prepend twitterHandle with @ as text link.
         final Inline apiLink = createInline(parent, 'anchor', formatShortName(shortName), attributes, options)
 
@@ -103,15 +99,38 @@ class ApiMacro extends InlineMacroProcessor {
         return apiLink.convert()
     }
 
+    static Map<String, Object> inlineAnchorOptions(@NonNull String baseUri, @NonNull String target, @NonNull String methodRef, @NonNull String propRef, JvmLibrary jvmLibrary) {
+        [
+                type: ':link',
+                target: "${baseUri}/${targetPathUrl(target, jvmLibrary)}.html${methodRef}${propRef}".toString().replaceAll('\\$', '.')
+        ] as Map<String, Object>
+    }
+
+    @NonNull
+    static String targetPathUrl(@NonNull String target, JvmLibrary jvmLibrary) {
+        String defaultPackage = jvmLibrary.getDefaultPackagePrefix()
+        if(defaultPackage != null && !target.startsWith(defaultPackage)) {
+            return "${defaultPackage}${target}".replace('.','/')
+        }
+        target.replace('.','/')
+    }
+
     protected String formatShortName(String shortName) {
         return shortName
     }
 
-    protected String getBaseUri(Map<String, Object> attrs) {
-        "../api"
+    @NonNull
+    static String getBaseUri(Map<String, Object> attrs, @Nullable String attributeKey, @NonNull JvmLibrary jvmLibrary) {
+        (attributeKey && attrs[attributeKey]) ? attrs[attributeKey].toString() : jvmLibrary.defaultUri()
     }
 
-    protected String getDefaultPackagePrefix() {
-        "io.micronaut."
+    @Nullable
+    String getAttributeKey() {
+        return null
+    }
+
+    @NonNull
+    JvmLibrary getJvmLibrary() {
+        return new Micronaut()
     }
 }

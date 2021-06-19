@@ -16,6 +16,8 @@
 
 package io.micronaut.docs;
 
+import io.micronaut.core.annotation.NonNull;
+import io.micronaut.core.annotation.Nullable;
 import java.util.Map;
 
 /**
@@ -23,9 +25,6 @@ import java.util.Map;
  * @since 1.0
  */
 public class ReactiveStreamsApiMacro extends ApiMacro {
-
-    private static final String DEFAULT_URI = "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc";
-
     /**
      * @param macroName The macro name
      * @param config    The configuration
@@ -35,16 +34,14 @@ public class ReactiveStreamsApiMacro extends ApiMacro {
     }
 
     @Override
-    protected String getBaseUri(Map<String, Object> attrs) {
-        Object api = attrs.get("rsapi");
-        if (api != null) {
-            return api.toString();
-        }
-        return DEFAULT_URI;
+    @Nullable
+    public String getAttributeKey() {
+        return "rsapi";
     }
 
     @Override
-    protected String getDefaultPackagePrefix() {
-        return "org.reactivestreams.";
+    @NonNull
+    public JvmLibrary getJvmLibrary() {
+        return new ReactiveStreams();
     }
 }
