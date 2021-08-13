@@ -109,10 +109,28 @@ class ApiMacro extends InlineMacroProcessor {
     @NonNull
     static String targetPathUrl(@NonNull String target, JvmLibrary jvmLibrary) {
         String defaultPackage = jvmLibrary.getDefaultPackagePrefix()
+        String result = target
         if(defaultPackage != null && !target.startsWith(defaultPackage)) {
-            return "${defaultPackage}${target}".replace('.','/')
+            result = "${defaultPackage}${target}"
         }
-        target.replace('.','/')
+        scapeDots(result)
+    }
+
+    static String scapeDots(String str) {
+        String result = ""
+        String[] arr = str.split("\\.")
+        for (int i = 0; i < arr.length; i++) {
+            String token = arr[i]
+            result += token
+            if (Character.isUpperCase(token.charAt(0))) {
+                if (i != arr.length -1) {
+                    result += "."
+                }
+            } else {
+                result += "/"
+            }
+        }
+        result
     }
 
     protected String formatShortName(String shortName) {
