@@ -1,0 +1,5 @@
+[versions]
+major = "1.1"
+
+[libraries]
+awesome = { module = "does.not.upgrade:major", version.ref = "major" }

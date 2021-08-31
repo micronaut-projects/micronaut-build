@@ -12,9 +12,6 @@ import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.signing.Sign
-
-import java.time.Duration
-
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
@@ -99,6 +96,12 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 }
 
                 publishing {
+                    repositories {
+                        maven {
+                            name = "Build"
+                            url = "${layout.buildDirectory.dir("repo").get().asFile.toURI()}"
+                        }
+                    }
                     publications {
                         if (project.extensions.findByType(PublishingExtension).publications.empty) {
                             maven(MavenPublication) { publication ->

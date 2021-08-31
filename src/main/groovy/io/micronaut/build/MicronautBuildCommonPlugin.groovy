@@ -4,6 +4,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Plugin
 import org.gradle.api.artifacts.DependencyResolveDetails
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.compile.GroovyCompile
 import org.gradle.api.tasks.compile.JavaCompile
@@ -31,22 +32,31 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
     }
 
     private void configureDependencies(Project project, MicronautBuildExtension micronautBuild) {
-        String micronautVersion = project.findProperty("micronautVersion")
-        String groovyVersion = project.findProperty("groovyVersion")
+        project.afterEvaluate {
 
-        project.configurations {
-            documentation
-            all {
-                resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                    String group = details.requested.group
-                    if(group == 'org.codehaus.groovy') {
-                        details.useVersion(groovyVersion)
+            String micronautVersion = project.findProperty("micronautVersion")
+            String groovyVersion = project.findProperty("groovyVersion")
+            if (groovyVersion == null) {
+                groovyVersion = project.extensions.findByType(VersionCatalogsExtension)
+                        ?.find("libs")
+                        ?.map {
+                            it.findVersion("managed.groovy").get().requiredVersion
+                        }
+                        ?.orElse("undefined") ?: "no_version_catalog"
+            }
+
+            project.configurations {
+                documentation
+                all {
+                    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                        String group = details.requested.group
+                        if (group == 'org.codehaus.groovy') {
+                            details.useVersion(groovyVersion)
+                        }
                     }
                 }
             }
-        }
 
-        project.afterEvaluate {
             project.dependencies {
                 if (micronautBuild.enableBom) {
                     if (micronautBuild.enforcedPlatform) {
@@ -64,7 +74,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     annotationProcessor "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
                     testAnnotationProcessor "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
                 }
-                
+
                 documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
                 documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"
 
@@ -81,14 +91,14 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         }
 
 
-        project.tasks.withType(GroovydocTask) {
+        project.tasks.withType(GroovydocTask).configureEach {
             classpath += project.configurations.documentation
         }
     }
 
     private void configureJavaPlugin(Project project, MicronautBuildExtension micronautBuildExtension) {
-        project.apply plugin:"groovy"
-        project.apply plugin:"java-library"
+        project.apply plugin: "groovy"
+        project.apply plugin: "java-library"
 
         project.afterEvaluate {
             JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
@@ -98,7 +108,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             }
         }
 
-        project.tasks.withType(Test) {
+        project.tasks.withType(Test).configureEach {
             jvmArgs '-Duser.country=US'
             jvmArgs '-Duser.language=en'
 
@@ -111,11 +121,11 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             }
         }
 
-        project.tasks.withType(GroovyCompile) {
+        project.tasks.withType(GroovyCompile).configureEach {
             groovyOptions.forkOptions.jvmArgs.add('-Dgroovy.parameters=true')
         }
 
-        project.tasks.withType(JavaCompile){
+        project.tasks.withType(JavaCompile).configureEach {
             options.encoding = "UTF-8"
             options.compilerArgs.add('-parameters')
             if (micronautBuildExtension.enableProcessing) {
@@ -124,7 +134,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             }
         }
 
-        project.tasks.withType(Jar) {
+        project.tasks.withType(Jar).configureEach {
             manifest {
                 attributes('Automatic-Module-Name': "${project.group}.${project.name}".replaceAll('[^\\w\\.\\$_]', "_"))
                 attributes('Implementation-Version': project.findProperty("projectVersion"))

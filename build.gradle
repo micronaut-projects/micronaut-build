@@ -17,6 +17,24 @@ repositories {
     gradlePluginPortal()
 }
 
+sourceSets {
+    functionalTest {
+    }
+}
+
+gradlePlugin.testSourceSets(sourceSets.functionalTest)
+configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
+
+tasks.register('functionalTest', Test) {
+    testClassesDirs = sourceSets.functionalTest.output.classesDirs
+    classpath = sourceSets.functionalTest.runtimeClasspath
+    useJUnitPlatform()
+}
+
+tasks.named('check') {
+    dependsOn(tasks.functionalTest)
+}
+
 dependencies {
     implementation "commons-lang:commons-lang:2.6",
         'org.grails:grails-gdoc-engine:1.0.1',
@@ -38,11 +56,17 @@ dependencies {
         exclude group: 'bouncycastle', module:'bcprov-jdk14'
     }
 
+    implementation 'org.tomlj:tomlj:1.0.0'
+
     testImplementation platform("org.spockframework:spock-bom:2.0-groovy-3.0")
     testImplementation "org.spockframework:spock-core"
 
     compileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
     testCompileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
+
+    functionalTestImplementation("org.mock-server:mockserver-netty:5.11.2")
+    functionalTestImplementation("org.mock-server:mockserver-client-java:5.11.2")
+
 }
 
 test {
@@ -95,6 +119,10 @@ gradlePlugin {
         dependencyUpdates {
             id = 'io.micronaut.build.internal.dependency-updates'
             implementationClass = 'io.micronaut.build.MicronautDependencyUpdatesPlugin'
+        }
+        versionCatalogUpdates {
+            id = 'io.micronaut.build.internal.version-catalog-updates'
+            implementationClass = 'io.micronaut.build.catalogs.MicronautVersionCatalogUpdatePlugin'
         }
         docs {
             id = 'io.micronaut.build.internal.docs'
