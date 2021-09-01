@@ -118,7 +118,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                         boolean skipDocs = proj.hasProperty('skipDocumentation') ? proj.property('skipDocumentation') as Boolean : false
 
                         if (!skipDocs) {
-                            proj.tasks.withType(Javadoc).each { javadocTask ->
+                            proj.tasks.withType(Javadoc).configureEach { javadocTask ->
                                 source += javadocTask.source
                                 classpath += javadocTask.classpath
                                 excludes += javadocTask.excludes

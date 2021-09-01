@@ -1,0 +1,5 @@
+[versions]
+some-lib = "1.1"
+
+[libraries]
+lib = { module = "some.lib:lib", version = { ref = "some-lib" } }

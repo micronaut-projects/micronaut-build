@@ -1,0 +1,2 @@
+[libraries]
+awesome = "awesome.lib:awesome:3.0.8"

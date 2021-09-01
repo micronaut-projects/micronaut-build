@@ -1,0 +1,5 @@
+[versions]
+awesome = "3.0.8"
+
+[libraries]
+awesome = { module = "awesome.lib:awesome", version.ref = "awesome" }

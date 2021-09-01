@@ -31,6 +31,9 @@ Then, apply the individual plugins as desired
     
 * `io.micronaut.build.internal.dependency-updates`:
     * Configures the `com.github.ben-manes.versions` plugin to check for outdated dependencies.
+* 
+* `io.micronaut.build.internal.version-catalog-updates`:
+    * An alternative to `io.micronaut.build.internal.dependency-updates` which is usable on projects that make use of Gradle's version catalogs
     
 * `io.micronaut.build.internal.publishing`:
     * Configures publishing to Sonatype OSSRH and Maven Central.
