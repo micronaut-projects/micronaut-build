@@ -127,6 +127,7 @@ public class LenientVersionCatalogParser {
                 RichVersion rich = strictVersionParser.parse(version);
                 VersionModel versionModel = new VersionModel(null, rich, position);
                 model.addLibrary(new Library(
+                        alias,
                         group,
                         name,
                         versionModel,
@@ -171,7 +172,7 @@ public class LenientVersionCatalogParser {
             ) : null, position);
         }
         if (versionModel != null) {
-            model.addLibrary(new Library(group, name, versionModel, position));
+            model.addLibrary(new Library(alias, group, name, versionModel, position));
         }
     }
 

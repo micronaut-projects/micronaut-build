@@ -18,16 +18,22 @@ package io.micronaut.build.catalogs.internal;
 import org.tomlj.TomlPosition;
 
 public class Library {
+    private final String alias;
     private final String group;
     private final String name;
     private final VersionModel version;
     private final TomlPosition position;
 
-    public Library(String group, String name, VersionModel version, TomlPosition position) {
+    public Library(String alias, String group, String name, VersionModel version, TomlPosition position) {
+        this.alias = alias;
         this.group = group;
         this.name = name;
         this.version = version;
         this.position = position;
+    }
+
+    public String getAlias() {
+        return alias;
     }
 
     public String getGroup() {
