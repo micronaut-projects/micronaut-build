@@ -99,7 +99,7 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                     repositories {
                         maven {
                             name = "Build"
-                            url = "${layout.buildDirectory.dir("repo").get().asFile.toURI()}"
+                            url = "${rootProject.layout.buildDirectory.dir("repo").get().asFile.toURI()}"
                         }
                     }
                     publications {
