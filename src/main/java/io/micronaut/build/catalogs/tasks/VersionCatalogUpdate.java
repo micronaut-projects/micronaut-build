@@ -166,6 +166,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
             model.getLibrariesTable()
                     .stream()
                     .filter(library -> !ignoredModules.contains(library.getModule()))
+                    .filter(library -> library.getVersion().getReference() != null || !requiredVersionOf(library).isEmpty())
                     .map(library -> requirePom(dependencies, library))
                     .forEach(dependency -> detachedConfiguration.getDependencies().add(dependency));
 
@@ -243,6 +244,17 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
                 throw new GradleException("Some modules couldn't be updated because of the following reasons:" + errors);
             }
         }
+    }
+
+    private static String requiredVersionOf(Library library) {
+        RichVersion version = library.getVersion().getVersion();
+        if (version != null) {
+            String require = version.getRequire();
+            if (require != null) {
+                return require;
+            }
+        }
+        return "";
     }
 
     private static Dependency requirePom(DependencyHandler dependencies, Library library) {
