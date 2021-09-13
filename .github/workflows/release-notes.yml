@@ -17,7 +17,7 @@ jobs:
         id: release_notes
         with:
           token: ${{ secrets.GH_TOKEN }}
-      - uses: ncipollo/release-action@v1.8.8
+      - uses: ncipollo/release-action@v1.8.9
         if: steps.release_notes.outputs.generated_changelog == 'true'
         with:
           allowUpdates: true
