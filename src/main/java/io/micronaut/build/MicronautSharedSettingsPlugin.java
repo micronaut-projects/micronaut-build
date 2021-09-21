@@ -15,12 +15,14 @@
  */
 package io.micronaut.build;
 
+import com.gradle.CommonCustomUserDataGradlePlugin;
 import com.gradle.enterprise.gradleplugin.GradleEnterpriseExtension;
 import com.gradle.enterprise.gradleplugin.GradleEnterprisePlugin;
 import com.gradle.scan.plugin.BuildScanExtension;
 import org.gradle.api.Plugin;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
+import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.ProviderFactory;
 import org.nosphere.gradle.github.ActionsPlugin;
 
@@ -29,7 +31,9 @@ import java.lang.reflect.InvocationTargetException;
 public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
     @Override
     public void apply(Settings settings) {
-        settings.getPluginManager().apply(GradleEnterprisePlugin.class);
+        PluginManager pluginManager = settings.getPluginManager();
+        pluginManager.apply(GradleEnterprisePlugin.class);
+        pluginManager.apply(CommonCustomUserDataGradlePlugin.class);
         GradleEnterpriseExtension ge = settings.getExtensions().getByType(GradleEnterpriseExtension.class);
         configureGradleEnterprise(settings, ge);
     }
@@ -47,11 +51,12 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
             buildScan.publishAlways();
             if (isCI) {
                 buildScan.setUploadInBackground(false);
-                buildScan.tag("CI");
             } else {
-                buildScan.tag("LOCAL");
                 publishIfAuthenticated(buildScan);
             }
+            buildScan.capture(c ->
+                    c.setTaskInputFiles(true)
+            );
         });
     }
 
@@ -62,7 +67,7 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
     private static void publishIfAuthenticated(BuildScanExtension ext) {
         try {
             ext.getClass().getMethod("publishIfAuthenticated").invoke(ext);
-        } catch (IllegalAccessException  | InvocationTargetException | NoSuchMethodException e) {
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             System.err.println("Unable to set publish if authenticated on build scan extension");
         }
     }
@@ -70,12 +75,11 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
     private static boolean guessCI(ProviderFactory providers) {
         return providers
                 .environmentVariable("CI").forUseAtConfigurationTime()
-                .map(s -> // Not all workflows may have the enterprise key set
+                .flatMap(s -> // Not all workflows may have the enterprise key set
                         providers.environmentVariable("GRADLE_ENTERPRISE_ACCESS_KEY")
                                 .forUseAtConfigurationTime()
                                 .map(env -> true)
                                 .orElse(false)
-                                .get()
                 )
                 .orElse(false)
                 .get();
