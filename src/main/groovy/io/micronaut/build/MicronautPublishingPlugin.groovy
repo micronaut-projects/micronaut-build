@@ -97,10 +97,35 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
                 publishing {
                     repositories {
+                        def externalRepo = providers.systemProperty("io.micronaut.publishing.uri")
+                                .forUseAtConfigurationTime()
+                                .orNull
+                        if (externalRepo) {
+
+                            def externalRepoUsername = providers.systemProperty("io.micronaut.publishing.username")
+                                    .forUseAtConfigurationTime()
+                                    .orNull
+                            def externalRepoPassword = providers.systemProperty("io.micronaut.publishing.password")
+                                    .forUseAtConfigurationTime()
+                                    .orNull
+
+                            maven {
+                                name = "External"
+                                url = externalRepo
+                                if(externalRepoUsername){
+                                    credentials {
+                                        username = externalRepoUsername
+                                        password = externalRepoPassword
+                                    }
+                                }
+                            }
+                        }
+
                         maven {
                             name = "Build"
                             url = "${rootProject.layout.buildDirectory.dir("repo").get().asFile.toURI()}"
                         }
+
                     }
                     publications {
                         if (project.extensions.findByType(PublishingExtension).publications.empty) {
