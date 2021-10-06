@@ -20,7 +20,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
     void apply(Project project) {
         project.repositories.mavenCentral()
         project.setVersion project.findProperty("projectVersion")
-        MicronautBuildExtension micronautBuild = project.extensions.create('micronautBuild', MicronautBuildExtension)
+        BuildEnvironment buildEnvironment = new BuildEnvironment(project.providers)
+        MicronautBuildExtension micronautBuild = project.extensions.create('micronautBuild', MicronautBuildExtension, buildEnvironment)
         configureJavaPlugin(project, micronautBuild)
         configureDependencies(project, micronautBuild)
         configureTasks(project)
@@ -112,8 +113,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             jvmArgs '-Duser.country=US'
             jvmArgs '-Duser.language=en'
 
-            reports.html.enabled = !System.getenv("GITHUB_ACTIONS")
-            reports.junitXml.enabled = true
+            reports.html.required = micronautBuildExtension.environment.isNotGithubAction()
+            reports.junitXml.required = true
 
             String groovyVersion = project.findProperty("groovyVersion")
             if (groovyVersion?.startsWith("3")) {

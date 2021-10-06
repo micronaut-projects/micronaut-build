@@ -2,9 +2,17 @@ package io.micronaut.build
 
 import org.gradle.api.artifacts.ResolutionStrategy
 
-class MicronautBuildExtension {
+import javax.inject.Inject
 
-    /**
+class MicronautBuildExtension {
+    private final BuildEnvironment environment
+
+    @Inject
+    MicronautBuildExtension(BuildEnvironment buildEnvironment) {
+        this.environment = buildEnvironment
+    }
+
+/**
      * The default source compatibility
      */
     String sourceCompatibility = '1.8'
@@ -44,4 +52,7 @@ class MicronautBuildExtension {
         this.resolutionStrategy = closure
     }
 
+    BuildEnvironment getEnvironment() {
+        environment
+    }
 }
