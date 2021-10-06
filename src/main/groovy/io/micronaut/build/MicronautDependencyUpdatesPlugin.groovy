@@ -24,7 +24,8 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
             if (project.extensions.findByType(MicronautBuildExtension)) {
                 micronautBuildExtension = project.extensions.getByType(MicronautBuildExtension)
             } else {
-                micronautBuildExtension = project.extensions.create('micronautBuild', MicronautBuildExtension)
+                BuildEnvironment buildEnvironment = new BuildEnvironment(project.providers)
+                micronautBuildExtension = project.extensions.create('micronautBuild', MicronautBuildExtension, buildEnvironment)
             }
 
             project.configurations.all { Configuration cfg ->

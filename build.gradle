@@ -94,19 +94,16 @@ configurations.all {
     }
 }
 
-task docFilesJar(type: Jar, description: 'Package up files used for generating documentation.') {
+tasks.register('docFilesJar', Jar) {
+    description = 'Package up files used for generating documentation.'
     archiveVersion = null
     archiveFileName = "grails-doc-files.jar"
     from "src/main/template"
-    doLast {
-        copy {
-            from docFilesJar.archivePath
-            into "${buildDir}/classes/groovy/main"
-        }
-    }
 }
 
-jar.dependsOn docFilesJar
+tasks.named('jar', Jar) {
+    from docFilesJar
+}
 
 
 gradlePlugin {

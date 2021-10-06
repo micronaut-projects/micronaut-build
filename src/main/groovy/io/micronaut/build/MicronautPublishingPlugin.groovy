@@ -7,10 +7,12 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.SelfResolvingDependency
+import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.plugins.signing.Sign
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
@@ -33,6 +35,23 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
         project.with {
             apply plugin: 'maven-publish'
+            plugins.withId('java-base') {
+                java {
+                    withSourcesJar()
+                    withJavadocJar()
+                }
+                micronautBuild.environment.duringMigration {
+                    tasks.withType(Javadoc).configureEach {
+                        // temporary workaround for broken docs in many modules
+                        failOnError = false
+                    }
+                    ['sourcesJar', 'javadocJar'].each { name ->
+                        tasks.named(name, Jar) {
+                            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+                        }
+                    }
+                }
+            }
             ExtraPropertiesExtension ext = extensions.getByType(ExtraPropertiesExtension)
             def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
             def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
@@ -82,18 +101,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
             afterEvaluate {
                 boolean isPlatform = project.plugins.findPlugin("java-platform") != null
-
-                if (!isPlatform && project.pluginManager.hasPlugin('java')) {
-                    project.task('sourcesJar', type:Jar) {
-                        archiveClassifier.set('sources')
-                        from project.sourceSets.main.allJava
-                    }
-
-                    project.task('javadocJar', type:Jar) {
-                        archiveClassifier.set('javadoc')
-                        from project.javadoc.destinationDir
-                    }
-                }
 
                 publishing {
                     repositories {
@@ -198,13 +205,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
                                         xml.children().last() + pomInfo
                                     }
-
-                                    artifact sourcesJar {
-                                        classifier "sources"
-                                    }
-                                    artifact javadocJar {
-                                        classifier "javadoc"
-                                    }
                                 } else {
                                     if (isPlatform) {
                                         from components.javaPlatform
@@ -218,10 +218,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                                     } else {
                                         if (components.findByName('java')) {
                                             from components.java
-                                            afterEvaluate {
-                                                artifact source: sourcesJar, classifier: "sources"
-                                                artifact source: javadocJar, classifier: "javadoc"
-                                            }
                                         }
 
                                         pom.withXml {

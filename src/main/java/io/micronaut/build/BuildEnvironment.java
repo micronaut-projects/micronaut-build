@@ -22,10 +22,14 @@ public class BuildEnvironment {
 
     private final ProviderFactory providers;
     private final Provider<Boolean> githubAction;
+    private final boolean isMigrationActive;
 
     public BuildEnvironment(ProviderFactory providers) {
         this.providers = providers;
         this.githubAction = trueWhenEnvVarPresent( "GITHUB_ACTIONS");
+        this.isMigrationActive = !providers.systemProperty("strictBuild")
+                .forUseAtConfigurationTime()
+                .isPresent();
     }
 
     public Provider<Boolean> isGithubAction() {
@@ -41,5 +45,11 @@ public class BuildEnvironment {
                 .forUseAtConfigurationTime()
                 .map(s -> true)
                 .orElse(false);
+    }
+
+    public void duringMigration(Runnable action) {
+        if (isMigrationActive) {
+            action.run();
+        }
     }
 }
