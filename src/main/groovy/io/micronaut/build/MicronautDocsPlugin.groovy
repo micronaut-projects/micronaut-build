@@ -35,45 +35,45 @@ class MicronautDocsPlugin implements Plugin<Project> {
             logger.info("Add skipDocumentation=true to a submodule gradle.properties to skip docs")
             subprojects { subproject ->
                 boolean skipDocs = hasProperty('skipDocumentation') ? property('skipDocumentation') as Boolean : false
-                if (tasks.findByName("classes") && !skipDocs) {
-
-                    tasks.register('moveConfigProps') { task ->
-                        task.group(DOCUMENTATION_GROUP)
-                        task.doLast {
-                            ant.mkdir(dir:"${rootProject.buildDir}/config-props")
-                            ant.move(file: "${subproject.buildDir}/classes/java/main/META-INF/config-properties.adoc", tofile:"${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc", failonerror:false, quiet:true)
+                subproject.plugins.withId('java-base') {
+                    if (!skipDocs) {
+                        tasks.register('moveConfigProps') { task ->
+                            task.group(DOCUMENTATION_GROUP)
+                            task.doLast {
+                                ant.mkdir(dir: "${rootProject.buildDir}/config-props")
+                                ant.move(file: "${subproject.buildDir}/classes/java/main/META-INF/config-properties.adoc", tofile: "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc", failonerror: false, quiet: true)
+                            }
+                            task.dependsOn tasks.named("classes")
                         }
-                        task.dependsOn tasks.named("classes")
-                    }
-                    tasks.register('javaDocAtReplacement', JavaDocAtValueReplacementTask) { task ->
-                        task.group(DOCUMENTATION_GROUP)
-                        task.dependsOn('moveConfigProps')
-                        adoc = "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc"
-                    }
-                    tasks.register('replaceAtLink', ReplaceAtLinkTask) { task ->
-                        configProperties = "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc"
-                        task.group(DOCUMENTATION_GROUP)
-                        task.dependsOn tasks.named('moveConfigProps')
-                        task.mustRunAfter tasks.named('javaDocAtReplacement')
-                    }
+                        tasks.register('javaDocAtReplacement', JavaDocAtValueReplacementTask) { task ->
+                            task.group(DOCUMENTATION_GROUP)
+                            task.dependsOn('moveConfigProps')
+                            adoc = "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc"
+                        }
+                        tasks.register('replaceAtLink', ReplaceAtLinkTask) { task ->
+                            configProperties = "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc"
+                            task.group(DOCUMENTATION_GROUP)
+                            task.dependsOn tasks.named('moveConfigProps')
+                            task.mustRunAfter tasks.named('javaDocAtReplacement')
+                        }
 
-                    tasks.register('processConfigProps', ProcessConfigPropsTask) { task ->
-                        configPropertiesFileName = "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc"
-                        individualConfigPropsFolder = "${rootProject.buildDir}/generated/configurationProperties"
-                        task.group(DOCUMENTATION_GROUP)
-                        task.mustRunAfter tasks.named("javadoc")
-                        task.mustRunAfter tasks.named("assemble")
-                        task.dependsOn tasks.named('replaceAtLink')
-                        task.dependsOn tasks.named('javaDocAtReplacement')
+                        tasks.register('processConfigProps', ProcessConfigPropsTask) { task ->
+                            configPropertiesFileName = "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc"
+                            individualConfigPropsFolder = "${rootProject.buildDir}/generated/configurationProperties"
+                            task.group(DOCUMENTATION_GROUP)
+                            task.mustRunAfter tasks.named("javadoc")
+                            task.mustRunAfter tasks.named("assemble")
+                            task.dependsOn tasks.named('replaceAtLink')
+                            task.dependsOn tasks.named('javaDocAtReplacement')
+                        }
                     }
-                    javadoc.mustRunAfter tasks.named('assemble')
                 }
             }
 
             tasks.register("copyLocalDocResources", Copy) { task ->
                 group = DOCUMENTATION_GROUP
                 description = 'Copy local resources to build folder'
-                from ("$project.projectDir/src/main/docs/resources")
+                from("$project.projectDir/src/main/docs/resources")
                 destinationDir = project.file("${rootProject.buildDir}/doc-resources")
             }
 
@@ -92,7 +92,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             } else {
                 cleanTask.doLast {
-                    ant.delete(dir:"build/docs")
+                    ant.delete(dir: "build/docs")
                 }
             }
 
@@ -104,8 +104,8 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 title = "$name ${projectVersion} API"
                 options.author true
                 List links = []
-                for( p in properties ) {
-                    if(p.key.endsWith('api')) {
+                for (p in properties) {
+                    if (p.key.endsWith('api')) {
                         links.add(p.value.toString())
                     }
                 }
@@ -114,7 +114,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 options.addBooleanOption('notimestamp', true)
 
                 subprojects.each { proj ->
-                    if(!proj.name != 'docs' && !proj.name.startsWith('examples') ) {
+                    if (!proj.name != 'docs' && !proj.name.startsWith('examples')) {
                         boolean skipDocs = proj.hasProperty('skipDocumentation') ? proj.property('skipDocumentation') as Boolean : false
 
                         if (!skipDocs) {
@@ -132,8 +132,8 @@ class MicronautDocsPlugin implements Plugin<Project> {
             tasks.register('cleanupPropertyReference') { task ->
                 task.group(DOCUMENTATION_GROUP)
                 task.doLast {
-                    File f = new File( "${rootProject.buildDir}/docs/guide/${CONFIGURATION_REFERENCE_HTML}" )
-                    if(f.exists()) {
+                    File f = new File("${rootProject.buildDir}/docs/guide/${CONFIGURATION_REFERENCE_HTML}")
+                    if (f.exists()) {
                         f.delete()
                     }
                 }
@@ -181,7 +181,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 dependsOn copyLocalDocResources
 
                 targetDir = file("${buildDir}/docs")
-                String githubBranch='git rev-parse --abbrev-ref HEAD'.execute()?.text?.trim() ?: 'master'
+                String githubBranch = 'git rev-parse --abbrev-ref HEAD'.execute()?.text?.trim() ?: 'master'
                 sourceRepo = "https://github.com/${githubSlug}/edit/${githubBranch}/src/main/docs"
                 sourceDir = new File(projectDir, "src/main/docs")
                 def f = new File(project.projectDir, 'src/main/docs/resources')
@@ -192,18 +192,18 @@ class MicronautDocsPlugin implements Plugin<Project> {
                     f.mkdirs()
                     resourcesDir = f
                 }
-                propertiesFiles = [ new File(rootProject.projectDir, "gradle.properties") ]
+                propertiesFiles = [new File(rootProject.projectDir, "gradle.properties")]
                 asciidoc = true
                 properties = [
-                        'safe':'UNSAFE',
-                        'source-highlighter':'highlightjs',
+                        'safe': 'UNSAFE',
+                        'source-highlighter': 'highlightjs',
                         'version': projectVersion,
                         'subtitle': projectDesc,
                         'github': 'https://github.com/micronaut-projects/micronaut-core',
                         'api': '../api',
                         'micronautapi': 'https://docs.micronaut.io/latest/api/io/micronaut/',
-                        'sourceDir':rootProject.projectDir.absolutePath,
-                        'sourcedir':rootProject.projectDir.absolutePath,
+                        'sourceDir': rootProject.projectDir.absolutePath,
+                        'sourcedir': rootProject.projectDir.absolutePath,
                         'includedir': "${rootProject.buildDir.absolutePath}/generated/",
                         'javaee': 'https://docs.oracle.com/javaee/8/api/',
                         'javase': 'https://docs.oracle.com/javase/8/docs/api/',
@@ -214,8 +214,8 @@ class MicronautDocsPlugin implements Plugin<Project> {
                         'kafka-version': rootProject.hasProperty('kafkaVersion') ? rootProject.properties['kafkaVersion'] : 'N/A'
                 ]
                 doLast {
-                    ant.move(file:"${buildDir}/docs/guide/single.html",
-                            tofile:"${buildDir}/docs/guide/${INDEX_HTML}", overwrite:true)
+                    ant.move(file: "${buildDir}/docs/guide/single.html",
+                            tofile: "${buildDir}/docs/guide/${INDEX_HTML}", overwrite: true)
                     new File(buildDir, "docs/${INDEX_HTML}").text = """
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
@@ -236,6 +236,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 destinationDirectory = new File(buildDir, "distributions")
                 from files("${buildDir}/docs")
             }
+            // TODO: Don't do this
             tasks.register('assemble') {
                 subprojects.each { subproject ->
                     if (subproject.tasks.findByName("assemble") != null) {
@@ -245,10 +246,12 @@ class MicronautDocsPlugin implements Plugin<Project> {
             }
 
             def processConfigPropsTask = tasks.register('processConfigProps')
+            // TODO: Reaching out to other project's state is not a good practice,
+            // this needs to be replaced
             subprojects.each { subproject ->
-                if (subproject.tasks.findByName("processConfigProps") != null) {
-                    processConfigPropsTask.configure {
-                        processConfigPropsTask.get().dependsOn subproject.tasks.findByName("processConfigProps")
+                subproject.tasks.configureEach {
+                    if ("processConfigProps" == it.name) {
+                        processConfigPropsTask.dependsOn(it)
                     }
                 }
             }
@@ -274,12 +277,13 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 task.finalizedBy tasks.named("zipDocs")
                 task.finalizedBy tasks.named("createReleasesDropdown")
             }
-            javadoc {
+            tasks.named('javadoc', Javadoc) {
                 exclude "example/**"
-                mustRunAfter assemble
+                mustRunAfter tasks.assemble
             }
-            publishGuide.mustRunAfter processConfigProps
+            tasks.named('publishGuide') {
+                mustRunAfter processConfigPropsTask
+            }
         }
     }
-
 }

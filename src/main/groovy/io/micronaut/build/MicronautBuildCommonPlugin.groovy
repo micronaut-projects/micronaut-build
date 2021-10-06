@@ -174,8 +174,12 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
 
                     showViolations = true
                 }
-                checkstyleTest.enabled = false
-                checkstyleMain.dependsOn('spotlessCheck')
+                tasks.named('checkstyleTest') {
+                    enabled = false
+                }
+                tasks.named('checkstyleMain') {
+                    dependsOn('spotlessCheck')
+                }
             }
         }
     }
