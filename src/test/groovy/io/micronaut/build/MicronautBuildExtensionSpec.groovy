@@ -8,7 +8,7 @@ class MicronautBuildExtensionSpec extends Specification {
     @Unroll
     void "dependencyUpdatesPattern excludes non GA version: #version"(String version, boolean expectedMatch) {
         given:
-        String pattern = new MicronautBuildExtension().dependencyUpdatesPattern
+        String pattern = new MicronautBuildExtension(null).dependencyUpdatesPattern
 
         when:
         boolean matches = version ==~ pattern
