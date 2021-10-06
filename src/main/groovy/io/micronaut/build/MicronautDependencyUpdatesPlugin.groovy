@@ -16,17 +16,12 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+        project.pluginManager.apply(MicronautBasePlugin)
         project.apply plugin: GRADLE_VERSIONS_PLUGIN
         project.apply plugin: USE_LATEST_VERSIONS_PLUGIN
 
         project.afterEvaluate {
-            MicronautBuildExtension micronautBuildExtension
-            if (project.extensions.findByType(MicronautBuildExtension)) {
-                micronautBuildExtension = project.extensions.getByType(MicronautBuildExtension)
-            } else {
-                BuildEnvironment buildEnvironment = new BuildEnvironment(project.providers)
-                micronautBuildExtension = project.extensions.create('micronautBuild', MicronautBuildExtension, buildEnvironment)
-            }
+            MicronautBuildExtension micronautBuildExtension = project.extensions.getByType(MicronautBuildExtension)
 
             project.configurations.all { Configuration cfg ->
                 if (micronautBuildExtension.resolutionStrategy) {

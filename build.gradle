@@ -109,9 +109,17 @@ tasks.named('jar', Jar) {
 gradlePlugin {
     // Define the plugins
     plugins {
+        base {
+            id = 'io.micronaut.build.internal.base'
+            implementationClass = 'io.micronaut.build.MicronautBasePlugin'
+        }
         common {
             id = 'io.micronaut.build.internal.common'
             implementationClass = 'io.micronaut.build.MicronautBuildCommonPlugin'
+        }
+        module {
+            id = 'io.micronaut.build.internal.module'
+            implementationClass = 'io.micronaut.build.MicronautModulePlugin'
         }
         publishing {
             id = 'io.micronaut.build.internal.publishing'

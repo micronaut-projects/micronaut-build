@@ -12,7 +12,7 @@ class MicronautBuildExtension {
         this.environment = buildEnvironment
     }
 
-/**
+    /**
      * The default source compatibility
      */
     String sourceCompatibility = '1.8'
