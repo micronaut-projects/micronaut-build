@@ -18,10 +18,8 @@ import org.groovy.lang.groovydoc.tasks.GroovydocTask
  */
 class MicronautBuildCommonPlugin implements Plugin<Project> {
     void apply(Project project) {
-        project.repositories.mavenCentral()
-        project.setVersion project.findProperty("projectVersion")
-        BuildEnvironment buildEnvironment = new BuildEnvironment(project.providers)
-        MicronautBuildExtension micronautBuild = project.extensions.create('micronautBuild', MicronautBuildExtension, buildEnvironment)
+        project.pluginManager.apply(MicronautBasePlugin)
+        def micronautBuild = project.extensions.findByType(MicronautBuildExtension)
         configureJavaPlugin(project, micronautBuild)
         configureDependencies(project, micronautBuild)
         configureTasks(project)
