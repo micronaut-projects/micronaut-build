@@ -49,7 +49,7 @@ dependencies {
     implementation "com.diffplug.spotless:spotless-plugin-gradle:5.14.2"
     implementation "com.adarshr:gradle-test-logger-plugin:3.0.0"
     implementation "io.github.gradle-nexus:publish-plugin:1.1.0"
-    implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.16"
+    implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.17"
     implementation('com.lowagie:itext:2.0.8')
     implementation 'org.jsoup:jsoup:1.14.2'
     implementation('org.xhtmlrenderer:core-renderer:8.0') {
