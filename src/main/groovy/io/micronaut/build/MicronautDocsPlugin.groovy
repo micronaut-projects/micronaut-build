@@ -249,9 +249,9 @@ class MicronautDocsPlugin implements Plugin<Project> {
             // TODO: Reaching out to other project's state is not a good practice,
             // this needs to be replaced
             subprojects.each { subproject ->
-                subproject.tasks.configureEach {
-                    if ("processConfigProps" == it.name) {
-                        processConfigPropsTask.dependsOn(it)
+                subproject.tasks.configureEach { spTask ->
+                    if ("processConfigProps" == spTask.name) {
+                        processConfigPropsTask.configure { it.dependsOn(spTask) }
                     }
                 }
             }
