@@ -65,7 +65,7 @@ dependencies {
     testImplementation platform("org.spockframework:spock-bom:2.0-groovy-3.0")
     testImplementation "org.spockframework:spock-core"
 
-    compileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
+    compileOnly "org.jruby:jruby-complete:9.3.1.0" // Groovy bug :(
     testCompileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
 
     functionalTestImplementation("org.mock-server:mockserver-netty:5.11.2")
