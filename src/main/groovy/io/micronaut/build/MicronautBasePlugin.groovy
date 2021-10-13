@@ -18,7 +18,8 @@ package io.micronaut.build
 import groovy.transform.CompileStatic
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.initialization.Settings
+import org.gradle.api.internal.GradleInternal
 
 /**
  * This plugin is responsible for creating the Micronaut Build
@@ -38,8 +39,13 @@ class MicronautBasePlugin implements Plugin<Project> {
         project.version = project.providers.gradleProperty("projectVersion").forUseAtConfigurationTime().orElse("undefined").get()
     }
 
-    private MavenArtifactRepository addMavenCentral(Project project) {
-        project.repositories.mavenCentral()
+    private void addMavenCentral(Project project) {
+        // TODO: Avoid use of internal API
+        Settings settings = ((GradleInternal) project.gradle).settings
+        def repositoriesMode = settings.dependencyResolutionManagement.repositoriesMode.get()
+        if (repositoriesMode != repositoriesMode.FAIL_ON_PROJECT_REPOS) {
+            project.repositories.mavenCentral()
+        }
     }
 
     private void createBuildExtension(Project project) {
