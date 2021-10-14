@@ -33,6 +33,9 @@ class MicronautPublishingPlugin implements Plugin<Project> {
             }
         }
 
+        def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
+        def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
+
         project.with {
             apply plugin: 'maven-publish'
             plugins.withId('java-base') {
@@ -53,8 +56,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 }
             }
             ExtraPropertiesExtension ext = extensions.getByType(ExtraPropertiesExtension)
-            def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
-            def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
             ext."signing.keyId" = System.getenv("GPG_KEY_ID") ?: project.hasProperty("signing.keyId") ? project.getProperty('signing.keyId') : null
             ext."signing.password" = System.getenv("GPG_PASSWORD") ?: project.hasProperty("signing.password") ? project.getProperty('signing.password') : null
             def githubSlug = project.findProperty('githubSlug')
@@ -97,7 +98,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                     ext.extraPomInfo.call()
                 }
             }
-
 
             afterEvaluate {
                 boolean isPlatform = project.plugins.findPlugin("java-platform") != null
@@ -256,7 +256,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                 }
 
 
-                rootProject.plugins.apply('io.github.gradle-nexus.publish-plugin')
                 NexusPublishExtension nexusPublish = rootProject.extensions.getByType(NexusPublishExtension)
                 nexusPublish.with {
                     if (repositories.isEmpty()) {

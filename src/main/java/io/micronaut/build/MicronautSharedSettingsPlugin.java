@@ -36,6 +36,23 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         pluginManager.apply(CommonCustomUserDataGradlePlugin.class);
         GradleEnterpriseExtension ge = settings.getExtensions().getByType(GradleEnterpriseExtension.class);
         configureGradleEnterprise(settings, ge);
+        applyPublishingPlugin(settings);
+    }
+
+    private void applyPublishingPlugin(Settings settings) {
+        ProviderFactory providers = settings.getProviders();
+        String ossUser = envOrSystemProperty(providers, "SONATYPE_USERNAME", "sonatypeOssUsername");
+        String ossPass = envOrSystemProperty(providers, "SONATYPE_PASSWORD", "sonatypeOssPassword");
+        if (!ossUser.isEmpty() && !ossPass.isEmpty()) {
+            settings.getGradle().projectsLoaded(gradle -> gradle.getRootProject().getPlugins().apply("io.github.gradle-nexus.publish-plugin"));
+        }
+    }
+
+    private static String envOrSystemProperty(ProviderFactory providers, String envName, String propertyName) {
+        return providers.environmentVariable(envName)
+                .forUseAtConfigurationTime()
+                .orElse(providers.gradleProperty(propertyName).forUseAtConfigurationTime())
+                .getOrElse("");
     }
 
     private void configureGradleEnterprise(Settings settings, GradleEnterpriseExtension ge) {
