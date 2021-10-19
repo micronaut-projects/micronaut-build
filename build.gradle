@@ -117,6 +117,10 @@ gradlePlugin {
             id = 'io.micronaut.build.internal.common'
             implementationClass = 'io.micronaut.build.MicronautBuildCommonPlugin'
         }
+        'base-module' {
+            id = 'io.micronaut.build.internal.base-module'
+            implementationClass = 'io.micronaut.build.MicronautBaseModulePlugin'
+        }
         module {
             id = 'io.micronaut.build.internal.module'
             implementationClass = 'io.micronaut.build.MicronautModulePlugin'
