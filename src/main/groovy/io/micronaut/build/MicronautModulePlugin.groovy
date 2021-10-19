@@ -16,17 +16,8 @@ import org.gradle.api.tasks.testing.Test
 class MicronautModulePlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
-        project.pluginManager.apply(MicronautBuildCommonPlugin)
-        project.pluginManager.apply(MicronautDependencyUpdatesPlugin)
-        project.pluginManager.apply(MicronautPublishingPlugin)
+        project.pluginManager.apply(MicronautBaseModulePlugin)
         configureStandardDependencies(project)
-        configureJUnit(project)
-    }
-
-    private static void configureJUnit(Project project) {
-        project.tasks.withType(Test).configureEach { Test test ->
-            test.useJUnitPlatform()
-        }
     }
 
     private static Dependency configureStandardDependencies(Project project) {
