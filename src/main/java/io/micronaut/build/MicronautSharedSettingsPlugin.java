@@ -19,7 +19,9 @@ import com.gradle.CommonCustomUserDataGradlePlugin;
 import com.gradle.enterprise.gradleplugin.GradleEnterpriseExtension;
 import com.gradle.enterprise.gradleplugin.GradleEnterprisePlugin;
 import com.gradle.scan.plugin.BuildScanExtension;
+import io.github.gradlenexus.publishplugin.NexusPublishExtension;
 import org.gradle.api.Plugin;
+import org.gradle.api.Project;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.PluginManager;
@@ -27,8 +29,12 @@ import org.gradle.api.provider.ProviderFactory;
 import org.nosphere.gradle.github.ActionsPlugin;
 
 import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
+    public static final String NEXUS_STAGING_PROFILE_ID = "11bd7bc41716aa";
+
     @Override
     public void apply(Settings settings) {
         PluginManager pluginManager = settings.getPluginManager();
@@ -44,7 +50,30 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         String ossUser = envOrSystemProperty(providers, "SONATYPE_USERNAME", "sonatypeOssUsername");
         String ossPass = envOrSystemProperty(providers, "SONATYPE_PASSWORD", "sonatypeOssPassword");
         if (!ossUser.isEmpty() && !ossPass.isEmpty()) {
-            settings.getGradle().projectsLoaded(gradle -> gradle.getRootProject().getPlugins().apply("io.github.gradle-nexus.publish-plugin"));
+            settings.getGradle().projectsLoaded(gradle -> configureNexusPublishing(gradle, ossUser, ossPass));
+        }
+    }
+
+    private void configureNexusPublishing(Gradle gradle, String ossUser, String ossPass) {
+        Project rootProject = gradle.getRootProject();
+        rootProject.getPlugins().apply("io.github.gradle-nexus.publish-plugin");
+        NexusPublishExtension nexusPublish = rootProject.getExtensions().getByType(NexusPublishExtension.class);
+        nexusPublish.getRepositoryDescription().set("" + rootProject.getGroup() + ":" + rootProject.getName() + ":" + rootProject.getVersion());
+        nexusPublish.getUseStaging().convention(!rootProject.getVersion().toString().endsWith("-SNAPSHOT"));
+        nexusPublish.repositories(repos -> repos.create("sonatype", repo -> {
+            repo.getUsername().set(ossUser);
+            repo.getPassword().set(ossPass);
+            repo.getNexusUrl().set(uri("https://s01.oss.sonatype.org/service/local/"));
+            repo.getSnapshotRepositoryUrl().set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"));
+            repo.getStagingProfileId().set(NEXUS_STAGING_PROFILE_ID);
+        }));
+    }
+
+    private static URI uri(String uri) {
+        try {
+            return new URI(uri);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 

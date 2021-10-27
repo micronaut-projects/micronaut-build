@@ -1,7 +1,6 @@
 package io.micronaut.build
 
 import io.github.gradlenexus.publishplugin.InitializeNexusStagingRepository
-import io.github.gradlenexus.publishplugin.NexusPublishExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
@@ -18,9 +17,6 @@ import org.gradle.plugins.signing.Sign
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
 class MicronautPublishingPlugin implements Plugin<Project> {
-
-
-    public static final String NEXUS_STAGING_PROFILE_ID = "11bd7bc41716aa"
 
     @Override
     void apply(Project project) {
@@ -250,24 +246,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                             }
                             tasks.withType(Sign) {
                                 onlyIf { !project.version.endsWith("-SNAPSHOT") }
-                            }
-                        }
-                    }
-                }
-
-
-                NexusPublishExtension nexusPublish = rootProject.extensions.getByType(NexusPublishExtension)
-                nexusPublish.with {
-                    if (repositories.isEmpty()) {
-                        repositoryDescription = "${project.group}:${rootProject.name}:${project.version}"
-                        useStaging = !project.version.endsWith("-SNAPSHOT")
-                        repositories {
-                            sonatype {
-                                username = ossUser
-                                password = ossPass
-                                nexusUrl = uri("https://s01.oss.sonatype.org/service/local/")
-                                snapshotRepositoryUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-                                stagingProfileId = NEXUS_STAGING_PROFILE_ID //can reduce execution time by even 10 seconds
                             }
                         }
                     }
