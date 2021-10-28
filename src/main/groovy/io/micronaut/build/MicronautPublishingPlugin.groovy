@@ -147,10 +147,15 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                                 }
 
                                 if(project.hasProperty('shadowJarEnabled') && project.shadowJarEnabled == true) {
+                                    // TODO: This code doesn't use Gradle publications, it hard codes publishing
+                                    // which is easy to break and causes Gradle Module Metadata to be ignored
+                                    // this should be replaced with a publication
                                     def shadowJar = tasks.findByName("shadowJar")
                                     artifact(project.tasks.shadowJar) {
                                         classifier = null
                                     }
+                                    artifact(tasks.named('javadocJar'))
+                                    artifact(tasks.named('sourcesJar'))
                                     pom.withXml { xml ->
                                         def xmlNode = xml.asNode()
                                         def dependenciesNode = xmlNode.appendNode('dependencies')
