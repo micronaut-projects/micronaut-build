@@ -47,8 +47,8 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
 
     private void applyPublishingPlugin(Settings settings) {
         ProviderFactory providers = settings.getProviders();
-        String ossUser = envOrSystemProperty(providers, "SONATYPE_USERNAME", "sonatypeOssUsername");
-        String ossPass = envOrSystemProperty(providers, "SONATYPE_PASSWORD", "sonatypeOssPassword");
+        String ossUser = envOrSystemProperty(providers, "SONATYPE_USERNAME", "sonatypeOssUsername", "");
+        String ossPass = envOrSystemProperty(providers, "SONATYPE_PASSWORD", "sonatypeOssPassword", "");
         if (!ossUser.isEmpty() && !ossPass.isEmpty()) {
             settings.getGradle().projectsLoaded(gradle -> configureNexusPublishing(gradle, ossUser, ossPass));
         }
@@ -61,10 +61,11 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         nexusPublish.getRepositoryDescription().set("" + rootProject.getGroup() + ":" + rootProject.getName() + ":" + rootProject.getVersion());
         nexusPublish.getUseStaging().convention(!rootProject.getVersion().toString().endsWith("-SNAPSHOT"));
         nexusPublish.repositories(repos -> repos.create("sonatype", repo -> {
+            repo.getAllowInsecureProtocol().convention(rootProject.getProviders().systemProperty("allowInsecurePublishing").forUseAtConfigurationTime().map(Boolean::parseBoolean).orElse(false));
             repo.getUsername().set(ossUser);
             repo.getPassword().set(ossPass);
-            repo.getNexusUrl().set(uri("https://s01.oss.sonatype.org/service/local/"));
-            repo.getSnapshotRepositoryUrl().set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"));
+            repo.getNexusUrl().set(uri(envOrSystemProperty(rootProject.getProviders(), "SONATYPE_REPO_URI", "sonatypeRepoUri", "https://s01.oss.sonatype.org/service/local/")));
+            repo.getSnapshotRepositoryUrl().set(uri(envOrSystemProperty(rootProject.getProviders(), "SONATYPE_SNAPSHOT_REPO_URI", "sonatypeSnapshotsRepoUri", "https://s01.oss.sonatype.org/content/repositories/snapshots/")));
             repo.getStagingProfileId().set(NEXUS_STAGING_PROFILE_ID);
         }));
     }
@@ -77,11 +78,11 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         }
     }
 
-    private static String envOrSystemProperty(ProviderFactory providers, String envName, String propertyName) {
+    private static String envOrSystemProperty(ProviderFactory providers, String envName, String propertyName, String defaultValue) {
         return providers.environmentVariable(envName)
                 .forUseAtConfigurationTime()
                 .orElse(providers.gradleProperty(propertyName).forUseAtConfigurationTime())
-                .getOrElse("");
+                .getOrElse(defaultValue);
     }
 
     private void configureGradleEnterprise(Settings settings, GradleEnterpriseExtension ge) {
