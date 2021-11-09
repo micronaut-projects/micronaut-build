@@ -44,6 +44,8 @@ import org.gradle.api.tasks.TaskProvider;
  */
 public abstract class ConfigurationPropertiesPlugin implements Plugin<Project> {
     private static final String DOCUMENTATION_GROUP = "mndocs";
+    public static final String CONFIGURATION_PROPERTIES = "configuration-properties";
+    public static final String INDIVIDUAL_CONFIGURATION_PROPERTIES = "individual-configuration-properties";
 
     @Override
     public void apply(Project project) {
@@ -52,7 +54,6 @@ public abstract class ConfigurationPropertiesPlugin implements Plugin<Project> {
             TaskContainer tasks = project.getTasks();
             DirectoryProperty buildDirectory = project.getLayout().getBuildDirectory();
             Provider<Directory> genDir = buildDirectory.dir("config-properties");
-            Configuration configurationPropertiesElements = createConfigurationPropertiesOutgoingConfiguration(project);
             SourceSet mainSourceSet = javaPluginConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
             TaskProvider<JavaDocAtValueReplacementTask> javaDocAtReplacement = tasks.register("javaDocAtReplacement", JavaDocAtValueReplacementTask.class, task -> {
@@ -65,7 +66,7 @@ public abstract class ConfigurationPropertiesPlugin implements Plugin<Project> {
             TaskProvider<ReplaceAtLinkTask> replaceAtLink = tasks.register("replaceAtLink", ReplaceAtLinkTask.class, task -> {
                 task.setGroup(DOCUMENTATION_GROUP);
                 task.getInputFiles().from(javaDocAtReplacement);
-                task.getOutputFile().convention(genDir.map(dir -> dir.file("config-properties-atlink-replaced.adoc")));
+                task.getOutputFile().convention(genDir.map(dir -> dir.file(project.getName() + "-config-properties.adoc")));
             });
 
             // This is the final task of the chain, which generates what is consumed by the top-level project
@@ -74,7 +75,10 @@ public abstract class ConfigurationPropertiesPlugin implements Plugin<Project> {
                 task.getInputFiles().from(replaceAtLink);
                 task.getOutputDirectory().convention(genDir.map(d -> d.dir("processed")));
             });
-            configurationPropertiesElements.getOutgoing().artifact(processConfigurationProperties);
+            Configuration singleConfigPropertiesElements = createConfigurationPropertiesOutgoingConfiguration(project, "configurationPropertiesElements", CONFIGURATION_PROPERTIES);
+            singleConfigPropertiesElements.getOutgoing().artifact(replaceAtLink);
+            Configuration individualConfigurationPropertiesElements = createConfigurationPropertiesOutgoingConfiguration(project, "individualConfigurationPropertiesElements", INDIVIDUAL_CONFIGURATION_PROPERTIES);
+            individualConfigurationPropertiesElements.getOutgoing().artifact(processConfigurationProperties);
         });
     }
 
@@ -83,18 +87,18 @@ public abstract class ConfigurationPropertiesPlugin implements Plugin<Project> {
      * @param project the project
      * @return the outgoing configuration
      */
-    private Configuration createConfigurationPropertiesOutgoingConfiguration(Project project) {
-        return project.getConfigurations().create("configurationPropertiesElements", conf -> {
+    private Configuration createConfigurationPropertiesOutgoingConfiguration(Project project, String name, String usage) {
+        return project.getConfigurations().create(name, conf -> {
             conf.setDescription("Configuration properties adoc files");
             conf.setCanBeConsumed(true);
             conf.setCanBeResolved(false);
-            conf.attributes(attrs -> configureAttributes(attrs, project.getObjects()));
+            conf.attributes(attrs -> configureAttributes(attrs, project.getObjects(), usage));
         });
     }
 
-    public static void configureAttributes(AttributeContainer attrs, ObjectFactory objects) {
+    public static void configureAttributes(AttributeContainer attrs, ObjectFactory objects, String usage) {
         attrs.attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.class, Category.DOCUMENTATION));
-        attrs.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, "configuration-properties"));
+        attrs.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, usage));
     }
 
 }

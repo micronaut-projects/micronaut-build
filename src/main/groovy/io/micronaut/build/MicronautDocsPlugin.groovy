@@ -1,8 +1,8 @@
 package io.micronaut.build
 
 import io.micronaut.build.docs.ConfigurationPropertiesPlugin
+import io.micronaut.build.docs.props.MergeConfigurationReferenceTask
 import io.micronaut.docs.CreateReleasesDropdownTask
-import io.micronaut.docs.MergeConfigurationReferenceTask
 import io.micronaut.docs.PublishConfigurationReferenceTask
 import io.micronaut.docs.gradle.PublishGuide
 import org.gradle.api.Plugin
@@ -11,6 +11,7 @@ import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.javadoc.Javadoc
+
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
@@ -30,18 +31,31 @@ class MicronautDocsPlugin implements Plugin<Project> {
             def githubSlug = project.findProperty('githubSlug')
             logger.info("Configuring micronaut documentation tasks for subprojects.")
             logger.info("Add skipDocumentation=true to a submodule gradle.properties to skip docs")
+            def configProperties = configurations.create("configProperties") {
+                it.canBeConsumed = false
+                it.canBeResolved = false
+            }
+            def incomingIndividualConfigProps = configurations.create("incomingIndividualConfigProps") {
+                it.canBeConsumed = false
+                it.canBeResolved = true
+                it.extendsFrom(configProperties)
+                it.attributes {
+                    ConfigurationPropertiesPlugin.configureAttributes(it, project.objects, ConfigurationPropertiesPlugin.INDIVIDUAL_CONFIGURATION_PROPERTIES)
+                }
+            }
             def incomingConfigProps = configurations.create("incomingConfigProps") {
                 it.canBeConsumed = false
                 it.canBeResolved = true
+                it.extendsFrom(configProperties)
                 it.attributes {
-                    ConfigurationPropertiesPlugin.configureAttributes(it, project.objects)
+                    ConfigurationPropertiesPlugin.configureAttributes(it, project.objects, ConfigurationPropertiesPlugin.CONFIGURATION_PROPERTIES)
                 }
             }
             subprojects { subproject ->
                 subproject.plugins.withType(ConfigurationPropertiesPlugin) {
                     boolean skipDocs = hasProperty('skipDocumentation') ? property('skipDocumentation') as Boolean : false
                     if (!skipDocs) {
-                        incomingConfigProps.dependencies.add(dependencies.create(subproject))
+                        configProperties.dependencies.add(dependencies.create(subproject))
                     }
                 }
             }
@@ -115,11 +129,8 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
             tasks.register('mergeConfigurationReference', MergeConfigurationReferenceTask) { task ->
-                inputFileName = "${rootProject.buildDir}/generated/propertyReference.adoc"
-                inputFilesName = "${buildDir}/config-props"
-                task.onlyIf {
-                    !fileTree("$buildDir/config-props").isEmpty()
-                }
+                inputFiles.from(incomingConfigProps)
+                outputFile = layout.buildDirectory.file("generated/propertyReference.adoc")
                 task.group(DOCUMENTATION_GROUP)
             }
             tasks.register('publishConfigurationReference', PublishConfigurationReferenceTask) { task ->
@@ -223,7 +234,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
             }
 
             def processConfigPropsTask = tasks.register('processConfigProps', Copy) {
-                from(incomingConfigProps)
+                from(incomingIndividualConfigProps)
                 into(layout.buildDirectory.dir("generated/configurationProperties"))
             }
 
