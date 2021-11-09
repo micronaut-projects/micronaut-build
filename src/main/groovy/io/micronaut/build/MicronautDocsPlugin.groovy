@@ -1,19 +1,16 @@
 package io.micronaut.build
 
-import io.micronaut.docs.gradle.PublishGuide
+import io.micronaut.build.docs.ConfigurationPropertiesPlugin
 import io.micronaut.docs.CreateReleasesDropdownTask
-import io.micronaut.docs.JavaDocAtValueReplacementTask
 import io.micronaut.docs.MergeConfigurationReferenceTask
-import io.micronaut.docs.ProcessConfigPropsTask
 import io.micronaut.docs.PublishConfigurationReferenceTask
-import io.micronaut.docs.ReplaceAtLinkTask
+import io.micronaut.docs.gradle.PublishGuide
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.javadoc.Javadoc
-
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
@@ -33,39 +30,18 @@ class MicronautDocsPlugin implements Plugin<Project> {
             def githubSlug = project.findProperty('githubSlug')
             logger.info("Configuring micronaut documentation tasks for subprojects.")
             logger.info("Add skipDocumentation=true to a submodule gradle.properties to skip docs")
+            def incomingConfigProps = configurations.create("incomingConfigProps") {
+                it.canBeConsumed = false
+                it.canBeResolved = true
+                it.attributes {
+                    ConfigurationPropertiesPlugin.configureAttributes(it, project.objects)
+                }
+            }
             subprojects { subproject ->
-                boolean skipDocs = hasProperty('skipDocumentation') ? property('skipDocumentation') as Boolean : false
-                subproject.plugins.withId('java-base') {
+                subproject.plugins.withType(ConfigurationPropertiesPlugin) {
+                    boolean skipDocs = hasProperty('skipDocumentation') ? property('skipDocumentation') as Boolean : false
                     if (!skipDocs) {
-                        tasks.register('moveConfigProps') { task ->
-                            task.group(DOCUMENTATION_GROUP)
-                            task.doLast {
-                                ant.mkdir(dir: "${rootProject.buildDir}/config-props")
-                                ant.move(file: "${subproject.buildDir}/classes/java/main/META-INF/config-properties.adoc", tofile: "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc", failonerror: false, quiet: true)
-                            }
-                            task.dependsOn tasks.named("classes")
-                        }
-                        tasks.register('javaDocAtReplacement', JavaDocAtValueReplacementTask) { task ->
-                            task.group(DOCUMENTATION_GROUP)
-                            task.dependsOn('moveConfigProps')
-                            adoc = "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc"
-                        }
-                        tasks.register('replaceAtLink', ReplaceAtLinkTask) { task ->
-                            configProperties = "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc"
-                            task.group(DOCUMENTATION_GROUP)
-                            task.dependsOn tasks.named('moveConfigProps')
-                            task.mustRunAfter tasks.named('javaDocAtReplacement')
-                        }
-
-                        tasks.register('processConfigProps', ProcessConfigPropsTask) { task ->
-                            configPropertiesFileName = "${rootProject.buildDir}/config-props/${subproject.name}-config-properties.adoc"
-                            individualConfigPropsFolder = "${rootProject.buildDir}/generated/configurationProperties"
-                            task.group(DOCUMENTATION_GROUP)
-                            task.mustRunAfter tasks.named("javadoc")
-                            task.mustRunAfter tasks.named("assemble")
-                            task.dependsOn tasks.named('replaceAtLink')
-                            task.dependsOn tasks.named('javaDocAtReplacement')
-                        }
+                        incomingConfigProps.dependencies.add(dependencies.create(subproject))
                     }
                 }
             }
@@ -235,6 +211,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 archiveBaseName = "${name}-${projectVersion}"
                 destinationDirectory = new File(buildDir, "distributions")
                 from files("${buildDir}/docs")
+                dependsOn('docs') // TODO: replace with a proper task!
             }
             // TODO: Don't do this
             tasks.register('assemble') {
@@ -245,17 +222,10 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
 
-            def processConfigPropsTask = tasks.register('processConfigProps')
-            // TODO: Reaching out to other project's state is not a good practice,
-            // this needs to be replaced
-            subprojects.each { subproject ->
-                subproject.tasks.configureEach { spTask ->
-                    if ("processConfigProps" == spTask.name) {
-                        processConfigPropsTask.configure { it.dependsOn(spTask) }
-                    }
-                }
+            def processConfigPropsTask = tasks.register('processConfigProps', Copy) {
+                from(incomingConfigProps)
+                into(layout.buildDirectory.dir("generated/configurationProperties"))
             }
-
 
             tasks.register("createReleasesDropdown", CreateReleasesDropdownTask) { task ->
                 slug = githubSlug as String

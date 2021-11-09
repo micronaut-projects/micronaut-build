@@ -16,6 +16,7 @@
 package io.micronaut.build
 
 import groovy.transform.CompileStatic
+import io.micronaut.build.docs.ConfigurationPropertiesPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.initialization.Settings
@@ -33,6 +34,7 @@ class MicronautBasePlugin implements Plugin<Project> {
         addMavenCentral(project)
         configureProjectVersion(project)
         createBuildExtension(project)
+        project.pluginManager.apply(ConfigurationPropertiesPlugin)
     }
 
     private void configureProjectVersion(Project project) {
