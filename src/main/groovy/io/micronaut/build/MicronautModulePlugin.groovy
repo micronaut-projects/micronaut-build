@@ -1,12 +1,11 @@
 package io.micronaut.build
 
 import groovy.transform.CompileStatic
+import io.micronaut.build.docs.ConfigurationPropertiesPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ExternalModuleDependency
-import org.gradle.api.tasks.testing.Test
-
 /**
  * Configures a project as a typical Micronaut module project,
  * which implies that it's a library aimed at being processed
