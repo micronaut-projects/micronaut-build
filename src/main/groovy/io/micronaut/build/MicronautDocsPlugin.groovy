@@ -2,8 +2,8 @@ package io.micronaut.build
 
 import io.micronaut.build.docs.ConfigurationPropertiesPlugin
 import io.micronaut.build.docs.props.MergeConfigurationReferenceTask
+import io.micronaut.build.docs.props.PublishConfigurationReferenceTask
 import io.micronaut.docs.CreateReleasesDropdownTask
-import io.micronaut.docs.PublishConfigurationReferenceTask
 import io.micronaut.docs.gradle.PublishGuide
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -119,38 +119,17 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
 
-            tasks.register('cleanupPropertyReference') { task ->
-                task.group(DOCUMENTATION_GROUP)
-                task.doLast {
-                    File f = new File("${rootProject.buildDir}/docs/guide/${CONFIGURATION_REFERENCE_HTML}")
-                    if (f.exists()) {
-                        f.delete()
-                    }
-                }
-            }
-            tasks.register('mergeConfigurationReference', MergeConfigurationReferenceTask) { task ->
+            def mergeConfigurationReference = tasks.register('mergeConfigurationReference', MergeConfigurationReferenceTask) { task ->
                 inputFiles.from(incomingConfigProps)
                 outputFile = layout.buildDirectory.file("generated/propertyReference.adoc")
                 task.group(DOCUMENTATION_GROUP)
             }
+
             tasks.register('publishConfigurationReference', PublishConfigurationReferenceTask) { task ->
-                inputFileName = "${rootProject.buildDir}/generated/propertyReference.adoc"
-                destinationFileName = "${rootProject.buildDir}/docs/guide/${CONFIGURATION_REFERENCE_HTML}"
+                propertyReferenceFile = mergeConfigurationReference.flatMap { it.outputFile }
+                destinationFile = layout.buildDir.file("docs/guide/${CONFIGURATION_REFERENCE_HTML}")
                 version = projectVersion
                 pageTemplate = file("${rootProject.buildDir}/doc-resources/style/page.html")
-                task.dependsOn tasks.named('mergeConfigurationReference')
-                task.mustRunAfter tasks.named('publishGuide')
-            }
-            tasks.register('cleanupGuideFiles', Delete) { task ->
-                task.group(DOCUMENTATION_GROUP)
-                delete fileTree("${rootProject.buildDir}/docs/guide") {
-                    include '*.html'
-                    exclude INDEX_HTML
-                    exclude publishConfigurationReference.destinationFileName
-                }
-                delete fileTree("${rootProject.buildDir}/docs/guide/pages") {
-                    include '*.html'
-                }
             }
 
             tasks.register(TASK_DELETE_INVIDUAL_PAGES, Delete) {
