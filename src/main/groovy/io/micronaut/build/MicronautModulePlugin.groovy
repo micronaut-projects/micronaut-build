@@ -1,7 +1,6 @@
 package io.micronaut.build
 
 import groovy.transform.CompileStatic
-import io.micronaut.build.docs.ConfigurationPropertiesPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency

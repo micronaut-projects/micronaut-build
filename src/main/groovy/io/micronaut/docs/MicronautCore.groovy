@@ -1,7 +1,6 @@
 package io.micronaut.docs
 
 import groovy.transform.CompileStatic
-import io.micronaut.core.annotation.Nullable
 
 @CompileStatic
 class MicronautCore implements JvmLibrary {
@@ -13,7 +12,6 @@ class MicronautCore implements JvmLibrary {
     }
 
     @Override
-    @Nullable
     String getDefaultPackagePrefix() {
         return "io.micronaut";
     }
