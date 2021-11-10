@@ -7,11 +7,11 @@ import io.micronaut.docs.CreateReleasesDropdownTask
 import io.micronaut.docs.gradle.PublishGuide
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.javadoc.Javadoc
-
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
@@ -26,6 +26,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         project.with {
+            plugins.apply(BasePlugin)
             def projectVersion = project.findProperty('projectVersion')
             def projectDesc = project.findProperty('projectDesc')
             def githubSlug = project.findProperty('githubSlug')
@@ -60,7 +61,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
 
-            tasks.register("copyLocalDocResources", Copy) { task ->
+            def copyLocalDocResources = tasks.register("copyLocalDocResources", Copy) { task ->
                 group = DOCUMENTATION_GROUP
                 description = 'Copy local resources to build folder'
                 from("$project.projectDir/src/main/docs/resources")
@@ -75,15 +76,12 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 documentation("org.fusesource.jansi:jansi:1.14")
             }
 
-            def cleanTask = tasks.findByName("clean")
-            if (cleanTask == null) {
-                tasks.register("clean", Delete) {
-                    delete(buildDir)
-                }
-            } else {
-                cleanTask.doLast {
-                    ant.delete(dir: "build/docs")
-                }
+            def cleanDocs = tasks.register("cleanDocs", Delete) {
+                delete layout.buildDirectory.dir("docs")
+            }
+
+            tasks.named('clean', Delete) {
+                dependsOn(cleanDocs)
             }
 
             tasks.register("javadoc", Javadoc) {
@@ -119,29 +117,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
 
-            def mergeConfigurationReference = tasks.register('mergeConfigurationReference', MergeConfigurationReferenceTask) { task ->
-                inputFiles.from(incomingConfigProps)
-                outputFile = layout.buildDirectory.file("generated/propertyReference.adoc")
-                task.group(DOCUMENTATION_GROUP)
-            }
-
-            tasks.register('publishConfigurationReference', PublishConfigurationReferenceTask) { task ->
-                propertyReferenceFile = mergeConfigurationReference.flatMap { it.outputFile }
-                destinationFile = layout.buildDir.file("docs/guide/${CONFIGURATION_REFERENCE_HTML}")
-                version = projectVersion
-                pageTemplate = file("${rootProject.buildDir}/doc-resources/style/page.html")
-            }
-
-            tasks.register(TASK_DELETE_INVIDUAL_PAGES, Delete) {
-                group = DOCUMENTATION_GROUP
-                description = "delete HTML files under build/docs/guides except ${INDEX_HTML} and ${CONFIGURATION_REFERENCE_HTML}"
-                delete fileTree("${buildDir}/docs/guide") {
-                    include '**/*.html'
-                    exclude CONFIGURATION_REFERENCE_HTML
-                    exclude INDEX_HTML
-                }
-            }
-            tasks.register('publishGuide', PublishGuide) {
+            def publishGuide = tasks.register('publishGuide', PublishGuide) {
                 group = DOCUMENTATION_GROUP
                 description = 'Generate Guide'
                 dependsOn copyLocalDocResources
@@ -196,6 +172,29 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 finalizedBy(TASK_DELETE_INVIDUAL_PAGES)
             }
 
+            def mergeConfigurationReference = tasks.register('mergeConfigurationReference', MergeConfigurationReferenceTask) { task ->
+                inputFiles.from(incomingConfigProps)
+                outputFile = layout.buildDirectory.file("generated/propertyReference.adoc")
+                task.group(DOCUMENTATION_GROUP)
+            }
+
+            tasks.register('publishConfigurationReference', PublishConfigurationReferenceTask) { task ->
+                propertyReferenceFile = mergeConfigurationReference.flatMap { it.outputFile }
+                destinationFile = layout.buildDir.file("docs/guide/${CONFIGURATION_REFERENCE_HTML}")
+                version = projectVersion
+                pageTemplate.set(publishGuide.map { layout.buildDirectory.file("doc-resources/style/page.html").get() })
+            }
+
+            tasks.register(TASK_DELETE_INVIDUAL_PAGES, Delete) {
+                group = DOCUMENTATION_GROUP
+                description = "delete HTML files under build/docs/guides except ${INDEX_HTML} and ${CONFIGURATION_REFERENCE_HTML}"
+                delete fileTree("${buildDir}/docs/guide") {
+                    include '**/*.html'
+                    exclude CONFIGURATION_REFERENCE_HTML
+                    exclude INDEX_HTML
+                }
+            }
+
             tasks.register("zipDocs", Zip) { task ->
                 task.group(DOCUMENTATION_GROUP)
                 archiveBaseName = "${name}-${projectVersion}"
@@ -204,7 +203,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 dependsOn('docs') // TODO: replace with a proper task!
             }
             // TODO: Don't do this
-            tasks.register('assemble') {
+            tasks.named('assemble') {
                 subprojects.each { subproject ->
                     if (subproject.tasks.findByName("assemble") != null) {
                         dependsOn subproject.tasks.findByName("assemble")
@@ -226,7 +225,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
                     new File("${buildDir.absolutePath}/docs/guide/${INDEX_HTML}").exists()
                 }
             }
-
 
             tasks.register("docs") { task ->
                 task.dependsOn tasks.named("assemble")
