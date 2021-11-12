@@ -16,9 +16,6 @@
 package io.micronaut.docs
 
 import groovy.transform.CompileStatic
-import io.micronaut.core.annotation.NonNull
-import io.micronaut.core.annotation.Nullable
-
 /**
  * @author Graeme Rocher
  * @since 1.0
@@ -35,13 +32,11 @@ class RxJavaApiMacro extends ApiMacro {
     }
 
     @Override
-    @Nullable
     String getAttributeKey() {
         "rxapi";
     }
 
     @Override
-    @NonNull
     JvmLibrary getJvmLibrary() {
         new RxJava()
     }

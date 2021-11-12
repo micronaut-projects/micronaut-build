@@ -15,9 +15,6 @@
  */
 package io.micronaut.docs;
 
-import io.micronaut.core.annotation.NonNull;
-import io.micronaut.core.annotation.Nullable;
-
 import java.util.Map;
 
 /**
@@ -31,13 +28,11 @@ public class ReactorJavaApiMacro extends ApiMacro {
     }
 
     @Override
-    @Nullable
     public String getAttributeKey() {
         return "reactorapi";
     }
 
     @Override
-    @NonNull
     public JvmLibrary getJvmLibrary() {
         return new Reactor();
     }
