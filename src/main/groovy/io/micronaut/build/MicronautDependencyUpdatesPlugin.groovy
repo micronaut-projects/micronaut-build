@@ -17,7 +17,7 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        project.pluginManager.apply(MicronautBasePlugin)
+        project.pluginManager.apply(MicronautBuildExtensionPlugin)
         project.apply plugin: GRADLE_VERSIONS_PLUGIN
         project.apply plugin: USE_LATEST_VERSIONS_PLUGIN
 
