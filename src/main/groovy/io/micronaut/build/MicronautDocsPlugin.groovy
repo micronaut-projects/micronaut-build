@@ -1,15 +1,19 @@
 package io.micronaut.build
 
 import io.micronaut.build.docs.ConfigurationPropertiesPlugin
+import io.micronaut.build.docs.CreateReleasesDropdownTask
+import io.micronaut.build.docs.PrepareDocResourcesTask
+import io.micronaut.build.docs.PublishGuideTask
+import io.micronaut.build.docs.ValidateAsciidocOutputTask
 import io.micronaut.build.docs.props.MergeConfigurationReferenceTask
 import io.micronaut.build.docs.props.PublishConfigurationReferenceTask
-import io.micronaut.docs.CreateReleasesDropdownTask
-import io.micronaut.docs.gradle.PublishGuide
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.FileTreeElement
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Delete
+import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.javadoc.Javadoc
 /**
@@ -20,8 +24,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
     static final String DOCUMENTATION_GROUP = 'mndocs'
     public static final String CONFIGURATION_REFERENCE_HTML = 'configurationreference.html'
     public static final String INDEX_HTML = 'index.html'
-
-    public static final String TASK_DELETE_INVIDUAL_PAGES = 'deleteInvidualPages'
 
     @Override
     void apply(Project project) {
@@ -61,13 +63,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
 
-            def copyLocalDocResources = tasks.register("copyLocalDocResources", Copy) { task ->
-                group = DOCUMENTATION_GROUP
-                description = 'Copy local resources to build folder'
-                from("$project.projectDir/src/main/docs/resources")
-                destinationDir = project.file("${rootProject.buildDir}/doc-resources")
-            }
-
             configurations {
                 documentation
             }
@@ -88,7 +83,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 description = 'Generate javadocs from all child projects as if it was a single project'
                 group = 'Documentation'
 
-                destinationDir = file("$buildDir/docs/api")
+                destinationDir = layout.buildDir.dir("working/00-api").get().asFile
                 title = "$name ${projectVersion} API"
                 options.author true
                 List links = []
@@ -97,6 +92,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                         links.add(p.value.toString())
                     }
                 }
+                exclude "example/**"
                 options.links links as String[]
                 options.addStringOption 'Xdoclint:none', '-quiet'
                 options.addBooleanOption('notimestamp', true)
@@ -117,26 +113,37 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 }
             }
 
-            def publishGuide = tasks.register('publishGuide', PublishGuide) {
+            def prepareDocsResources = tasks.register('prepareDocsResources', PrepareDocResourcesTask) {
+                group = DOCUMENTATION_GROUP
+                description = 'Prepare resources for documentation'
+                resources.from(layout.projectDirectory.dir("src/main/docs/resources"))
+                outputDirectory = layout.buildDirectory.dir("doc-resources")
+                resourceClasspathJarName = "grails-doc-files.jar"
+            }
+
+            def processConfigPropsTask = tasks.register('processConfigProps', Copy) {
+                from(incomingIndividualConfigProps)
+                into(layout.buildDirectory.dir("working/01-includes/configurationProperties"))
+            }
+
+            def publishGuide = tasks.register('publishGuide', PublishGuideTask) {
                 group = DOCUMENTATION_GROUP
                 description = 'Generate Guide'
-                dependsOn copyLocalDocResources
 
-                targetDir = file("${buildDir}/docs")
+                def kafkaVersion = rootProject.hasProperty('kafkaVersion') ? rootProject.properties['kafkaVersion'] : 'N/A'
+
+                inputs.files(processConfigPropsTask)
+                inputs.property("Project description", projectDesc)
+                inputs.property("Kafka version", kafkaVersion)
+
+                targetDir = layout.buildDirectory.dir("working/02-docs-raw")
                 String githubBranch = 'git rev-parse --abbrev-ref HEAD'.execute()?.text?.trim() ?: 'master'
                 sourceRepo = "https://github.com/${githubSlug}/edit/${githubBranch}/src/main/docs"
-                sourceDir = new File(projectDir, "src/main/docs")
-                def f = new File(project.projectDir, 'src/main/docs/resources')
-                if (f.exists()) {
-                    resourcesDir = f
-                } else {
-                    f = new File(project.buildDir, 'doc-resources')
-                    f.mkdirs()
-                    resourcesDir = f
-                }
-                propertiesFiles = [new File(rootProject.projectDir, "gradle.properties")]
+                sourceDir = layout.projectDirectory.dir("src/main/docs")
+                resourcesDir = prepareDocsResources.flatMap(PrepareDocResourcesTask::getOutputDirectory)
+                propertiesFiles.from(rootProject.file("gradle.properties"))
                 asciidoc = true
-                properties = [
+                properties.putAll([
                         'safe': 'UNSAFE',
                         'source-highlighter': 'highlightjs',
                         'version': projectVersion,
@@ -146,101 +153,91 @@ class MicronautDocsPlugin implements Plugin<Project> {
                         'micronautapi': 'https://docs.micronaut.io/latest/api/io/micronaut/',
                         'sourceDir': rootProject.projectDir.absolutePath,
                         'sourcedir': rootProject.projectDir.absolutePath,
-                        'includedir': "${rootProject.buildDir.absolutePath}/generated/",
+                        'includedir': "${processConfigPropsTask.get().destinationDir.parentFile}/",
                         'javaee': 'https://docs.oracle.com/javaee/8/api/',
                         'javase': 'https://docs.oracle.com/javase/8/docs/api/',
                         'groovyapi': 'http://docs.groovy-lang.org/latest/html/gapi/',
                         'grailsapi': 'http://docs.grails.org/latest/api/',
                         'gormapi': 'http://gorm.grails.org/latest/api/',
                         'springapi': 'https://docs.spring.io/spring/docs/current/javadoc-api/',
-                        'kafka-version': rootProject.hasProperty('kafkaVersion') ? rootProject.properties['kafkaVersion'] : 'N/A'
-                ]
-                doLast {
-                    ant.move(file: "${buildDir}/docs/guide/single.html",
-                            tofile: "${buildDir}/docs/guide/${INDEX_HTML}", overwrite: true)
-                    new File(buildDir, "docs/${INDEX_HTML}").text = """
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html lang="en">
-<head>
-<meta http-equiv="refresh" content="0; url=guide/${INDEX_HTML}" />
-</head>
-
-</body>
-</html>
-"""
-                }
-                finalizedBy(TASK_DELETE_INVIDUAL_PAGES)
+                        'kafka-version': kafkaVersion
+                ])
             }
 
             def mergeConfigurationReference = tasks.register('mergeConfigurationReference', MergeConfigurationReferenceTask) { task ->
                 inputFiles.from(incomingConfigProps)
-                outputFile = layout.buildDirectory.file("generated/propertyReference.adoc")
+                outputFile = layout.buildDirectory.file("working/03-property-ref/adoc/propertyReference.adoc")
                 task.group(DOCUMENTATION_GROUP)
             }
 
             tasks.register('publishConfigurationReference', PublishConfigurationReferenceTask) { task ->
                 propertyReferenceFile = mergeConfigurationReference.flatMap { it.outputFile }
-                destinationFile = layout.buildDir.file("docs/guide/${CONFIGURATION_REFERENCE_HTML}")
+                destinationFile = layout.buildDir.file("working/03-property-ref/html/${CONFIGURATION_REFERENCE_HTML}")
                 version = projectVersion
-                pageTemplate.set(publishGuide.map { layout.buildDirectory.file("doc-resources/style/page.html").get() })
+                pageTemplate.set(publishGuide.map { it.resourcesDir.file("style/page.html").get() })
             }
 
-            tasks.register(TASK_DELETE_INVIDUAL_PAGES, Delete) {
-                group = DOCUMENTATION_GROUP
-                description = "delete HTML files under build/docs/guides except ${INDEX_HTML} and ${CONFIGURATION_REFERENCE_HTML}"
-                delete fileTree("${buildDir}/docs/guide") {
-                    include '**/*.html'
-                    exclude CONFIGURATION_REFERENCE_HTML
-                    exclude INDEX_HTML
-                }
-            }
-
-            tasks.register("zipDocs", Zip) { task ->
-                task.group(DOCUMENTATION_GROUP)
-                archiveBaseName = "${name}-${projectVersion}"
-                destinationDirectory = new File(buildDir, "distributions")
-                from files("${buildDir}/docs")
-                dependsOn('docs') // TODO: replace with a proper task!
-            }
-            // TODO: Don't do this
-            tasks.named('assemble') {
-                subprojects.each { subproject ->
-                    if (subproject.tasks.findByName("assemble") != null) {
-                        dependsOn subproject.tasks.findByName("assemble")
+            def assembleDocs = tasks.register("assembleDocs", Sync) {
+                description = "Assembles the documentation"
+                destinationDir = layout.buildDirectory.dir("working/04-assembled-docs").get().asFile
+                from(publishGuide.flatMap { it.targetDir }) {
+                    include { FileTreeElement e ->
+                        def relativePath = e.relativePath.pathString
+                        if (relativePath.startsWith('guide/')) {
+                            return relativePath == 'guide/index.html'
+                        }
+                        true
                     }
                 }
+                from(publishConfigurationReference) {
+                    into 'guide'
+                }
+                from(tasks.withType(Javadoc)) {
+                    into 'api'
+                }
             }
 
-            def processConfigPropsTask = tasks.register('processConfigProps', Copy) {
-                from(incomingIndividualConfigProps)
-                into(layout.buildDirectory.dir("generated/configurationProperties"))
+            def validateAssembledDocs = tasks.register("validateAssembleDocs", ValidateAsciidocOutputTask) {
+                inputDirectory.fileProvider(assembleDocs.map { it.destinationDir })
+                report = layout.buildDirectory.file("working/reports/assemble-docs.txt")
             }
 
-            tasks.register("createReleasesDropdown", CreateReleasesDropdownTask) { task ->
+            assembleDocs.configure {
+                finalizedBy(validateAssembledDocs)
+            }
+
+            def zipDocs = tasks.register("zipDocs", Zip) { task ->
+                task.group(DOCUMENTATION_GROUP)
+                archiveAppendix = 'docs'
+                destinationDirectory = new File(buildDir, "distributions")
+                from(assembleDocs)
+            }
+
+            def createReleasesDropdown = tasks.register("createReleasesDropdown", CreateReleasesDropdownTask) { task ->
+                task.group(DOCUMENTATION_GROUP)
                 slug = githubSlug as String
                 version = projectVersion
-                doc = file("${buildDir.absolutePath}/docs/guide/${INDEX_HTML}")
-                task.mustRunAfter tasks.named("zipDocs")
-                task.onlyIf {
-                    new File("${buildDir.absolutePath}/docs/guide/${INDEX_HTML}").exists()
+                sourceIndex = publishGuide.flatMap { it.targetDir.file("guide/index.html") }
+                outputIndex = layout.buildDir.file("working/05-dropdown/index.html")
+                versionsJson = providers.provider {
+                    new URL("https://api.github.com/repos/${slug.get()}/tags").text
+                }
+            }
+
+            def assembleFinalDocs = tasks.register("assembleFinalDocs", Copy) {
+                destinationDir = layout.buildDirectory.dir("docs").get().asFile
+                from(assembleDocs) {
+                    exclude 'guide/index.html'
+                }
+                into('guide') {
+                    from(createReleasesDropdown)
                 }
             }
 
             tasks.register("docs") { task ->
-                task.dependsOn tasks.named("assemble")
-                task.dependsOn tasks.named("javadoc")
-                task.dependsOn tasks.named("publishGuide")
-                task.dependsOn tasks.named("processConfigProps")
-                task.dependsOn tasks.named("publishConfigurationReference")
-                task.finalizedBy tasks.named("zipDocs")
-                task.finalizedBy tasks.named("createReleasesDropdown")
-            }
-            tasks.named('javadoc', Javadoc) {
-                exclude "example/**"
-                mustRunAfter tasks.assemble
-            }
-            tasks.named('publishGuide') {
-                mustRunAfter processConfigPropsTask
+                task.dependsOn assembleDocs
+                task.dependsOn assembleFinalDocs
+                task.dependsOn zipDocs
             }
         }
     }
