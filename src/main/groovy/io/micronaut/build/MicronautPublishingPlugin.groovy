@@ -10,6 +10,7 @@ import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.plugins.signing.Sign
@@ -20,6 +21,7 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+        project.pluginManager.apply(MavenPublishPlugin)
         def p = project.findProperty("micronautPublish")
         // add option to force publishing
         boolean doPublish = p != null && Boolean.valueOf(p.toString())
@@ -33,7 +35,6 @@ class MicronautPublishingPlugin implements Plugin<Project> {
         def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
 
         project.with {
-            apply plugin: 'maven-publish'
             plugins.withId('java-base') {
                 java {
                     withSourcesJar()

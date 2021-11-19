@@ -33,7 +33,7 @@ class MicronautBasePlugin implements Plugin<Project> {
     void apply(Project project) {
         addMavenCentral(project)
         configureProjectVersion(project)
-        createBuildExtension(project)
+        project.pluginManager.apply(MicronautBuildExtensionPlugin)
         project.pluginManager.apply(ConfigurationPropertiesPlugin)
     }
 
@@ -48,11 +48,6 @@ class MicronautBasePlugin implements Plugin<Project> {
         if (repositoriesMode != repositoriesMode.FAIL_ON_PROJECT_REPOS) {
             project.repositories.mavenCentral()
         }
-    }
-
-    private void createBuildExtension(Project project) {
-        def buildEnvironment = new BuildEnvironment(project.providers)
-        project.extensions.create("micronautBuild", MicronautBuildExtension, buildEnvironment)
     }
 
 }

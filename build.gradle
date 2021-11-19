@@ -124,6 +124,14 @@ gradlePlugin {
             id = 'io.micronaut.build.internal.module'
             implementationClass = 'io.micronaut.build.MicronautModulePlugin'
         }
+        bom {
+            id = 'io.micronaut.build.internal.bom'
+            implementationClass = 'io.micronaut.build.MicronautBomPlugin'
+        }
+        bomChecker {
+            id = 'io.micronaut.build.internal.bom-checker'
+            implementationClass = 'io.micronaut.build.MicronautBomCheckerPlugin'
+        }
         publishing {
             id = 'io.micronaut.build.internal.publishing'
             implementationClass = 'io.micronaut.build.MicronautPublishingPlugin'
