@@ -7,6 +7,8 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.artifacts.repositories.ArtifactRepository
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.plugins.BasePlugin
+
 /**
  * This plugin verifies the BOMs which are used in the project
  * version catalog.
@@ -14,12 +16,12 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 abstract class MicronautBomCheckerPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
-
+        project.pluginManager.apply(BasePlugin)
         def catalog = project.extensions.findByType(VersionCatalogsExtension).named("libs")
         project.with {
             def checkBoms = tasks.register("checkBom")
 
-            project.tasks.register("check") {
+            project.tasks.named("check") {
                 dependsOn(checkBoms)
             }
 
