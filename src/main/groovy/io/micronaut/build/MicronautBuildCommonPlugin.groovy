@@ -98,6 +98,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
     private void configureJavaPlugin(Project project, MicronautBuildExtension micronautBuildExtension) {
         project.apply plugin: "groovy"
         project.apply plugin: "java-library"
+        project.pluginManager.apply('org.gradle.test-retry')
 
         project.afterEvaluate {
             JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
@@ -117,6 +118,11 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             String groovyVersion = project.findProperty("groovyVersion")
             if (groovyVersion?.startsWith("3")) {
                 useJUnitPlatform()
+            }
+            retry {
+                maxRetries.set(2)
+                maxFailures.set(20)
+                failOnPassedAfterRetry.set(false)
             }
         }
 
