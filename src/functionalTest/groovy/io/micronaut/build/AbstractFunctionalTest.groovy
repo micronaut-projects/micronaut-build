@@ -18,6 +18,7 @@ package io.micronaut.build
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
+import org.gradle.util.GFileUtils
 import spock.lang.Specification
 import spock.lang.TempDir
 
@@ -44,6 +45,10 @@ abstract class AbstractFunctionalTest extends Specification {
         fileRef
     }
 
+    File getGradlePropertiesFile() {
+        return file("gradle.properties")
+    }
+
     File getGroovyBuildFile() {
         file("build.gradle")
     }
@@ -66,6 +71,11 @@ abstract class AbstractFunctionalTest extends Specification {
 
     File getSettingsFile() {
         groovySettingsFile
+    }
+
+    protected void withSample(String name) {
+        File sampleDir = new File("src/functionalTest/gradle-projects/$name")
+        GFileUtils.copyDirectory(sampleDir, testDirectory.toFile())
     }
 
     void run(String... args) {
@@ -123,6 +133,7 @@ abstract class AbstractFunctionalTest extends Specification {
     private ArrayList<String> computeAutoArgs() {
         List<String> autoArgs = [
                 "-S",
+                "--no-build-cache"
         ]
         if (Boolean.getBoolean("config.cache")) {
             autoArgs << '--configuration-cache'

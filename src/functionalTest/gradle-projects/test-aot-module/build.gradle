@@ -1,0 +1,15 @@
+plugins {
+	id 'io.micronaut.build.internal.aot-module'
+}
+
+group = 'io.micronaut.dummy'
+
+repositories {
+	mavenCentral()
+}
+
+micronautBuild {
+	aot {
+		version = "1.0.0-M2"
+	}
+}
