@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 package io.micronaut.docs
-
-import io.micronaut.core.annotation.NonNull
-import io.micronaut.core.annotation.Nullable;
-
 /**
  * @author Graeme Rocher
  * @since 1.0
@@ -32,12 +28,10 @@ class MicronautApiMacro extends ApiMacro {
         super(macroName, config)
     }
 
-    @Nullable
     String getAttributeKey() {
         "micronautApi"
     }
 
-    @NonNull
     JvmLibrary getJvmLibrary() {
         new MicronautCore()
     }

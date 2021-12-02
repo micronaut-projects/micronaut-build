@@ -15,20 +15,22 @@
 
 package io.micronaut.docs
 
-import io.micronaut.docs.asciidoc.AsciiDocEngine
-import io.micronaut.docs.internal.*
 import groovy.io.FileType
 import groovy.text.Template
-
+import io.micronaut.docs.asciidoc.AsciiDocEngine
+import io.micronaut.docs.internal.FileResourceChecker
+import io.micronaut.docs.internal.LegacyTocStrategy
+import io.micronaut.docs.internal.StringEscapeCategory
+import io.micronaut.docs.internal.UserGuideNode
+import io.micronaut.docs.internal.YamlTocStrategy
 import org.apache.commons.logging.LogFactory
+import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.internal.file.FileOperations
 import org.radeox.api.engine.WikiRenderEngine
 import org.radeox.engine.context.BaseInitialRenderContext
 import org.radeox.engine.context.BaseRenderContext
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.constructor.SafeConstructor
-
-import java.util.regex.Pattern
-
 /**
  * Coordinated the DocEngine the produce documentation based on the gdoc format.
  *
@@ -44,8 +46,8 @@ class DocPublisher {
     File src
     /** The target directory to publish to */
     File target
-    /** The temporary work directory */
-    File workDir
+    /** The directory where resources used to generate docs are found */
+    File docResources
     /** Directory containing the project's API documentation. */
     File apiDir
     /** The directory containing any images to use (will override defaults) **/
@@ -62,8 +64,9 @@ class DocPublisher {
      * The properties fie to populate the engine properties from
      */
     File propertiesFile
-    /** The AntBuilder instance to use */
-    AntBuilder ant
+    
+    FileOperations fileOperations
+
     /** The language we're generating for (gets its own sub-directory). Defaults to '' */
     String language = ""
     /** The encoding to use (default is UTF-8) */
@@ -150,70 +153,61 @@ class DocPublisher {
             return
         }
 
-        // unpack documentation resources
-        String docResources = "${workDir}/doc-resources"
-        ant.mkdir(dir: docResources)
-        unpack(dest: docResources, src: "grails-doc-files.jar")
-
         def refDocsDir = calculateLanguageDir(target?.absolutePath ?: "./docs")
         def refGuideDir = new File(refDocsDir, "guide")
         def refPagesDir = "$refGuideDir/pages"
 
-        ant.mkdir(dir: refDocsDir)
-        ant.mkdir(dir: refGuideDir)
-        ant.mkdir(dir: refPagesDir)
-        ant.mkdir(dir: "$refDocsDir/ref")
+        fileOperations.mkdir( refDocsDir)
+        fileOperations.mkdir( refGuideDir)
+        fileOperations.mkdir( refPagesDir)
+        fileOperations.mkdir( "$refDocsDir/ref")
 
-        String imgsDir = new File(refDocsDir, calculatePathToResources("img")).path
+        File imgsDir = new File(refDocsDir, calculatePathToResources("img"))
         File fontsDir = new File(refDocsDir, calculatePathToResources("fonts"))
-        ant.mkdir(dir: imgsDir)
-        ant.mkdir(dir: fontsDir )
-        String cssDir = new File(refDocsDir, calculatePathToResources("css")).path
-        ant.mkdir(dir: cssDir)
-        String jsDir = new File(refDocsDir, calculatePathToResources("js")).path
-        ant.mkdir(dir: jsDir)
-        ant.mkdir(dir: "${refDocsDir}/ref")
+        File cssDir = new File(refDocsDir, calculatePathToResources("css"))
+        File jsDir = new File(refDocsDir, calculatePathToResources("js"))
+        File styleDir = new File(refDocsDir, calculatePathToResources("style"))
+        fileOperations.mkdir(imgsDir)
+        fileOperations.mkdir(fontsDir)
+        fileOperations.mkdir(cssDir)
+        fileOperations.mkdir(jsDir)
+        fileOperations.mkdir(styleDir)
 
-        ant.copy(todir: imgsDir, overwrite: true) {
-            fileset(dir: "${docResources}/img")
-        }
-
-        if (images && images.exists()) {
-            ant.copy(todir: imgsDir, overwrite: true, failonerror:false) {
-                fileset(dir: images)
-            }
+        fileOperations.copy {
+            it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            it.into(imgsDir)
+            it.from(new File(docResources, "img"))
+            it.from(images)
         }
 
-        ant.copy(todir: cssDir, overwrite: true) {
-            fileset(dir: "${docResources}/css")
+        fileOperations.copy {
+            it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            it.into(cssDir)
+            it.from(new File(docResources, "css"))
+            it.from(css)
         }
-        ant.copy(todir: fontsDir, overwrite: true) {
-            fileset(dir: "${docResources}/fonts")
+        fileOperations.copy {
+            it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+            it.into(fontsDir)
+            it.from(new File(docResources, "fonts"))
+            it.from(fonts)
         }
 
-        if (css && css.exists()) {
-            ant.copy(todir: cssDir, overwrite: true, failonerror:false) {
-                fileset(dir: css)
-            }
+        fileOperations.copy {
+            it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+            it.into(jsDir)
+            it.from(new File(docResources, "js"))
+            it.from(js)
         }
-        if (fonts && fonts.exists()) {
-            ant.copy(todir: fontsDir, overwrite: true, failonerror:false) {
-                fileset(dir: fonts)
-            }
+        fileOperations.copy {
+            it.into(styleDir)
+            it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            it.from(new File(docResources, "style"))
+            it.from(style)
         }
-        ant.copy(todir: jsDir, overwrite: true) {
-            fileset(dir: "${docResources}/js")
-        }
-        if (js && js.exists()) {
-            ant.copy(todir: jsDir, overwrite: true, failonerror:false) {
-                fileset(dir: js)
-            }
-        }
-        if (style && style.exists()) {
-            ant.copy(todir: "${docResources}/style", overwrite: true, failonerror:false) {
-                fileset(dir: style)
-            }
-        }
+
 
         // Build the table of contents as a tree of nodes. We currently support
         // two strategies for this:
@@ -281,8 +275,6 @@ class DocPublisher {
                     sections: f.listFiles().findAll { it.name.endsWith(ext) }.sort())
         }
 
-        def fullToc = new StringBuilder()
-
         def pathToRoot = ".."
         Map vars = new LinkedHashMap(engineProperties)
         vars.putAll(
@@ -319,7 +311,6 @@ class DocPublisher {
                     engineProperties
             )
         }
-
 
         // Build the user guide sections first.
         def template = templateEngine.createTemplate(new File("${docResources}/style/guideItem.html").newReader(encoding))
@@ -418,7 +409,23 @@ class DocPublisher {
             template.make(vars).writeTo(out)
         }
 
-        ant.echo "Built user manual at ${refDocsDir}/index.html"
+        def singleFile = new File(refGuideDir, "single.html")
+        new File(refGuideDir, "index.html").bytes = singleFile.bytes
+        fileOperations.delete(singleFile)
+
+        new File(refDocsDir, "index.html").text = """
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<meta http-equiv="refresh" content="0; url=guide/index.html" />
+</head>
+
+</body>
+</html>
+"""
+
+        println "Built user manual at ${refDocsDir}/index.html"
+
     }
 
     void writeChapter(
@@ -508,15 +515,8 @@ class DocPublisher {
         if (language) {
             src = new File(src, language)
         }
-
-        if (!workDir) {
-            workDir = new File(System.getProperty("java.io.tmpdir"))
-        }
         if (!apiDir) {
             apiDir = target
-        }
-        if (!ant) {
-            ant = new AntBuilder()
         }
         def metaProps = DocPublisher.metaClass.properties
         Properties props
@@ -698,40 +698,6 @@ class DocPublisher {
         context.set(DocEngine.API_CONTEXT_PATH, calculatePathToResources(path))
         context.set(DocEngine.RESOURCES_CONTEXT_PATH, calculatePathToResources(path))
         return context
-    }
-
-    private unpack(Map args) {
-
-        def dir = args["dest"] ?: "."
-        def src = args["src"]
-        def overwriteOption = args["overwrite"] == null ? true : args["overwrite"]
-
-        // Can't unjar a file from within a JAR, so we copy it to
-        // the destination directory first.
-        try {
-            URL url = getClass().getClassLoader().getResource(src)
-            if (url) {
-                url.withInputStream { InputStream input ->
-                    new File("$dir/$src").withOutputStream { out ->
-                        def buffer = new byte[1024]
-                        int len
-                        while ((len = input.read(buffer)) != -1) {
-                            out.write(buffer, 0, len)
-                        }
-                    }
-                }
-            }
-            // Now unjar it, excluding the META-INF directory.
-            ant.unjar(dest: dir, src: "${dir}/${src}", overwrite: overwriteOption) {
-                patternset {
-                    exclude(name: "META-INF/**")
-                }
-            }
-        }
-        finally {
-            // Don't need the JAR file any more, so remove it.
-            ant.delete(file: "${dir}/${src}", failonerror:false)
-        }
     }
 
     private overrideAliasesFromToc(node) {

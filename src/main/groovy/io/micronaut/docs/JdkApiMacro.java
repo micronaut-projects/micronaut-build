@@ -16,9 +16,6 @@
 
 package io.micronaut.docs;
 
-import io.micronaut.core.annotation.NonNull;
-import io.micronaut.core.annotation.Nullable;
-
 import java.util.Map;
 
 /**
@@ -29,20 +26,18 @@ public class JdkApiMacro extends ApiMacro {
 
     /**
      * @param macroName The macro name
-     * @param config    The configuration
+     * @param config The configuration
      */
     public JdkApiMacro(String macroName, Map<String, Object> config) {
         super(macroName, config);
     }
 
     @Override
-    @Nullable
     public String getAttributeKey() {
         return "jdkapi";
     }
 
     @Override
-    @NonNull
     public JvmLibrary getJvmLibrary() {
         return new Jdk();
     }

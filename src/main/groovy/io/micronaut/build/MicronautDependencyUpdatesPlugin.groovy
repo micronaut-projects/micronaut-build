@@ -17,7 +17,7 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        project.pluginManager.apply(MicronautBasePlugin)
+        project.pluginManager.apply(MicronautBuildExtensionPlugin)
         project.apply plugin: GRADLE_VERSIONS_PLUGIN
         project.apply plugin: USE_LATEST_VERSIONS_PLUGIN
 
@@ -30,7 +30,7 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
         }
 
         project.with {
-            dependencyUpdates {
+            tasks.named("dependencyUpdates") {
                 onlyIf {
                     gradle.taskGraph.hasTask("useLatestVersions")
                 }
@@ -65,14 +65,12 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
                 }
             }
 
-            useLatestVersions {
+            tasks.named("useLatestVersions") {
                 updateRootProperties = true
             }
 
-            pluginManager.withPlugin('checkstyle') {
-                tasks.withType(Checkstyle).configureEach {
-                    it.dependsOn('dependencyUpdates')
-                }
+            tasks.withType(Checkstyle).configureEach {
+                it.dependsOn('dependencyUpdates')
             }
         }
     }

@@ -26,6 +26,7 @@ gradlePlugin.testSourceSets(sourceSets.functionalTest)
 configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
 
 tasks.register('functionalTest', Test) {
+    inputs.dir(file("src/functionalTest/gradle-projects"))
     testClassesDirs = sourceSets.functionalTest.output.classesDirs
     classpath = sourceSets.functionalTest.runtimeClasspath
     useJUnitPlatform()
@@ -41,7 +42,6 @@ dependencies {
         'org.yaml:snakeyaml:1.29',
         "org.codehaus.groovy:groovy-ant:$groovyVersion"
     implementation "io.github.groovylang.groovydoc:io.github.groovylang.groovydoc.gradle.plugin:1.0.1"
-    implementation "io.micronaut:micronaut-inject:$micronautVersion"
     // TODO: upgrade to new asciidoctor
     implementation 'org.asciidoctor:asciidoctorj:1.5.6'
     implementation "io.spring.nohttp:nohttp-gradle:0.0.10"
@@ -59,6 +59,7 @@ dependencies {
     implementation 'com.gradle:gradle-enterprise-gradle-plugin:3.7'
     implementation 'org.nosphere.gradle.github:gradle-github-actions-plugin:1.3.2'
     implementation 'com.gradle:common-custom-user-data-gradle-plugin:1.4.2'
+    implementation 'org.gradle:test-retry-gradle-plugin:1.3.1'
 
     implementation 'org.tomlj:tomlj:1.0.0'
 
@@ -125,6 +126,14 @@ gradlePlugin {
             id = 'io.micronaut.build.internal.module'
             implementationClass = 'io.micronaut.build.MicronautModulePlugin'
         }
+        bom {
+            id = 'io.micronaut.build.internal.bom'
+            implementationClass = 'io.micronaut.build.MicronautBomPlugin'
+        }
+        bomChecker {
+            id = 'io.micronaut.build.internal.bom-checker'
+            implementationClass = 'io.micronaut.build.MicronautBomCheckerPlugin'
+        }
         publishing {
             id = 'io.micronaut.build.internal.publishing'
             implementationClass = 'io.micronaut.build.MicronautPublishingPlugin'
@@ -144,6 +153,10 @@ gradlePlugin {
         sharedSettings {
             id = 'io.micronaut.build.shared.settings'
             implementationClass = 'io.micronaut.build.MicronautSharedSettingsPlugin'
+        }
+        aotModule {
+            id = 'io.micronaut.build.internal.aot-module'
+            implementationClass = 'io.micronaut.build.aot.MicronautAotModulePlugin'
         }
     }
 }

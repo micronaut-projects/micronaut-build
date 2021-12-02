@@ -15,8 +15,6 @@
  */
 package io.micronaut.docs
 
-import io.micronaut.core.annotation.NonNull
-import io.micronaut.core.annotation.Nullable
 import org.asciidoctor.extension.*
 import org.asciidoctor.ast.*
 
@@ -37,41 +35,36 @@ class ApiMacro extends InlineMacroProcessor {
         String methodRef = ""
         String propRef = ""
         String shortName
-        if(methodIndex > -1 && target.endsWith(")")) {
-            String sig = target.substring(methodIndex+1, target.length()-1)
+        if (methodIndex > -1 && target.endsWith(")")) {
+            String sig = target.substring(methodIndex + 1, target.length() - 1)
             target = target.substring(0, methodIndex)
             methodIndex = target.lastIndexOf('.')
-            if(methodIndex > -1) {
+            if (methodIndex > -1) {
                 String sigRef = "-${sig.split(',').join('-')}-"
                 String methodName = target.substring(methodIndex + 1, target.length())
 
                 methodRef = "#${methodName}${sigRef}"
                 target = target.substring(0, methodIndex)
                 int classIndex = target.lastIndexOf('.')
-                if(classIndex > -1) {
-                    shortName = "${target.substring(classIndex+1, target.length())}.${methodName}(${sig})"
-                }
-                else {
+                if (classIndex > -1) {
+                    shortName = "${target.substring(classIndex + 1, target.length())}.${methodName}(${sig})"
+                } else {
                     shortName = target
                 }
-            }
-            else {
+            } else {
                 return null
             }
-        }
-        else {
-            if(propIndex > -1) {
+        } else {
+            if (propIndex > -1) {
                 propRef = target.substring(propIndex, target.length())
                 target = target.substring(0, propIndex)
                 shortName = propRef.substring(1)
-            }
-            else {
+            } else {
 
                 int classIndex = target.lastIndexOf('.')
-                if(classIndex > -1) {
-                    shortName = target.substring(classIndex+1, target.length())
-                }
-                else {
+                if (classIndex > -1) {
+                    shortName = target.substring(classIndex + 1, target.length())
+                } else {
                     shortName = target
                 }
             }
@@ -99,18 +92,18 @@ class ApiMacro extends InlineMacroProcessor {
         return apiLink.convert()
     }
 
-    static Map<String, Object> inlineAnchorOptions(@NonNull String baseUri, @NonNull String target, @NonNull String methodRef, @NonNull String propRef, JvmLibrary jvmLibrary) {
+    static Map<String, Object> inlineAnchorOptions(String baseUri, String target, String methodRef, String propRef, JvmLibrary jvmLibrary) {
         [
                 type: ':link',
                 target: "${baseUri}/${targetPathUrl(target, jvmLibrary)}.html${methodRef}${propRef}".toString().replaceAll('\\$', '.')
         ] as Map<String, Object>
     }
 
-    @NonNull
-    static String targetPathUrl(@NonNull String target, JvmLibrary jvmLibrary) {
+
+    static String targetPathUrl(String target, JvmLibrary jvmLibrary) {
         String defaultPackage = jvmLibrary.getDefaultPackagePrefix()
         String result = target
-        if(defaultPackage != null && !target.startsWith(defaultPackage)) {
+        if (defaultPackage != null && !target.startsWith(defaultPackage)) {
             result = "${defaultPackage}${target}"
         }
         scapeDots(result)
@@ -126,7 +119,7 @@ class ApiMacro extends InlineMacroProcessor {
                 throw new StringIndexOutOfBoundsException("Invalid class string: " + str)
             }
             if (Character.isUpperCase(token.charAt(0))) {
-                if (i != arr.length -1) {
+                if (i != arr.length - 1) {
                     result += "."
                 }
             } else {
@@ -140,17 +133,17 @@ class ApiMacro extends InlineMacroProcessor {
         return shortName
     }
 
-    @NonNull
-    static String getBaseUri(Map<String, Object> attrs, @Nullable String attributeKey, @NonNull JvmLibrary jvmLibrary) {
+
+    static String getBaseUri(Map<String, Object> attrs, String attributeKey, JvmLibrary jvmLibrary) {
         (attributeKey && attrs[attributeKey]) ? attrs[attributeKey].toString() : jvmLibrary.defaultUri()
     }
 
-    @Nullable
+
     String getAttributeKey() {
         return null
     }
 
-    @NonNull
+
     JvmLibrary getJvmLibrary() {
         return new Micronaut()
     }
