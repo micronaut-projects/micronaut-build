@@ -215,7 +215,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
 
                     // Add individual module versions as properties
                     forEachProject(bomExtension, project, p -> {
-                        String propertyName = "micronaut." + p.getName().replace('-', '.');
+                        String propertyName = "micronaut." + p.getName().replace('-', '.') + ".version";
                         String projectGroup = String.valueOf(p.getGroup());
                         Optional<Node> pomDep = forEachNode(node, DEPENDENCY_PATH)
                                 .filter(n -> childOf(n, "artifactId").text().equals("micronaut-" + p.getName()) &&
