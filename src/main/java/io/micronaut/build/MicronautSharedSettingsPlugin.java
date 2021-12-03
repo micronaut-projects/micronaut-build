@@ -25,6 +25,7 @@ import org.gradle.api.Project;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.PluginManager;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.nosphere.gradle.github.ActionsPlugin;
 
@@ -49,17 +50,31 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         ProviderFactory providers = settings.getProviders();
         String ossUser = envOrSystemProperty(providers, "SONATYPE_USERNAME", "sonatypeOssUsername", "");
         String ossPass = envOrSystemProperty(providers, "SONATYPE_PASSWORD", "sonatypeOssPassword", "");
-        if (!ossUser.isEmpty() && !ossPass.isEmpty()) {
-            settings.getGradle().projectsLoaded(gradle -> configureNexusPublishing(gradle, ossUser, ossPass));
-        }
+        settings.getGradle().projectsLoaded(gradle -> {
+            String projectVersion = providers.gradleProperty("projectVersion").forUseAtConfigurationTime().getOrElse("unspecified");
+            Provider<String> projectGroup = providers.gradleProperty("projectGroup").forUseAtConfigurationTime();
+            gradle.getRootProject().getAllprojects().forEach(project -> {
+                project.setVersion(projectVersion);
+                if (projectGroup.isPresent()) {
+                    project.setGroup(projectGroup.get());
+                }
+            });
+            if (!ossUser.isEmpty() && !ossPass.isEmpty()) {
+                configureNexusPublishing(gradle, ossUser, ossPass);
+            }
+        });
     }
 
     private void configureNexusPublishing(Gradle gradle, String ossUser, String ossPass) {
         Project rootProject = gradle.getRootProject();
         rootProject.getPlugins().apply("io.github.gradle-nexus.publish-plugin");
         NexusPublishExtension nexusPublish = rootProject.getExtensions().getByType(NexusPublishExtension.class);
-        nexusPublish.getRepositoryDescription().set("" + rootProject.getGroup() + ":" + rootProject.getName() + ":" + rootProject.getVersion());
-        nexusPublish.getUseStaging().convention(!rootProject.getVersion().toString().endsWith("-SNAPSHOT"));
+        String version = String.valueOf(rootProject.getVersion());
+        if ("unspecified".equals(version)) {
+            throw new RuntimeException("The root project doesn't define a version. Please set the version in the root project.");
+        }
+        nexusPublish.getRepositoryDescription().set("" + rootProject.getGroup() + ":" + rootProject.getName() + ":" + version);
+        nexusPublish.getUseStaging().convention(!version.endsWith("-SNAPSHOT"));
         nexusPublish.repositories(repos -> repos.create("sonatype", repo -> {
             repo.getAllowInsecureProtocol().convention(rootProject.getProviders().systemProperty("allowInsecurePublishing").forUseAtConfigurationTime().map(Boolean::parseBoolean).orElse(false));
             repo.getUsername().set(ossUser);
