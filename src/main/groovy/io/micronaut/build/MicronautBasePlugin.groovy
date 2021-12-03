@@ -16,6 +16,7 @@
 package io.micronaut.build
 
 import groovy.transform.CompileStatic
+import io.micronaut.build.docs.AggregatedJavadocParticipantPlugin
 import io.micronaut.build.docs.ConfigurationPropertiesPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -35,6 +36,7 @@ class MicronautBasePlugin implements Plugin<Project> {
         configureProjectVersion(project)
         project.pluginManager.apply(MicronautBuildExtensionPlugin)
         project.pluginManager.apply(ConfigurationPropertiesPlugin)
+        project.pluginManager.apply(AggregatedJavadocParticipantPlugin)
     }
 
     private void configureProjectVersion(Project project) {
