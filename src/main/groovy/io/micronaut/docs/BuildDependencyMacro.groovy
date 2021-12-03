@@ -155,8 +155,11 @@ class BuildDependencyMacro extends InlineMacroProcessor implements ValueAtAttrib
 <pre class=\"highlightjs highlight\"><code class=\"language-kotlin hljs" data-lang="${build}">"""
 
         html += "${scope}(<span class=\"hljs-string\">\"${groupId}:${artifactId}"
+        if (version || classifier) {
+            html += ":"
+        }
         if (version) {
-            html += ":${version}"
+            html += "${version}"
         }
         if (classifier) {
             html += ":${classifier}"
