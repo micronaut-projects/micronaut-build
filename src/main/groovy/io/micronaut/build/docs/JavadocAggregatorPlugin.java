@@ -33,9 +33,12 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @CacheableTask
 public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
+    private final static Pattern MICRONAUT_DOCS_URI_PATTERN = Pattern.compile("^(https?://micronaut-projects\\.github\\.io/micronaut-(?:[a-z-A-Z0-9]-?)+/latest/api/)(.*)$");
 
     @Override
     public void apply(Project project) {
@@ -75,7 +78,16 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
                     .filter(entry -> entry.getKey().endsWith("api"))
                     .map(Map.Entry::getValue)
                     .map(String::valueOf)
-                    .filter(link -> link.startsWith("http")).toArray(String[]::new));
+                    .filter(link -> link.startsWith("http"))
+                    .map(link -> {
+                        Matcher m = MICRONAUT_DOCS_URI_PATTERN.matcher(link);
+                        if (m.matches() && !m.group(2).isEmpty()) {
+                            project.getLogger().warn("[javadocs] gradle.properties file declares entry {} with should stop at /api. Automatically truncated to {}", link, m.group(1));
+                            return m.group(1);
+                        }
+                        return link;
+                    })
+                    .toArray(String[]::new));
             options.addStringOption("Xdoclint:none", "-quiet");
             options.addBooleanOption("notimestamp", true);
             javadoc.setSource(javadocAggregator);
