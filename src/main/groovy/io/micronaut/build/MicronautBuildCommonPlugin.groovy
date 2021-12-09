@@ -120,8 +120,10 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 useJUnitPlatform()
             }
             retry {
-                maxRetries.set(2)
-                maxFailures.set(20)
+                if (micronautBuildExtension.environment.isGithubAction().getOrElse(false)) {
+                    maxRetries.set(2)
+                    maxFailures.set(20)
+                }
                 failOnPassedAfterRetry.set(false)
             }
         }
