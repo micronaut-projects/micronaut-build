@@ -112,9 +112,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             jvmArgs '-Duser.country=US'
             jvmArgs '-Duser.language=en'
 
-            reports.html.required = micronautBuildExtension.environment.isNotGithubAction()
-            reports.junitXml.required = true
-
             String groovyVersion = project.findProperty("groovyVersion")
             if (groovyVersion?.startsWith("3")) {
                 useJUnitPlatform()
