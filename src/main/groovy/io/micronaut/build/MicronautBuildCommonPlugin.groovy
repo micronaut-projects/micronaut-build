@@ -129,12 +129,19 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             groovyOptions.forkOptions.jvmArgs.add('-Dgroovy.parameters=true')
         }
 
-        project.tasks.withType(JavaCompile).configureEach {
-            options.encoding = "UTF-8"
-            options.compilerArgs.add('-parameters')
-            if (micronautBuildExtension.enableProcessing) {
-                options.compilerArgs.add("-Amicronaut.processing.group=$project.group")
-                options.compilerArgs.add("-Amicronaut.processing.module=micronaut-$project.name")
+        project.afterEvaluate {
+            def compileOptions = micronautBuildExtension.compileOptions
+            project.tasks.withType(JavaCompile).configureEach {
+                    options.encoding = "UTF-8"
+                    options.compilerArgs.add('-parameters')
+                    if (micronautBuildExtension.enableProcessing) {
+                        options.compilerArgs.add("-Amicronaut.processing.group=$project.group")
+                        options.compilerArgs.add("-Amicronaut.processing.module=micronaut-$project.name")
+                    }
+                compileOptions.applyTo(options)
+            }
+            project.tasks.withType(GroovyCompile).configureEach {
+                compileOptions.applyTo(options)
             }
         }
 
