@@ -27,6 +27,8 @@ import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+import org.gradle.caching.configuration.BuildCacheConfiguration;
+import org.gradle.caching.http.HttpBuildCache;
 import org.nosphere.gradle.github.ActionsPlugin;
 
 import java.lang.reflect.InvocationTargetException;
@@ -42,7 +44,8 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         pluginManager.apply(GradleEnterprisePlugin.class);
         pluginManager.apply(CommonCustomUserDataGradlePlugin.class);
         GradleEnterpriseExtension ge = settings.getExtensions().getByType(GradleEnterpriseExtension.class);
-        configureGradleEnterprise(settings, ge);
+        MicronautBuildSettingsExtension micronautBuildSettingsExtension = settings.getExtensions().create("micronautBuild", MicronautBuildSettingsExtension.class);
+        configureGradleEnterprise(settings, ge, micronautBuildSettingsExtension);
         applyPublishingPlugin(settings);
     }
 
@@ -100,11 +103,46 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
                 .getOrElse(defaultValue);
     }
 
-    private void configureGradleEnterprise(Settings settings, GradleEnterpriseExtension ge) {
+    private void configureGradleEnterprise(Settings settings,
+                                           GradleEnterpriseExtension ge,
+                                           MicronautBuildSettingsExtension micronautBuildSettingsExtension) {
         ProviderFactory providers = settings.getProviders();
         boolean isCI = guessCI(providers);
         configureBuildScansPublishing(ge, isCI);
         settings.getGradle().projectsLoaded(MicronautSharedSettingsPlugin::applyGitHubActionsPlugin);
+        if (providers.gradleProperty("org.gradle.caching").forUseAtConfigurationTime().map(Boolean::parseBoolean).orElse(true).get()) {
+            settings.getGradle().settingsEvaluated(lateSettings -> {
+                BuildCacheConfiguration buildCache = settings.getBuildCache();
+                boolean localEnabled = micronautBuildSettingsExtension.getUseLocalCache().get();
+                boolean remoteEnabled = micronautBuildSettingsExtension.getUseRemoteCache().get();
+                boolean push = MicronautBuildSettingsExtension.booleanProvider(providers, "cachePush", isCI).get();
+                if (isCI) {
+                    System.out.println("Build cache     enabled     push");
+                    System.out.println("    Local        " + (localEnabled ? "   Y   " : "   N   ") + "     N/A");
+                    System.out.println("    Remote       " + (remoteEnabled ? "   Y   " : "   N   ") + "     " + (push ? " Y" : " N"));
+                }
+                buildCache.getLocal().setEnabled(localEnabled);
+                if (remoteEnabled) {
+                    buildCache.remote(HttpBuildCache.class, remote -> {
+                        remote.setUrl("https://ge.micronaut.io/cache/");
+                        remote.setEnabled(true);
+                        if (push) {
+                            String username = envOrSystemProperty(providers, "GRADLE_ENTERPRISE_CACHE_USERNAME", "gradleEnterpriseCacheUsername", "");
+                            String password = envOrSystemProperty(providers, "GRADLE_ENTERPRISE_CACHE_PASSWORD", "gradleEnterpriseCachePassword", "");
+                            if (!username.isEmpty() && !password.isEmpty()) {
+                                remote.setPush(true);
+                                remote.credentials(creds -> {
+                                    creds.setUsername(username);
+                                    creds.setPassword(password);
+                                });
+                            } else {
+                                System.err.println("WARNING: No credentials for remote build cache, cannot configure push!");
+                            }
+                        }
+                    });
+                }
+            });
+        }
     }
 
     private void configureBuildScansPublishing(GradleEnterpriseExtension ge, boolean isCI) {
