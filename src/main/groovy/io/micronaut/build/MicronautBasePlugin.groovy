@@ -20,9 +20,6 @@ import io.micronaut.build.docs.AggregatedJavadocParticipantPlugin
 import io.micronaut.build.docs.ConfigurationPropertiesPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.initialization.Settings
-import org.gradle.api.internal.GradleInternal
-
 /**
  * This plugin is responsible for creating the Micronaut Build
  * project extension and configuring reasonable defaults.
@@ -32,7 +29,7 @@ class MicronautBasePlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        addMavenCentral(project)
+        project.pluginManager.apply(MicronautDependencyResolutionConfigurationPlugin)
         configureProjectVersion(project)
         project.pluginManager.apply(MicronautBuildExtensionPlugin)
         project.pluginManager.apply(ConfigurationPropertiesPlugin)
@@ -41,15 +38,6 @@ class MicronautBasePlugin implements Plugin<Project> {
 
     private void configureProjectVersion(Project project) {
         project.version = project.providers.gradleProperty("projectVersion").forUseAtConfigurationTime().orElse("undefined").get()
-    }
-
-    private void addMavenCentral(Project project) {
-        // TODO: Avoid use of internal API
-        Settings settings = ((GradleInternal) project.gradle).settings
-        def repositoriesMode = settings.dependencyResolutionManagement.repositoriesMode.get()
-        if (repositoriesMode != repositoriesMode.FAIL_ON_PROJECT_REPOS) {
-            project.repositories.mavenCentral()
-        }
     }
 
 }
