@@ -17,13 +17,16 @@ package io.micronaut.build.docs;
 
 import io.micronaut.build.MicronautBuildExtension;
 import io.micronaut.build.MicronautBuildExtensionPlugin;
+import io.micronaut.build.MicronautDependencyResolutionConfigurationPlugin;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.attributes.AttributeCompatibilityRule;
+import org.gradle.api.attributes.AttributeDisambiguationRule;
 import org.gradle.api.attributes.Bundling;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.CompatibilityCheckDetails;
+import org.gradle.api.attributes.MultipleCandidatesDetails;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.tasks.CacheableTask;
@@ -32,7 +35,10 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,14 +52,16 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
         //  https://github.com/gradle/gradle/issues/19234 is fixed.
         project.getPluginManager().apply(JavaBasePlugin.class);
         project.getPluginManager().apply(MicronautBuildExtensionPlugin.class);
+        project.getPluginManager().apply(MicronautDependencyResolutionConfigurationPlugin.class);
         MicronautBuildExtension micronautBuildExtension = project.getExtensions().getByType(MicronautBuildExtension.class);
-        project.getDependencies().getAttributesSchema().attribute(Usage.USAGE_ATTRIBUTE).getCompatibilityRules().add(ApiCompatibilityRule.class);
+        project.getDependencies().getAttributesSchema().attribute(Usage.USAGE_ATTRIBUTE).getCompatibilityRules().add(AggregationCompatibilityRule.class);
+        project.getDependencies().getAttributesSchema().attribute(Usage.USAGE_ATTRIBUTE).getDisambiguationRules().add(AggregationDisambiguationRule.class);
         Configuration javadocAggregatorBase = createAggregationConfigurationBase(project);
         Configuration javadocAggregator = createAggregationConfiguration(project, javadocAggregatorBase);
         Configuration javadocAggregatorClasspath = createAggregationConfigurationClasspath(project, javadocAggregatorBase);
         project.getSubprojects().forEach(subproject -> {
+            project.evaluationDependsOn(subproject.getPath());
             subproject.getPlugins().withType(AggregatedJavadocParticipantPlugin.class, plugin -> {
-                project.evaluationDependsOn(subproject.getPath());
                 javadocAggregatorBase.getDependencies().add(
                         project.getDependencies().create(subproject)
                 );
@@ -132,14 +140,37 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
         });
     }
 
-    public static class ApiCompatibilityRule implements AttributeCompatibilityRule<Usage> {
+    public static class AggregationCompatibilityRule implements AttributeCompatibilityRule<Usage> {
+        private final static Set<String> COMPATIBLE_VALUES = Collections.unmodifiableSet(new HashSet<String>() {{
+            add(Usage.JAVA_API);
+            add(Usage.JAVA_RUNTIME);
+        }});
         @Override
         public void execute(CompatibilityCheckDetails<Usage> details) {
             Usage consumerValue = details.getConsumerValue();
             if (consumerValue != null && consumerValue.getName().equals(JavadocAggregationUtils.AGGREGATED_JAVADOC_PARTICIPANT_DEPS)) {
                 Usage producerValue = details.getProducerValue();
-                if (producerValue != null && producerValue.getName().equals(Usage.JAVA_API)) {
+                if (producerValue != null && COMPATIBLE_VALUES.contains(producerValue.getName())) {
                     details.compatible();
+                }
+            }
+        }
+    }
+
+    public static class AggregationDisambiguationRule implements AttributeDisambiguationRule<Usage> {
+
+        @Override
+        public void execute(MultipleCandidatesDetails<Usage> details) {
+            for (Usage candidateValue : details.getCandidateValues()) {
+                if (candidateValue.getName().equals(Usage.JAVA_RUNTIME)) {
+                    details.closestMatch(candidateValue);
+                    return;
+                }
+            }
+            for (Usage candidateValue : details.getCandidateValues()) {
+                if (candidateValue.getName().equals(Usage.JAVA_API)) {
+                    details.closestMatch(candidateValue);
+                    return;
                 }
             }
         }
