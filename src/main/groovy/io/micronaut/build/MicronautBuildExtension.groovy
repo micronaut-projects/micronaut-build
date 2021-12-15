@@ -1,15 +1,25 @@
 package io.micronaut.build
 
 import org.gradle.api.artifacts.ResolutionStrategy
+import org.gradle.api.model.ObjectFactory
 
 import javax.inject.Inject
 
-class MicronautBuildExtension {
+abstract class MicronautBuildExtension {
     private final BuildEnvironment environment
+    private final MicronautCompileOptions compileOptions
+
+    MicronautCompileOptions getCompileOptions() {
+        compileOptions
+    }
+
+    @Inject
+    abstract ObjectFactory getObjects()
 
     @Inject
     MicronautBuildExtension(BuildEnvironment buildEnvironment) {
         this.environment = buildEnvironment
+        this.compileOptions = getObjects().newInstance(MicronautCompileOptions)
     }
 
     /**
