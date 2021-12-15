@@ -52,8 +52,8 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
         Configuration javadocAggregator = createAggregationConfiguration(project, javadocAggregatorBase);
         Configuration javadocAggregatorClasspath = createAggregationConfigurationClasspath(project, javadocAggregatorBase);
         project.getSubprojects().forEach(subproject -> {
+            project.evaluationDependsOn(subproject.getPath());
             subproject.getPlugins().withType(AggregatedJavadocParticipantPlugin.class, plugin -> {
-                project.evaluationDependsOn(subproject.getPath());
                 javadocAggregatorBase.getDependencies().add(
                         project.getDependencies().create(subproject)
                 );
