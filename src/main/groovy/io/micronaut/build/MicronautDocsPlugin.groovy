@@ -2,6 +2,7 @@ package io.micronaut.build
 
 import io.micronaut.build.docs.ConfigurationPropertiesPlugin
 import io.micronaut.build.docs.CreateReleasesDropdownTask
+import io.micronaut.build.docs.JavadocAggregatorPlugin
 import io.micronaut.build.docs.PrepareDocResourcesTask
 import io.micronaut.build.docs.PublishGuideTask
 import io.micronaut.build.docs.ValidateAsciidocOutputTask
@@ -29,6 +30,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
     void apply(Project project) {
         project.with {
             plugins.apply(BasePlugin)
+            plugins.apply(JavadocAggregatorPlugin)
             def projectVersion = project.findProperty('projectVersion')
             def projectDesc = project.findProperty('projectDesc')
             def githubSlug = project.findProperty('githubSlug')
@@ -77,40 +79,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
 
             tasks.named('clean', Delete) {
                 dependsOn(cleanDocs)
-            }
-
-            tasks.register("javadoc", Javadoc) {
-                description = 'Generate javadocs from all child projects as if it was a single project'
-                group = 'Documentation'
-
-                destinationDir = layout.buildDir.dir("working/00-api").get().asFile
-                title = "$name ${projectVersion} API"
-                options.author true
-                List links = []
-                for (p in properties) {
-                    if (p.key.endsWith('api')) {
-                        links.add(p.value.toString())
-                    }
-                }
-                exclude "example/**"
-                options.links links as String[]
-                options.addStringOption 'Xdoclint:none', '-quiet'
-                options.addBooleanOption('notimestamp', true)
-
-                subprojects.each { proj ->
-                    if (!proj.name != 'docs' && !proj.name.startsWith('examples')) {
-                        boolean skipDocs = proj.hasProperty('skipDocumentation') ? proj.property('skipDocumentation') as Boolean : false
-
-                        if (!skipDocs) {
-                            proj.tasks.withType(Javadoc).each { javadocTask ->
-                                source += javadocTask.source
-                                classpath += javadocTask.classpath
-                                excludes += javadocTask.excludes
-                                includes += javadocTask.includes
-                            }
-                        }
-                    }
-                }
             }
 
             def prepareDocsResources = tasks.register('prepareDocsResources', PrepareDocResourcesTask) {
