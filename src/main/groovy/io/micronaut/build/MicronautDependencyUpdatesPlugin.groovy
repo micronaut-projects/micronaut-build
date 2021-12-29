@@ -1,5 +1,6 @@
 package io.micronaut.build
 
+import io.micronaut.build.catalogs.MicronautVersionCatalogUpdatePlugin
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -18,6 +19,12 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         project.pluginManager.apply(MicronautBuildExtensionPlugin)
+        if (project.rootProject.file("gradle/libs.versions.toml").exists()) {
+            if (project == project.rootProject) {
+                project.pluginManager.apply(MicronautVersionCatalogUpdatePlugin)
+            }
+            return
+        }
         project.apply plugin: GRADLE_VERSIONS_PLUGIN
         project.apply plugin: USE_LATEST_VERSIONS_PLUGIN
 
@@ -32,7 +39,7 @@ class MicronautDependencyUpdatesPlugin implements Plugin<Project> {
         project.with {
             tasks.named("dependencyUpdates") {
                 onlyIf {
-                    gradle.taskGraph.hasTask("useLatestVersions")
+                    gradle.taskGraph.hasTask(":useLatestVersions")
                 }
                 checkForGradleUpdate = true
                 gradleReleaseChannel = "current"
