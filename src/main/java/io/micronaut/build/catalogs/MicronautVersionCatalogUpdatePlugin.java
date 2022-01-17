@@ -6,6 +6,7 @@ package io.micronaut.build.catalogs;
 import io.micronaut.build.catalogs.tasks.VersionCatalogUpdate;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
@@ -20,8 +21,14 @@ public class MicronautVersionCatalogUpdatePlugin implements Plugin<Project> {
         }
         TaskContainer tasks = project.getTasks();
         TaskProvider<VersionCatalogUpdate> updater = tasks.register("updateVersionCatalogs", VersionCatalogUpdate.class, task -> {
-            task.getCatalogsDirectory().convention(project.getLayout().getProjectDirectory().dir("gradle"));
-            task.getOutputDirectory().convention(project.getLayout().getProjectDirectory().dir("gradle/updates"));
+            Directory gradleDirectory = project.getLayout().getProjectDirectory().dir("gradle");
+            task.getCatalogsDirectory().convention(gradleDirectory);
+            task.getOutputDirectory().convention(
+                    project.getProviders().environmentVariable("CI").forUseAtConfigurationTime()
+                            // On CI we want to create PRs which update the file
+                            .map(value -> gradleDirectory)
+                            .orElse(gradleDirectory.dir("updates"))
+            );
             task.getRejectedQualifiers().convention(Arrays.asList("alpha", "beta", "rc", "cr", "m", "preview", "b", "ea"));
             task.getIgnoredModules().convention(Collections.emptySet());
             task.getAllowMajorUpdates().convention(false);
