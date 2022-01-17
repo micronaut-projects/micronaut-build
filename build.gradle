@@ -56,9 +56,9 @@ dependencies {
         exclude group: 'bouncycastle', module:'bcprov-jdk14'
     }
 
-    implementation 'com.gradle:gradle-enterprise-gradle-plugin:3.7'
+    implementation 'com.gradle:gradle-enterprise-gradle-plugin:3.8.1'
     implementation 'org.nosphere.gradle.github:gradle-github-actions-plugin:1.3.2'
-    implementation 'com.gradle:common-custom-user-data-gradle-plugin:1.4.2'
+    implementation 'com.gradle:common-custom-user-data-gradle-plugin:1.6.2'
     implementation 'org.gradle:test-retry-gradle-plugin:1.3.1'
 
     implementation 'org.tomlj:tomlj:1.0.0'
