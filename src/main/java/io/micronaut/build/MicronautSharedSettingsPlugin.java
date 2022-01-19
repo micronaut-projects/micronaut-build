@@ -20,6 +20,7 @@ import com.gradle.enterprise.gradleplugin.GradleEnterpriseExtension;
 import com.gradle.enterprise.gradleplugin.GradleEnterprisePlugin;
 import com.gradle.scan.plugin.BuildScanExtension;
 import io.github.gradlenexus.publishplugin.NexusPublishExtension;
+import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.initialization.Settings;
@@ -34,6 +35,8 @@ import org.nosphere.gradle.github.ActionsPlugin;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
     public static final String NEXUS_STAGING_PROFILE_ID = "11bd7bc41716aa";
@@ -47,6 +50,20 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         MicronautBuildSettingsExtension micronautBuildSettingsExtension = settings.getExtensions().create("micronautBuild", MicronautBuildSettingsExtension.class);
         configureGradleEnterprise(settings, ge, micronautBuildSettingsExtension);
         applyPublishingPlugin(settings);
+        assertUniqueProjectNames(settings);
+    }
+
+    private void assertUniqueProjectNames(Settings settings) {
+        settings.getGradle().projectsLoaded(gradle -> {
+            Map<String, String> duplicates = new HashMap<>();
+            gradle.getRootProject().getAllprojects().forEach(project -> {
+                String name = project.getName();
+                if (duplicates.containsKey(name)) {
+                    throw new InvalidUserCodeException("Warning: Project name '" + name + "' with path '" + project.getPath() + "' has the same name as project path '" + duplicates.get(name) + "'. Please use unique names for projects.");
+                }
+                duplicates.put(name, project.getPath());
+            });
+        });
     }
 
     private void applyPublishingPlugin(Settings settings) {
