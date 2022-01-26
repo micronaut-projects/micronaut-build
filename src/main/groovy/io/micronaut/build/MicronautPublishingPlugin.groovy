@@ -21,15 +21,20 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        project.pluginManager.apply(MavenPublishPlugin)
         def p = project.findProperty("micronautPublish")
-        // add option to force publishing
-        boolean doPublish = p != null && Boolean.valueOf(p.toString())
-        if (!doPublish) {
+        // add option to skip publishing
+        if (p == null) {
             if (project.name.contains("doc") || project.name.contains("example")) {
                 return
             }
+        } else {
+            boolean doPublish = Boolean.valueOf(p.toString())
+            if (!doPublish) {
+                return
+            }
         }
+
+        project.pluginManager.apply(MavenPublishPlugin)
 
         def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
         def ossPass = System.getenv("SONATYPE_PASSWORD") ?: project.hasProperty("sonatypeOssPassword") ? project.sonatypeOssPassword : ''
