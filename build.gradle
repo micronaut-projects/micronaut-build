@@ -46,7 +46,7 @@ dependencies {
     implementation 'org.asciidoctor:asciidoctorj:1.5.6'
     implementation "io.spring.nohttp:nohttp-gradle:0.0.10"
     implementation "com.github.ben-manes:gradle-versions-plugin:0.38.0"
-    implementation "com.diffplug.spotless:spotless-plugin-gradle:5.14.2"
+    implementation "com.diffplug.spotless:spotless-plugin-gradle:6.2.2"
     implementation "com.adarshr:gradle-test-logger-plugin:3.0.0"
     implementation "io.github.gradle-nexus:publish-plugin:1.1.0"
     implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.18"
