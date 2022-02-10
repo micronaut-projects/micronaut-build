@@ -4,7 +4,7 @@ import groovy.transform.CompileStatic
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
-import org.gradle.api.artifacts.ExternalModuleDependency
+
 /**
  * Configures a project as a typical Micronaut module project,
  * which implies that it's a library aimed at being processed
@@ -12,6 +12,7 @@ import org.gradle.api.artifacts.ExternalModuleDependency
  */
 @CompileStatic
 class MicronautModulePlugin implements Plugin<Project> {
+
     @Override
     void apply(Project project) {
         project.pluginManager.apply(MicronautBaseModulePlugin)
@@ -25,9 +26,7 @@ class MicronautModulePlugin implements Plugin<Project> {
 
             add("api", "io.micronaut:micronaut-inject")
 
-            add("testImplementation", "org.spockframework:spock-core:${project.findProperty('spockVersion')}") { ExternalModuleDependency d ->
-                d.exclude module: 'groovy-all'
-            }
+            add("testImplementation", "org.spockframework:spock-core:${project.findProperty('spockVersion')}")
             add("testImplementation", "io.micronaut.test:micronaut-test-spock:${project.findProperty('micronautTestVersion')}")
         }
     }
