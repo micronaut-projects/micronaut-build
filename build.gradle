@@ -9,8 +9,11 @@ plugins {
 version project.projectVersion
 group "io.micronaut.build.internal"
 
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
 
 repositories {
     mavenCentral()
@@ -23,13 +26,28 @@ sourceSets {
 }
 
 gradlePlugin.testSourceSets(sourceSets.functionalTest)
-configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
+configurations {
+    functionalTestImplementation {
+        extendsFrom(testImplementation)
+    }
+    functionalTestRuntimeClasspath {
+        resolutionStrategy {
+            exclude group: 'org.codehaus.groovy'
+        }
+    }
+}
+
+tasks.withType(Test).configureEach {
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(8)
+    })
+    useJUnitPlatform()
+}
 
 tasks.register('functionalTest', Test) {
     inputs.dir(file("src/functionalTest/gradle-projects"))
     testClassesDirs = sourceSets.functionalTest.output.classesDirs
     classpath = sourceSets.functionalTest.runtimeClasspath
-    useJUnitPlatform()
 }
 
 tasks.named('check') {
@@ -39,8 +57,7 @@ tasks.named('check') {
 dependencies {
     implementation "commons-lang:commons-lang:2.6",
         'org.grails:grails-gdoc-engine:1.0.1',
-        'org.yaml:snakeyaml:1.29',
-        "org.codehaus.groovy:groovy-ant:$groovyVersion"
+        'org.yaml:snakeyaml:1.29'
     implementation "io.github.groovylang.groovydoc:io.github.groovylang.groovydoc.gradle.plugin:1.0.1"
     // TODO: upgrade to new asciidoctor
     implementation 'org.asciidoctor:asciidoctorj:1.5.6'
@@ -64,7 +81,7 @@ dependencies {
     implementation 'org.tomlj:tomlj:1.0.0'
 
     testImplementation platform("org.spockframework:spock-bom:2.0-groovy-3.0")
-    testImplementation "org.spockframework:spock-core"
+    testImplementation("org.spockframework:spock-core")
 
     compileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
     testCompileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
@@ -72,10 +89,6 @@ dependencies {
     functionalTestImplementation("org.mock-server:mockserver-netty:5.11.2")
     functionalTestImplementation("org.mock-server:mockserver-client-java:5.11.2")
 
-}
-
-test {
-    useJUnitPlatform()
 }
 
 configurations.all {
