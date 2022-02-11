@@ -23,6 +23,9 @@ import java.util.Map;
  * @since 1.0
  */
 public class JdkApiMacro extends ApiMacro {
+    public JdkApiMacro(String macroName) {
+        super(macroName);
+    }
 
     /**
      * @param macroName The macro name

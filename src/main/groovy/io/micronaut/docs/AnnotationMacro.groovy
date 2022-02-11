@@ -20,6 +20,9 @@ package io.micronaut.docs
  * @since 1.0
  */
 class AnnotationMacro extends ApiMacro {
+    AnnotationMacro(String macroName) {
+        super(macroName)
+    }
 
     AnnotationMacro(String macroName, Map<String, Object> config) {
         super(macroName, config)

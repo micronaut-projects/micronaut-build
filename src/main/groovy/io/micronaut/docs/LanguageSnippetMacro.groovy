@@ -1,9 +1,10 @@
 package io.micronaut.docs
 
-
 import org.asciidoctor.Asciidoctor
+import org.asciidoctor.Attributes
+import org.asciidoctor.Options
 import org.asciidoctor.SafeMode
-import org.asciidoctor.ast.AbstractBlock
+import org.asciidoctor.ast.StructuralNode
 import org.asciidoctor.extension.BlockMacroProcessor
 
 class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttributes {
@@ -47,7 +48,7 @@ class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttribu
     }
 
     @Override
-    protected Object process(AbstractBlock parent, String target, Map<String, Object> attributes) {
+    Object process(StructuralNode parent, String target, Map<String, Object> attributes) {
         String[] tags = valueAtAttributes("tags", attributes)?.toString()?.split(",")
         String indent = valueAtAttributes("indent", attributes)
         String title = valueAtAttributes("title", attributes)
@@ -94,11 +95,16 @@ ${includes.join("\n\n")}
             }
         }
         if (content) {
-            String result = asciidoctor.render(content.toString(), [
-                    'safe': SafeMode.UNSAFE.level,
-                    'source-highlighter':'highlightjs',
-            ])
-            createBlock(parent, "pass", result, attributes, config)
+            def options = Options.builder()
+                    .attributes(
+                            Attributes.builder()
+                                    .attribute('source-highlighter', 'highlightjs')
+                                    .build()
+                    )
+                    .safe(SafeMode.UNSAFE)
+                    .build()
+            String result = asciidoctor.convert(content.toString(), options)
+            createBlock(parent, "pass", result)
         }
     }
 

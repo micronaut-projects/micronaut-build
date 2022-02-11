@@ -16,6 +16,7 @@
 package io.micronaut.build.docs.props;
 
 import org.asciidoctor.Asciidoctor;
+import org.asciidoctor.Options;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -33,7 +34,6 @@ import javax.inject.Inject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 
 @CacheableTask
 public abstract class PublishConfigurationReferenceTask extends DefaultTask {
@@ -63,7 +63,8 @@ public abstract class PublishConfigurationReferenceTask extends DefaultTask {
             textPage = textPage.replace("@projectVersion@", getVersion().get());
             textPage = textPage.replace("@pagetitle@", "Configuration Reference | Micronaut");
             try {
-                String html = Asciidoctor.Factory.create().render(getProviders().fileContents(getPropertyReferenceFile()).getAsText().get(), Collections.emptyMap());
+                String html = Asciidoctor.Factory.create()
+                        .convert(getProviders().fileContents(getPropertyReferenceFile()).getAsText().get(), Options.builder().build());
                 textPage = textPage.replace("@docscontent@", html);
                 try (FileOutputStream fos = new FileOutputStream(getDestinationFile().getAsFile().get())) {
                     fos.write(textPage.getBytes(StandardCharsets.UTF_8.name()));
