@@ -22,6 +22,8 @@ jobs:
       with:
         distribution: 'adopt'
         java-version: '8'
+    - name: Check plugin
+      run: ./gradlew check
     - name: Publish to Sonatype OSSRH
       if: github.event_name == 'push'
       env:
