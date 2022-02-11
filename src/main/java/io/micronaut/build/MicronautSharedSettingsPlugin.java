@@ -124,8 +124,12 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
                                            GradleEnterpriseExtension ge,
                                            MicronautBuildSettingsExtension micronautBuildSettingsExtension) {
         ProviderFactory providers = settings.getProviders();
+        Provider<Boolean> publishScanOnDemand = providers.gradleProperty("publishScanOnDemand")
+                .forUseAtConfigurationTime()
+                .map(Boolean::parseBoolean)
+                .orElse(false);
         boolean isCI = guessCI(providers);
-        configureBuildScansPublishing(ge, isCI);
+        configureBuildScansPublishing(ge, isCI, publishScanOnDemand);
         settings.getGradle().projectsLoaded(MicronautSharedSettingsPlugin::applyGitHubActionsPlugin);
         if (providers.gradleProperty("org.gradle.caching").forUseAtConfigurationTime().map(Boolean::parseBoolean).orElse(true).get()) {
             settings.getGradle().settingsEvaluated(lateSettings -> {
@@ -162,10 +166,12 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         }
     }
 
-    private void configureBuildScansPublishing(GradleEnterpriseExtension ge, boolean isCI) {
+    private void configureBuildScansPublishing(GradleEnterpriseExtension ge, boolean isCI, Provider<Boolean> publishScanOnDemand) {
         ge.setServer("https://ge.micronaut.io");
         ge.buildScan(buildScan -> {
-            buildScan.publishAlways();
+            if (!publishScanOnDemand.get()) {
+                buildScan.publishAlways();
+            }
             if (isCI) {
                 buildScan.setUploadInBackground(false);
             } else {
