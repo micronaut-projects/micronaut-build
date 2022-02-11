@@ -132,7 +132,6 @@ abstract class AbstractFunctionalTest extends Specification {
 
     private ArrayList<String> computeAutoArgs() {
         List<String> autoArgs = [
-                "-g", testDirectory.resolve("gradle-home").toString(),
                 "-S",
                 "--no-build-cache"
         ]
