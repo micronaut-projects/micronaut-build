@@ -24,6 +24,12 @@ jobs:
         java-version: '8'
     - name: Check plugin
       run: ./gradlew check
+    - name: Publish Test Report
+      if: always()
+      uses: mikepenz/action-junit-report@v2
+      with:
+        check_name: Java CI / Test Report
+        report_paths: '**/build/test-results/*/TEST-*.xml'
     - name: Publish to Sonatype OSSRH
       if: github.event_name == 'push'
       env:
