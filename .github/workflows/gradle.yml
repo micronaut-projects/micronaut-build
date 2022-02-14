@@ -25,7 +25,7 @@ jobs:
     - name: Check plugin
       run: ./gradlew check
     - name: Publish Test Report
-      if: always()
+      if: ${{ always() }}
       uses: mikepenz/action-junit-report@v2
       with:
         check_name: Java CI / Test Report
