@@ -1,5 +1,8 @@
 package io.micronaut.build
 
+import org.gradle.api.Project
+import org.gradle.api.model.ObjectFactory
+import org.gradle.testfixtures.ProjectBuilder
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -8,7 +11,13 @@ class MicronautBuildExtensionSpec extends Specification {
     @Unroll
     void "dependencyUpdatesPattern excludes non GA version: #version"(String version, boolean expectedMatch) {
         given:
-        String pattern = new MicronautBuildExtension(null).dependencyUpdatesPattern
+        Project p = ProjectBuilder.builder().build()
+        String pattern = new MicronautBuildExtension(null) {
+            @Override
+            ObjectFactory getObjects() {
+                p.objects
+            }
+        }.dependencyUpdatesPattern
 
         when:
         boolean matches = version ==~ pattern

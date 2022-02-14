@@ -9,8 +9,11 @@ plugins {
 version project.projectVersion
 group "io.micronaut.build.internal"
 
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
 
 repositories {
     mavenCentral()
@@ -23,13 +26,28 @@ sourceSets {
 }
 
 gradlePlugin.testSourceSets(sourceSets.functionalTest)
-configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
+configurations {
+    functionalTestImplementation {
+        extendsFrom(testImplementation)
+    }
+    functionalTestRuntimeClasspath {
+        resolutionStrategy {
+            exclude group: 'org.codehaus.groovy'
+        }
+    }
+}
+
+tasks.withType(Test).configureEach {
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(8)
+    })
+    useJUnitPlatform()
+}
 
 tasks.register('functionalTest', Test) {
     inputs.dir(file("src/functionalTest/gradle-projects"))
     testClassesDirs = sourceSets.functionalTest.output.classesDirs
     classpath = sourceSets.functionalTest.runtimeClasspath
-    useJUnitPlatform()
 }
 
 tasks.named('check') {
@@ -39,19 +57,18 @@ tasks.named('check') {
 dependencies {
     implementation "commons-lang:commons-lang:2.6",
         'org.grails:grails-gdoc-engine:1.0.1',
-        'org.yaml:snakeyaml:1.29',
-        "org.codehaus.groovy:groovy-ant:$groovyVersion"
+        'org.yaml:snakeyaml:1.29'
     implementation "io.github.groovylang.groovydoc:io.github.groovylang.groovydoc.gradle.plugin:1.0.1"
     // TODO: upgrade to new asciidoctor
     implementation 'org.asciidoctor:asciidoctorj:1.5.6'
     implementation "io.spring.nohttp:nohttp-gradle:0.0.10"
     implementation "com.github.ben-manes:gradle-versions-plugin:0.38.0"
-    implementation "com.diffplug.spotless:spotless-plugin-gradle:5.14.2"
-    implementation "com.adarshr:gradle-test-logger-plugin:3.0.0"
+    implementation "com.diffplug.spotless:spotless-plugin-gradle:6.2.2"
+    implementation "com.adarshr:gradle-test-logger-plugin:3.1.0"
     implementation "io.github.gradle-nexus:publish-plugin:1.1.0"
     implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.18"
     implementation('com.lowagie:itext:2.0.8')
-    implementation 'org.jsoup:jsoup:1.14.2'
+    implementation 'org.jsoup:jsoup:1.14.3'
     implementation('org.xhtmlrenderer:core-renderer:8.0') {
         exclude group: 'bouncycastle', module:'bcprov-jdk14'
     }
@@ -64,18 +81,14 @@ dependencies {
     implementation 'org.tomlj:tomlj:1.0.0'
 
     testImplementation platform("org.spockframework:spock-bom:2.0-groovy-3.0")
-    testImplementation "org.spockframework:spock-core"
+    testImplementation("org.spockframework:spock-core")
 
-    compileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
-    testCompileOnly "org.jruby:jruby-complete:1.7.26" // Groovy bug :(
+    compileOnly "org.jruby:jruby-complete:9.3.3.0" // Groovy bug :(
+    testCompileOnly "org.jruby:jruby-complete:9.3.3.0" // Groovy bug :(
 
     functionalTestImplementation("org.mock-server:mockserver-netty:5.11.2")
     functionalTestImplementation("org.mock-server:mockserver-client-java:5.11.2")
 
-}
-
-test {
-    useJUnitPlatform()
 }
 
 configurations.all {
