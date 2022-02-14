@@ -23,12 +23,17 @@ import org.asciidoctor.ast.*
  * @since 1.0
  */
 class ApiMacro extends InlineMacroProcessor {
+
+    ApiMacro(String macroName) {
+        super(macroName)
+    }
+
     ApiMacro(String macroName, Map<String, Object> config) {
         super(macroName, config)
     }
 
     @Override
-    protected Object process(AbstractBlock parent, String target, Map<String, Object> attributes) {
+    Object process(ContentNode parent, String target, Map<String, Object> attributes) {
         // is it a method reference
         int methodIndex = target.lastIndexOf('(')
         int propIndex = target.lastIndexOf('#')
@@ -86,10 +91,7 @@ class ApiMacro extends InlineMacroProcessor {
 
         Map<String, Object> options = inlineAnchorOptions(baseUri, target, methodRef, propRef, lib)
         // Prepend twitterHandle with @ as text link.
-        final Inline apiLink = createInline(parent, 'anchor', formatShortName(shortName), attributes, options)
-
-        // Convert to String value.
-        return apiLink.convert()
+        return createPhraseNode(parent, "anchor", formatShortName(shortName), attributes, options)
     }
 
     static Map<String, Object> inlineAnchorOptions(String baseUri, String target, String methodRef, String propRef, JvmLibrary jvmLibrary) {

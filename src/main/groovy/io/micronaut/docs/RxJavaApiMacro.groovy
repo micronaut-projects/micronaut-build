@@ -22,6 +22,9 @@ import groovy.transform.CompileStatic
  */
 @CompileStatic
 class RxJavaApiMacro extends ApiMacro {
+    RxJavaApiMacro(String macroName) {
+        super(macroName)
+    }
 
     /**
      * @param macroName The macro name

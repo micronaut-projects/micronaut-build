@@ -23,6 +23,10 @@ import java.util.Map;
  * @since 1.0
  */
 public class ReactiveStreamsApiMacro extends ApiMacro {
+    public ReactiveStreamsApiMacro(String macroName) {
+        super(macroName);
+    }
+
     /**
      * @param macroName The macro name
      * @param config    The configuration

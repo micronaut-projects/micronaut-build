@@ -22,6 +22,9 @@ import java.util.Map;
  * @since 4.0.1
  */
 public class ReactorJavaApiMacro extends ApiMacro {
+    public ReactorJavaApiMacro(String macroName) {
+        super(macroName);
+    }
 
     public ReactorJavaApiMacro(String macroName, Map<String, Object> config) {
         super(macroName, config);

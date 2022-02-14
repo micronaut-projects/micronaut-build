@@ -1,8 +1,8 @@
 package io.micronaut.docs
 
-import org.asciidoctor.ast.AbstractBlock
+import org.asciidoctor.ast.ContentNode
+import org.asciidoctor.ast.StructuralNode
 import org.asciidoctor.extension.InlineMacroProcessor
-
 /**
  * Inline macro which can be invoked in asciidoc with:
  *
@@ -68,14 +68,18 @@ class BuildDependencyMacro extends InlineMacroProcessor implements ValueAtAttrib
     public static final String SCOPE_COMPILE = 'compile'
     public static final String SCOPE_IMPLEMENTATION = 'implementation'
 
+    BuildDependencyMacro(String macroName) {
+        super(macroName)
+    }
+
     BuildDependencyMacro(String macroName, Map<String, Object> config) {
         super(macroName, config)
     }
 
     @Override
-    protected Object process(AbstractBlock parent, String target, Map<String, Object> attributes) {
+    Object process(ContentNode parent, String target, Map<String, Object> attributes) {
         String content = contentForTargetAndAttributes(target, attributes)
-        createBlock(parent, "pass", [content], attributes, config).convert()
+        return createBlock(parent as StructuralNode, "pass", [content]).convert()
     }
 
     static String contentForTargetAndAttributes(String target, Map<String, Object> attributes) {
@@ -231,4 +235,3 @@ class BuildDependencyMacro extends InlineMacroProcessor implements ValueAtAttrib
         return html
     }
 }
-

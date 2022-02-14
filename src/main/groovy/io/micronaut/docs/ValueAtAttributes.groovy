@@ -16,6 +16,6 @@ trait ValueAtAttributes {
                 return partial
             }
         }
-        null
+        attributes[name]
     }
 }

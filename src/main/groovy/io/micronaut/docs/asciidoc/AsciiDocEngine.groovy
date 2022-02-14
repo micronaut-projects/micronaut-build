@@ -1,14 +1,14 @@
 package io.micronaut.docs.asciidoc
 
-import io.micronaut.docs.DocEngine
 import groovy.transform.InheritConstructors
+import io.micronaut.docs.DocEngine
+import org.asciidoctor.Asciidoctor
+import org.asciidoctor.Attributes
 import org.asciidoctor.Options
-import org.asciidoctor.OptionsBuilder
 import org.asciidoctor.SafeMode
 import org.radeox.api.engine.context.RenderContext
 
-import static org.asciidoctor.Asciidoctor.Factory.create;
-import org.asciidoctor.Asciidoctor;
+import static org.asciidoctor.Asciidoctor.Factory.create
 /**
  * A DocEngine implementation that uses Asciidoctor to render pages
  *
@@ -25,16 +25,13 @@ class AsciiDocEngine extends DocEngine {
     ]
     @Override
     String render(String content, RenderContext context) {
-        def optionsBuilder = OptionsBuilder.options()
+        def optionsBuilder = Options.builder()
                                         .headerFooter(false)
-                                        .attributes(attributes)
+                                        .attributes(Attributes.builder().attributes(attributes).build())
         if(attributes.containsKey('safe')) {
             optionsBuilder.safe(SafeMode.valueOf(attributes.get('safe').toString()))
         }
-        asciidoctor.convert(content,
-            optionsBuilder
-                .get()
-        )
+        asciidoctor.convert(content, optionsBuilder.build())
     }
 
 }

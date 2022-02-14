@@ -19,8 +19,10 @@ package io.micronaut.docs
  * @since 1.0
  */
 class MicronautApiMacro extends ApiMacro {
-
-    /**
+    MicronautApiMacro(String macroName) {
+        super(macroName)
+    }
+/**
      * @param macroName The macro name
      * @param config    The configuration
      */

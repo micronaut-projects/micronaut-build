@@ -15,11 +15,12 @@
  */
 package io.micronaut.docs
 
-import org.asciidoctor.extension.spi.ExtensionRegistry
-import org.asciidoctor.extension.JavaExtensionRegistry
 import org.asciidoctor.Asciidoctor
+import org.asciidoctor.extension.JavaExtensionRegistry
 
-class DocsExtensionRegistry implements ExtensionRegistry{
+import org.asciidoctor.jruby.extension.spi.ExtensionRegistry
+
+class DocsExtensionRegistry implements ExtensionRegistry {
     @Override
     void register(Asciidoctor asciidoctor) {
 
@@ -34,7 +35,7 @@ class DocsExtensionRegistry implements ExtensionRegistry{
         javaExtensionRegistry.inlineMacro 'rx', RxJavaApiMacro
         javaExtensionRegistry.inlineMacro 'reactor', ReactorJavaApiMacro
         javaExtensionRegistry.inlineMacro 'dependency', BuildDependencyMacro
-        javaExtensionRegistry.blockMacro(new LanguageSnippetMacro("snippet", Collections.emptyMap(), asciidoctor))
+        javaExtensionRegistry.blockMacro(new LanguageSnippetMacro("snippet", new HashMap<String, Object>(), asciidoctor))
 
 
     }
