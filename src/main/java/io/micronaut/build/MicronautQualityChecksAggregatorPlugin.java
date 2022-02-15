@@ -49,10 +49,8 @@ public class MicronautQualityChecksAggregatorPlugin implements Plugin<Project> {
         rootProject.getPluginManager().apply(BasePlugin.class);
         rootProject.getPluginManager().apply(JacocoReportAggregationPlugin.class);
 
-        rootProject.getTasks().register(COVERAGE_REPORT_TASK_NAME, JacocoReport.class);
-
         ReportingExtension reporting = rootProject.getExtensions().getByType(ReportingExtension.class);
-        reporting.getReports().register(COVERAGE_REPORT_TASK_NAME, JacocoCoverageReport.class,
+        reporting.getReports().create(COVERAGE_REPORT_TASK_NAME, JacocoCoverageReport.class,
                 r -> r.getTestType().set(TestSuiteType.UNIT_TEST));
 
         final Configuration jacocoAggregation = rootProject.getConfigurations().getByName("jacocoAggregation");
