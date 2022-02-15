@@ -171,7 +171,7 @@ gradlePlugin {
         }
         qualityChecks {
             id = 'io.micronaut.build.internal.quality-checks'
-            implementationClass = 'io.micronaut.build.MicronautQualityChecksPlugin'
+            implementationClass = 'io.micronaut.build.MicronautQualityChecksAggregatorPlugin'
         }
     }
 }

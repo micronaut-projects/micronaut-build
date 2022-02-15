@@ -19,6 +19,7 @@ import org.groovy.lang.groovydoc.tasks.GroovydocTask
 class MicronautBuildCommonPlugin implements Plugin<Project> {
     void apply(Project project) {
         project.pluginManager.apply(MicronautBasePlugin)
+        project.pluginManager.apply(MicronautQualityChecksParticipantPlugin)
         def micronautBuild = project.extensions.findByType(MicronautBuildExtension)
         configureJavaPlugin(project, micronautBuild)
         configureDependencies(project, micronautBuild)
