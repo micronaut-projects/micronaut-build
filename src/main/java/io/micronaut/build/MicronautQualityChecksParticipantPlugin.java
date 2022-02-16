@@ -1,12 +1,13 @@
 package io.micronaut.build;
 
-import java.io.File;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.quality.CheckstyleExtension;
 import org.gradle.api.plugins.quality.CheckstylePlugin;
 import org.gradle.testing.jacoco.plugins.JacocoPlugin;
 import org.sonarqube.gradle.SonarQubeExtension;
+
+import java.io.File;
 
 public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> {
 
@@ -49,12 +50,18 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
             project.getRootProject().getPluginManager().withPlugin("org.sonarqube", p -> {
                 final SonarQubeExtension sonarQubeExtension = project.getExtensions().findByType(SonarQubeExtension.class);
                 if (sonarQubeExtension != null) {
-                    final File checkstyleReportPath = project.getBuildDir().toPath().resolve("reports/checkstyle/main.xml").toFile();
-                    if (checkstyleReportPath.exists()) {
+                    project.getPluginManager().withPlugin("checkstyle", unused -> {
+                        // Because sonar doesn't support the lazy APIs, we can't use
+                        // tasks.withType(Checkstyle) to property identify the report,
+                        // so any change to this property by a build script will lead
+                        // to wrong reports.
+                        // Alternatively we could eagerly resolve the checkstyle task,
+                        // but we don't want to do this because it makes the build slower
                         sonarQubeExtension.properties(props -> {
-                            props.property("sonar.java.checkstyle.reportPaths", checkstyleReportPath.getAbsolutePath());
+                            File checkstyleReport = project.getLayout().getBuildDirectory().file("reports/checkstyle/main.xml").get().getAsFile();
+                            props.property("sonar.java.checkstyle.reportPaths", checkstyleReport.getAbsolutePath());
                         });
-                    }
+                    });
                 } else {
                     project.getLogger().warn("Could not find the sonarqube extension for project " + project.getName());
                 }
