@@ -1,7 +1,5 @@
 package io.micronaut.build;
 
-import static io.micronaut.build.MicronautQualityChecksAggregatorPlugin.COVERAGE_REPORT_TASK_NAME;
-
 import java.io.File;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -40,7 +38,7 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
             p.getTasks().named("checkstyleTest").configure(task -> task.setEnabled(false));
             p.getTasks().named("checkstyleMain").configure(task -> {
                 task.dependsOn("spotlessCheck");
-                project.getRootProject().getTasks().named(COVERAGE_REPORT_TASK_NAME).configure(t -> t.dependsOn(task));
+                project.getRootProject().getTasks().named("sonarqube").configure(t -> t.dependsOn(task));
             });
 
         });
