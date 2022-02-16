@@ -84,7 +84,7 @@ dependencies {
     testImplementation("org.spockframework:spock-core")
 
     functionalTestImplementation("org.mock-server:mockserver-netty:5.11.2")
-    functionalTestImplementation("org.mock-server:mockserver-client-java:5.11.2")
+    functionalTestImplementation("org.mock-server:mockserver-client-java:5.12.0")
 
 }
 
