@@ -9,9 +9,9 @@ import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.reporting.ReportingExtension;
 import org.gradle.testing.jacoco.plugins.JacocoCoverageReport;
 import org.gradle.testing.jacoco.plugins.JacocoReportAggregationPlugin;
-import org.gradle.testing.jacoco.tasks.JacocoReport;
 import org.sonarqube.gradle.SonarQubeExtension;
 import org.sonarqube.gradle.SonarQubePlugin;
+import org.sonarqube.gradle.SonarQubeTask;
 
 @SuppressWarnings("UnstableApiUsage")
 public class MicronautQualityChecksAggregatorPlugin implements Plugin<Project> {
@@ -30,18 +30,30 @@ public class MicronautQualityChecksAggregatorPlugin implements Plugin<Project> {
 
 
     private void configureSonar(final Project rootProject) {
-        rootProject.getPluginManager().apply(SonarQubePlugin.class);
-        final SonarQubeExtension sonarQubeExtension = rootProject.getExtensions().findByType(SonarQubeExtension.class);
-        final String githubSlug = (String) rootProject.findProperty("githubSlug");
-        if (sonarQubeExtension != null) {
-            sonarQubeExtension.properties(p -> {
-                if (githubSlug != null) {
-                    p.property("sonar.projectKey", githubSlug.replaceAll("/", "_"));
-                    p.property("sonar.organization", "micronaut-projects");
-                    p.property("sonar.host.url", "https://sonarcloud.io");
-                    p.property("sonar.java.source", "8");
-                }
-            });
+        if (System.getenv("SONAR_TOKEN") != null) {
+            rootProject.getPluginManager().apply(SonarQubePlugin.class);
+            final SonarQubeExtension sonarQubeExtension = rootProject.getExtensions().findByType(SonarQubeExtension.class);
+            if (sonarQubeExtension != null) {
+                sonarQubeExtension.properties(p -> {
+                    final String githubSlug = (String) rootProject.findProperty("githubSlug");
+                    if (githubSlug != null) {
+                        p.property("sonar.projectKey", githubSlug.replaceAll("/", "_"));
+                        p.property("sonar.organization", "micronaut-projects");
+                        p.property("sonar.host.url", "https://sonarcloud.io");
+                        p.property("sonar.java.source", "8");
+
+                        final String xmlReportPath = rootProject.getBuildDir().toPath()
+                            .resolve("reports/jacoco/" + COVERAGE_REPORT_TASK_NAME + "/" + COVERAGE_REPORT_TASK_NAME + ".xml")
+                            .toFile().getAbsolutePath();
+                        p.property("sonar.coverage.jacoco.xmlReportPaths",
+                            xmlReportPath);
+                    }
+                });
+
+                rootProject.getTasks().withType(SonarQubeTask.class).configureEach(t -> t.dependsOn(COVERAGE_REPORT_TASK_NAME));
+            } else {
+                rootProject.getLogger().warn("Could not find the sonarqube extension");
+            }
         }
     }
 
