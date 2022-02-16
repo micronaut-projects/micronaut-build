@@ -41,12 +41,22 @@ public class MicronautQualityChecksAggregatorPlugin implements Plugin<Project> {
                         p.property("sonar.organization", "micronaut-projects");
                         p.property("sonar.host.url", "https://sonarcloud.io");
                         p.property("sonar.java.source", "8");
+                        p.property("sonar.verbose", "true");
 
-                        final String xmlReportPath = rootProject.getBuildDir().toPath()
+                        // Jacoco integration
+                        final String jacocoReportPath = rootProject.getBuildDir().toPath()
                             .resolve("reports/jacoco/" + COVERAGE_REPORT_TASK_NAME + "/" + COVERAGE_REPORT_TASK_NAME + ".xml")
                             .toFile().getAbsolutePath();
-                        p.property("sonar.coverage.jacoco.xmlReportPaths",
-                            xmlReportPath);
+                        p.property("sonar.coverage.jacoco.xmlReportPaths", jacocoReportPath);
+
+//                        // Checkstyle configuration
+//                        final String checkstyleReportPaths = rootProject.getSubprojects().stream()
+//                            .map(project -> project.getBuildDir().toPath())
+//                            .map(path -> path.resolve("reports/checkstyle/main.xml"))
+//                            .filter(Files::exists)
+//                            .map(path -> path.toFile().getAbsolutePath())
+//                            .collect(Collectors.joining(","));
+//                        p.property("sonar.java.checkstyle.reportPaths", checkstyleReportPaths);
                     }
                 });
 

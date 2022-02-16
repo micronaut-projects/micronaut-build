@@ -79,7 +79,7 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
             javadoc.exclude("example/**");
             // Use Java Toolchain to render consistent javadocs
             javadoc.getJavadocTool().convention(toolchains.javadocToolFor(spec -> spec.getLanguageVersion().set(asLanguageVersion(micronautBuildExtension))));
-            options.setSource(micronautBuildExtension.getSourceCompatibility());
+            options.setSource(micronautBuildExtension.getSourceCompatibility().get());
             options.links(project.getProperties()
                     .entrySet()
                     .stream()
@@ -104,7 +104,7 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
     }
 
     private static JavaLanguageVersion asLanguageVersion(MicronautBuildExtension micronautBuildExtension) {
-        String sourceCompatibility = micronautBuildExtension.getSourceCompatibility();
+        String sourceCompatibility = micronautBuildExtension.getSourceCompatibility().get();
         if (sourceCompatibility.startsWith("1.")) {
             sourceCompatibility = sourceCompatibility.substring(2);
         }

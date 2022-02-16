@@ -36,8 +36,8 @@ public class MicronautAotModulePlugin implements Plugin<Project> {
         project.getPluginManager().apply(MicronautBaseModulePlugin.class);
         MicronautBuildExtension micronautBuildExtension = project.getExtensions().getByType(MicronautBuildExtension.class);
         // An AOT module MUST NOT use Micronaut DI
-        micronautBuildExtension.setEnableBom(false);
-        micronautBuildExtension.setEnableProcessing(false);
+        micronautBuildExtension.getEnableBom().set(false);
+        micronautBuildExtension.getEnableProcessing().set(false);
         MicronautBuildAotExtension aotExtension = ((ExtensionAware) micronautBuildExtension).getExtensions().create("aot", MicronautBuildAotExtension.class);
         aotExtension.getVersion().convention(DEFAULT_AOT_VERSION);
         String micronautVersion = String.valueOf(project.getProperties().get("micronautVersion"));
