@@ -14,6 +14,7 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
 
     @Override
     public void apply(final Project project) {
+        project.getPluginManager().apply(MicronautBuildExtensionPlugin.class);
         final MicronautBuildExtension micronautBuild = project.getExtensions().findByType(MicronautBuildExtension.class);
 
         configureCheckstyle(project, micronautBuild);
