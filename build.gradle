@@ -81,7 +81,7 @@ dependencies {
 
     implementation 'org.tomlj:tomlj:1.0.0'
 
-    testImplementation platform("org.spockframework:spock-bom:2.0-groovy-3.0")
+    testImplementation platform("org.spockframework:spock-bom:2.1-groovy-3.0")
     testImplementation("org.spockframework:spock-core")
 
     functionalTestImplementation("org.mock-server:mockserver-netty:5.12.0")
