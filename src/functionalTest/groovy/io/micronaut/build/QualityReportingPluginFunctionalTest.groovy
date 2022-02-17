@@ -1,6 +1,6 @@
 package io.micronaut.build
 
-class QualityChecksPluginFunctionalTest extends AbstractFunctionalTest {
+class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
 
     void "it can run aggregate coverage reports"() {
         given:
