@@ -14,7 +14,7 @@ import org.sonarqube.gradle.SonarQubePlugin;
 import org.sonarqube.gradle.SonarQubeTask;
 
 @SuppressWarnings("UnstableApiUsage")
-public class MicronautQualityChecksAggregatorPlugin implements Plugin<Project> {
+public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project> {
 
     public static final String COVERAGE_REPORT_TASK_NAME = "testCodeCoverageReport";
 

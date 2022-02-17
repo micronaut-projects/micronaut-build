@@ -169,10 +169,15 @@ gradlePlugin {
             id = 'io.micronaut.build.internal.aot-module'
             implementationClass = 'io.micronaut.build.aot.MicronautAotModulePlugin'
         }
+        qualityReporting {
+            id = 'io.micronaut.build.internal.quality-reporting'
+            implementationClass = 'io.micronaut.build.MicronautQualityReportingAggregatorPlugin'
+        }
         qualityChecks {
             id = 'io.micronaut.build.internal.quality-checks'
-            implementationClass = 'io.micronaut.build.MicronautQualityChecksAggregatorPlugin'
+            implementationClass = 'io.micronaut.build.MicronautQualityChecksParticipantPlugin'
         }
+
     }
 }
 

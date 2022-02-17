@@ -9,7 +9,7 @@ The plugins are published in Maven Central:
 ```groovy
 buildscript {
     dependencies {
-        classpath "io.micronaut.build:micronaut-gradle-plugins:3.0.0"
+        classpath "io.micronaut.build:micronaut-gradle-plugins:5.2.0"
     }
 }
 ```
@@ -40,6 +40,12 @@ Then, apply the individual plugins as desired
 
 * `io.micronaut.build.internal.docs`:
     * Configures the guide publishing stuff.
+  
+* `io.micronaut.build.internal.quality-checks`:
+    * Applied automatically by the `common` plugin; configures Checkstyle, Jacoco and Sonar.
+
+* `io.micronaut.build.internal.quality-reporting`:
+    * To be applied to the root project only; it consumes and aggregates the reports produced by the `quality-checks` plugin. 
     
 ## Configuration options
 
