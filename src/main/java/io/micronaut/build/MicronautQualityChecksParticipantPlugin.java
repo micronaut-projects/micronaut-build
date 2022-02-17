@@ -26,7 +26,7 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
             p.getPluginManager().apply(CheckstylePlugin.class);
             final CheckstyleExtension checkstyle = p.getExtensions().findByType(CheckstyleExtension.class);
             if (checkstyle != null) {
-                checkstyle.setConfigFile(p.file("${rootDir}/config/checkstyle/checkstyle.xml"));
+                checkstyle.setConfigFile(p.getRootProject().getLayout().getProjectDirectory().file("config/checkstyle/checkstyle.xml").getAsFile());
                 checkstyle.setToolVersion(micronautBuildExtension.getCheckstyleVersion().get());
 
                 // Per submodule
@@ -39,7 +39,9 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
             p.getTasks().named("checkstyleTest").configure(task -> task.setEnabled(false));
             p.getTasks().named("checkstyleMain").configure(task -> {
                 task.dependsOn("spotlessCheck");
-                project.getRootProject().getTasks().named("sonarqube").configure(t -> t.dependsOn(task));
+                project.getRootProject().getPluginManager().withPlugin("org.sonarqube", sq -> {
+                    project.getRootProject().getTasks().named("sonarqube").configure(t -> t.dependsOn(task));
+                });
             });
 
         });
