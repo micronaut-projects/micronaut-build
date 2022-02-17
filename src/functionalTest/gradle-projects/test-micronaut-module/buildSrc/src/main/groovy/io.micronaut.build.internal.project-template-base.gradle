@@ -1,0 +1,1 @@
+// If you don't need any common settings/dependencies/... for everything, remove this convention plugin and the reference to it in `io.micronaut.build.internal.project-template-module.gradle` file

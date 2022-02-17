@@ -19,6 +19,7 @@ import org.groovy.lang.groovydoc.tasks.GroovydocTask
 class MicronautBuildCommonPlugin implements Plugin<Project> {
     void apply(Project project) {
         project.pluginManager.apply(MicronautBasePlugin)
+        project.pluginManager.apply(MicronautQualityChecksParticipantPlugin)
         def micronautBuild = project.extensions.findByType(MicronautBuildExtension)
         configureJavaPlugin(project, micronautBuild)
         configureDependencies(project, micronautBuild)
@@ -27,7 +28,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         configureLicensePlugin(project)
         configureTestLoggerPlugin(project)
         configureMiscPlugins(project)
-        configureCheckstyle(project, micronautBuild)
     }
 
     private void configureDependencies(Project project, MicronautBuildExtension micronautBuild) {
@@ -57,8 +57,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             }
 
             project.dependencies {
-                if (micronautBuild.enableBom) {
-                    if (micronautBuild.enforcedPlatform) {
+                if (micronautBuild.enableBom.get()) {
+                    if (micronautBuild.enforcedPlatform.get()) {
                         throw new GradleException("Do not use enforcedPlatform. Please remove the micronautBuild.enforcedPlatform setting")
                     }
                     String p = "platform"
@@ -69,7 +69,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     compileOnly "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
                 }
 
-                if (micronautBuild.enableProcessing) {
+                if (micronautBuild.enableProcessing.get()) {
                     annotationProcessor "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
                     testAnnotationProcessor "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
                 }
@@ -103,8 +103,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         project.afterEvaluate {
             JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
             convention.with {
-                sourceCompatibility = micronautBuildExtension.sourceCompatibility
-                targetCompatibility = micronautBuildExtension.targetCompatibility
+                sourceCompatibility = micronautBuildExtension.sourceCompatibility.get()
+                targetCompatibility = micronautBuildExtension.targetCompatibility.get()
             }
         }
 
@@ -134,7 +134,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             project.tasks.withType(JavaCompile).configureEach {
                     options.encoding = "UTF-8"
                     options.compilerArgs.add('-parameters')
-                    if (micronautBuildExtension.enableProcessing) {
+                    if (micronautBuildExtension.enableProcessing.get()) {
                         options.compilerArgs.add("-Amicronaut.processing.group=$project.group")
                         options.compilerArgs.add("-Amicronaut.processing.module=micronaut-$project.name")
                     }
@@ -165,30 +165,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 module {
                     outputDir file('build/classes/java/main')
                     testOutputDir file('build/classes/groovy/test')
-                }
-            }
-        }
-    }
-
-    void configureCheckstyle(Project project, MicronautBuildExtension micronautBuildExtension) {
-        project.afterEvaluate {
-            project.with {
-                apply plugin: 'checkstyle'
-                checkstyle {
-                    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
-                    toolVersion = micronautBuildExtension.checkstyleVersion
-
-                    // Per submodule
-                    maxErrors = 1
-                    maxWarnings = 10
-
-                    showViolations = true
-                }
-                tasks.named('checkstyleTest') {
-                    enabled = false
-                }
-                tasks.named('checkstyleMain') {
-                    dependsOn('spotlessCheck')
                 }
             }
         }

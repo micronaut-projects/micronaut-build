@@ -67,6 +67,7 @@ dependencies {
     implementation "com.adarshr:gradle-test-logger-plugin:3.1.0"
     implementation "io.github.gradle-nexus:publish-plugin:1.1.0"
     implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.18"
+    implementation "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.3"
     implementation('com.lowagie:itext:2.0.8')
     implementation 'org.jsoup:jsoup:1.14.3'
     implementation('org.xhtmlrenderer:core-renderer:8.0') {
@@ -168,6 +169,15 @@ gradlePlugin {
             id = 'io.micronaut.build.internal.aot-module'
             implementationClass = 'io.micronaut.build.aot.MicronautAotModulePlugin'
         }
+        qualityReporting {
+            id = 'io.micronaut.build.internal.quality-reporting'
+            implementationClass = 'io.micronaut.build.MicronautQualityReportingAggregatorPlugin'
+        }
+        qualityChecks {
+            id = 'io.micronaut.build.internal.quality-checks'
+            implementationClass = 'io.micronaut.build.MicronautQualityChecksParticipantPlugin'
+        }
+
     }
 }
 
