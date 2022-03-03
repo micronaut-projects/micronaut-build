@@ -77,4 +77,14 @@ public interface MicronautBomExtension {
      * @return the mapping from catalog property names to BOOM property names
      */
     MapProperty<String, String> getCatalogToPropertyNameOverrides();
+
+    /**
+     * Defines if imported catalogs (declared via the `bom.` prefix) should be
+     * scanned for entries starting with "micronaut", in which case such
+     * entries would be inlined into the current catalog (without version),
+     * so that users get type-safe accessors without having to explicitly
+     * import the nested catalog.
+     * @return the inline property
+     */
+    Property<Boolean> getInlineNestedCatalogs();
 }

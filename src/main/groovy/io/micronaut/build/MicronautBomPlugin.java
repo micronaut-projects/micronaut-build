@@ -18,6 +18,8 @@ package io.micronaut.build;
 import groovy.lang.Closure;
 import groovy.namespace.QName;
 import groovy.util.Node;
+import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
+import io.micronaut.build.catalogs.internal.Library;
 import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.pom.PomChecker;
 import io.micronaut.build.pom.VersionCatalogConverter;
@@ -25,11 +27,15 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.VersionCatalog;
 import org.gradle.api.artifacts.VersionCatalogsExtension;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.attributes.Category;
+import org.gradle.api.attributes.Usage;
 import org.gradle.api.component.AdhocComponentWithVariants;
+import org.gradle.api.initialization.dsl.VersionCatalogBuilder;
 import org.gradle.api.plugins.JavaPlatformExtension;
 import org.gradle.api.plugins.JavaPlatformPlugin;
 import org.gradle.api.plugins.PluginManager;
@@ -43,6 +49,8 @@ import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -83,6 +91,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         bomExtension.getExtraExcludedProjects().add(project.getName());
         bomExtension.getCatalogToPropertyNameOverrides().convention(Collections.emptyMap());
         configureBOM(project, bomExtension);
+        project.getRepositories().mavenCentral();
     }
 
     private static String nameOf(Node n) {
@@ -245,19 +254,26 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         });
 
         Configuration api = project.getConfigurations().getByName(JavaPlatformPlugin.API_CONFIGURATION_NAME);
-        versionCatalog.ifPresent(libsCatalog -> libsCatalog.getDependencyAliases().forEach(alias -> {
+        Configuration catalogs = project.getConfigurations().detachedConfiguration();
+        catalogs.attributes(attrs -> {
+            attrs.attribute(Category.CATEGORY_ATTRIBUTE, project.getObjects().named(Category.class, Category.REGULAR_PLATFORM));
+            attrs.attribute(Usage.USAGE_ATTRIBUTE, project.getObjects().named(Usage.class, Usage.VERSION_CATALOG));
+        });
+        versionCatalog.ifPresent(libsCatalog -> libsCatalog.getLibraryAliases().forEach(alias -> {
             if (alias.startsWith("boms.")) {
-                api.getDependencies().add(project.getDependencies().platform(libsCatalog.findDependency(alias)
+                Dependency bomDependency = project.getDependencies().platform(libsCatalog.findLibrary(alias)
                         .map(Provider::get)
                         .orElseThrow(() -> new RuntimeException("Unexpected missing alias in catalog: " + alias))
-                ));
+                );
+                api.getDependencies().add(bomDependency);
+                catalogs.getDependencies().add(bomDependency);
             } else if (alias.startsWith("managed.")) {
                 api.getDependencyConstraints().add(
-                        project.getDependencies().getConstraints().create(libsCatalog.findDependency(alias).map(Provider::get)
+                        project.getDependencies().getConstraints().create(libsCatalog.findLibrary(alias).map(Provider::get)
                                 .orElseThrow(() -> new RuntimeException("Unexpected missing alias in catalog: " + alias))));
             }
-
         }));
+        modelConverter.afterBuildingModel(builderState -> maybeInlineNestedCatalogs(bomExtension, catalogs, builderState));
         forEachProject(bomExtension, project, p -> {
             project.evaluationDependsOn(p.getPath());
             String moduleGroup = String.valueOf(p.getGroup());
@@ -273,6 +289,33 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
             modelConverter.getExtraVersions().put(moduleName, moduleVersion);
             modelConverter.getExtraLibraries().put(moduleName, VersionCatalogConverter.library(moduleGroup, moduleName, moduleName));
         });
+    }
+
+    private void maybeInlineNestedCatalogs(MicronautBomExtension bomExtension, Configuration catalogs, VersionCatalogConverter.BuilderState builderState) {
+        if (bomExtension.getInlineNestedCatalogs().get()) {
+            VersionCatalogBuilder builder = builderState.getBuilder();
+            Set<String> knownAliases = builderState.getKnownAliases();
+            catalogs.getIncoming()
+                    .artifactView(spec -> spec.lenient(true))
+                    .getFiles()
+                    .forEach(catalogFile -> {
+                        try (FileInputStream fis = new FileInputStream(catalogFile)) {
+                            LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
+                            parser.parse(fis);
+                            Set<Library> librariesTable = parser.getModel().getLibrariesTable();
+                            librariesTable.forEach(library -> {
+                                String alias = library.getAlias();
+                                if (alias.startsWith("micronaut") && !knownAliases.contains(alias)) {
+                                    knownAliases.add(alias);
+                                    builder.library(alias, library.getGroup(), library.getName())
+                                            .withoutVersion();
+                                }
+                            });
+                        } catch (IOException e) {
+                            System.err.println("Unable to parse version catalog file: " + catalogFile);
+                        }
+                    });
+        }
     }
 
     private void registerCheckBomTask(Project project, PublishingExtension publishing, TaskContainer tasks) {
