@@ -308,10 +308,13 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                             Set<Library> librariesTable = parser.getModel().getLibrariesTable();
                             librariesTable.forEach(library -> {
                                 String alias = library.getAlias();
-                                if (!knownAliases.contains(alias) && !excludeFromInlining.contains(alias)) {
-                                    knownAliases.add(alias);
-                                    builder.library(alias, library.getGroup(), library.getName())
-                                            .withoutVersion();
+                                if (!excludeFromInlining.contains(alias)) {
+                                    if (knownAliases.add(alias)) {
+                                        builder.library(alias, library.getGroup(), library.getName())
+                                                .withoutVersion();
+                                    } else {
+                                        System.err.println("[Warning] While inlining " + catalogFile.getName() + ", alias '" + alias + "' is already defined in the catalog so it won't be imported");
+                                    }
                                 }
                             });
                         } catch (IOException e) {
