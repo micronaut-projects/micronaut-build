@@ -1,0 +1,19 @@
+[versions]
+asm = "9.2"
+
+managed-dekorate = "1.0.3"
+managed-micronaut-aws = "3.1.1"
+
+[libraries]
+boms-micronaut-aws = { module = "io.micronaut.aws:micronaut-aws-bom", version.ref = "managed-micronaut-aws" }
+
+#
+# Libraries which start with managed- are managed by Micronaut in the sense
+# that they will appear in the Micronaut BOM
+#
+managed-dekorate = { module = "io.dekorate:dekorate-project", version.ref = "managed-dekorate" }
+
+#
+# Other libraries are used by Micronaut but will not appear in the BOM
+#
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }

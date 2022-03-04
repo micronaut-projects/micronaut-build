@@ -1,0 +1,6 @@
+plugins {
+	id 'io.micronaut.build.internal.bom'
+}
+
+group = 'io.micronaut.dummy'
+version = '1.2.3'

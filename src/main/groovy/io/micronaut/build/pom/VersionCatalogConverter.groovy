@@ -4,7 +4,11 @@ import groovy.transform.Canonical
 import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser
 import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel
 import org.gradle.api.InvalidUserCodeException
+import org.gradle.api.initialization.dsl.VersionCatalogBuilder
 import org.gradle.api.plugins.catalog.CatalogPluginExtension
+
+import java.util.function.Consumer
+
 /**
  * This is an internal task which responsibility is to parse
  * the Micronaut version catalog used internally, extract components
@@ -22,6 +26,7 @@ class VersionCatalogConverter {
     final CatalogPluginExtension catalogExtension
     final Map<String, String> extraVersions = [:]
     final Map<String, Library> extraLibraries = [:]
+    final List<Consumer<? super BuilderState>> afterBuildingModel = []
 
     VersionCatalogConverter(File catalogFile, CatalogPluginExtension ext) {
         this.catalogFile = catalogFile
@@ -29,6 +34,10 @@ class VersionCatalogConverter {
     }
 
     private VersionCatalogTomlModel model
+
+    void afterBuildingModel(Consumer<? super BuilderState> consumer) {
+        afterBuildingModel << consumer
+    }
 
     VersionCatalogTomlModel getModel() {
         if (model == null) {
@@ -43,12 +52,13 @@ class VersionCatalogConverter {
 
     void populateModel() {
         catalogExtension.versionCatalog {builder ->
+            Set<String> knownAliases = []
             extraVersions.forEach { alias, version ->
                 builder.version(alias, version)
             }
             extraLibraries.forEach { alias, library ->
-                builder.alias(alias)
-                        .to(library.group, library.name)
+                knownAliases.add(alias)
+                builder.library(alias, library.group, library.name)
                         .versionRef(library.versionRef)
             }
             model.versionsTable.each { version ->
@@ -61,10 +71,15 @@ class VersionCatalogConverter {
                     if (!library.version.reference.startsWith("managed-")) {
                         throw new InvalidUserCodeException("Version catalog declares a managed library '${library.alias}' referencing a non managed version '${library.version.reference}'. Make sure to use a managed version.")
                     }
-                    builder.alias(library.alias.substring(8))
-                            .to(library.group, library.name)
+
+                    def alias = library.alias.substring(8)
+                    knownAliases.add(alias)
+                    builder.library(alias, library.group, library.name)
                             .versionRef(library.version.reference.substring(8))
                 }
+            }
+            afterBuildingModel.each {
+                it.accept(new BuilderState(builder, knownAliases))
             }
         }
     }
@@ -78,5 +93,11 @@ class VersionCatalogConverter {
         final String group
         final String name
         final String versionRef
+    }
+
+    @Canonical
+    static class BuilderState {
+        final VersionCatalogBuilder builder
+        final Set<String> knownAliases
     }
 }
