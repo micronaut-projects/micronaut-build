@@ -1,4 +1,6 @@
-package io.micronaut.build
+package io.micronaut.build.quality
+
+import io.micronaut.build.AbstractFunctionalTest
 
 class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
 

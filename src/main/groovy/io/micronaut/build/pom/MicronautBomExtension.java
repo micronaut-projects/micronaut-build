@@ -87,4 +87,11 @@ public interface MicronautBomExtension {
      * @return the inline property
      */
     Property<Boolean> getInlineNestedCatalogs();
+
+    /**
+     * Defines which aliases shouldn't be lined when importing other
+     * catalogs
+     * @return the ignored aliases
+     */
+    SetProperty<String> getExcludedInlinedAliases();
 }

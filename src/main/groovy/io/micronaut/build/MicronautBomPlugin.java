@@ -90,6 +90,8 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         bomExtension.getExcludeProject().convention(p -> p.getName().contains("bom") || p.getName().startsWith("test-suite") || !p.getSubprojects().isEmpty());
         bomExtension.getExtraExcludedProjects().add(project.getName());
         bomExtension.getCatalogToPropertyNameOverrides().convention(Collections.emptyMap());
+        bomExtension.getInlineNestedCatalogs().convention(true);
+        bomExtension.getExcludedInlinedAliases().convention(Collections.emptySet());
         configureBOM(project, bomExtension);
         project.getRepositories().mavenCentral();
     }
@@ -295,6 +297,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         if (bomExtension.getInlineNestedCatalogs().get()) {
             VersionCatalogBuilder builder = builderState.getBuilder();
             Set<String> knownAliases = builderState.getKnownAliases();
+            Set<String> excludeFromInlining = bomExtension.getExcludedInlinedAliases().get();
             catalogs.getIncoming()
                     .artifactView(spec -> spec.lenient(true))
                     .getFiles()
@@ -305,7 +308,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                             Set<Library> librariesTable = parser.getModel().getLibrariesTable();
                             librariesTable.forEach(library -> {
                                 String alias = library.getAlias();
-                                if (alias.startsWith("micronaut") && !knownAliases.contains(alias)) {
+                                if (!knownAliases.contains(alias) && !excludeFromInlining.contains(alias)) {
                                     knownAliases.add(alias);
                                     builder.library(alias, library.getGroup(), library.getName())
                                             .withoutVersion();
