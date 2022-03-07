@@ -22,12 +22,14 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -56,10 +58,12 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                     String version = readBaseline(baselineTask);
                     return project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version + "@jar");
                 }));
+                RegularFile changesFile = project.getRootProject().getLayout().getProjectDirectory().file("accepted-api-changes.json");
                 TaskProvider<JapicmpTask> japicmpTask = tasks.register("japiCmp", JapicmpTask.class, task -> {
                     task.getNewClasspath().from(project.getConfigurations().getByName("runtimeClasspath"));
                     task.getOldClasspath().from(oldClasspath);
                     task.getOldArchives().from(oldJar);
+                    task.getInputs().property("accepted-api-changes", providers.provider(changesFile::getAsFile)).optional(true);
                     task.richReport(report -> {
                         report.getReportName().set("binary-compatibility-" + project.getName() + ".html");
                         report.getTitle().set(baseline.map(baselineTask -> {
@@ -67,7 +71,10 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                             return "Binary compatibility report for Micronaut " + project.getName() + " " + project.getVersion() + " against " + version;
                         }));
                         report.getAddDefaultRules().set(true);
-                        report.addPostProcessRule(InternalMicronautTypeRule.class);
+                        report.addViolationTransformer(InternalMicronautTypeRule.class);
+                        report.addViolationTransformer(AcceptedApiChangesRule.class,
+                                Collections.singletonMap(AcceptedApiChangesRule.CHANGES_FILE, changesFile.getAsFile().getAbsolutePath())
+                        );
                     });
                     task.getIgnoreMissingClasses().set(true);
                 });

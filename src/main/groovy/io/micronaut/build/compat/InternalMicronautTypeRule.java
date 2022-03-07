@@ -15,41 +15,33 @@
  */
 package io.micronaut.build.compat;
 
-import me.champeau.gradle.japicmp.report.PostProcessViolationsRule;
 import me.champeau.gradle.japicmp.report.Severity;
 import me.champeau.gradle.japicmp.report.Violation;
-import me.champeau.gradle.japicmp.report.ViolationCheckContextWithViolations;
+import me.champeau.gradle.japicmp.report.ViolationTransformer;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 /**
  * This rule turns errors on internal types into warnings.
  */
-public class InternalMicronautTypeRule implements PostProcessViolationsRule {
-    @Override
-    public void execute(ViolationCheckContextWithViolations context) {
-        Map<String, List<Violation>> violations = context.getViolations();
-        Map<String, List<Violation>> newViolations = violations.entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> {
-                            String className = e.getKey();
-                            return e.getValue().stream()
-                                    .map(violation -> {
-                                        if (isInternalType(className) && violation.getSeverity() == Severity.error) {
-                                            return violation.withSeverity(Severity.warning);
-                                        }
-                                        return violation;
-                                    })
-                                    .collect(Collectors.toList());
-                        })
-                );
-        context.getViolations().clear();
-        context.getViolations().putAll(newViolations);
-    }
-
+public class InternalMicronautTypeRule implements ViolationTransformer {
     private static boolean isInternalType(String className) {
         return className.startsWith("io.micronaut") && className.contains(".internal.");
     }
+
+    /**
+     * Transforms the current violation.
+     *
+     * @param type the type on which the violation was found
+     * @param violation the violation
+     * @return a transformed violation. If the violation should be suppressed, return Optional.empty()
+     */
+    @Override
+    public Optional<Violation> transform(String type, Violation violation) {
+        if (isInternalType(type) && violation.getSeverity() == Severity.error) {
+            return Optional.of(violation.withSeverity(Severity.warning));
+        }
+        return Optional.of(violation);
+    }
+
 }
