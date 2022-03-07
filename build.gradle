@@ -178,7 +178,10 @@ gradlePlugin {
             id = 'io.micronaut.build.internal.quality-checks'
             implementationClass = 'io.micronaut.build.MicronautQualityChecksParticipantPlugin'
         }
-
+        binaryCompatibilityCheck {
+            id = 'io.micronaut.build.internal.binary-compatibility-check'
+            implementationClass = 'io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin'
+        }
     }
 }
 

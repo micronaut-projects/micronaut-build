@@ -16,17 +16,21 @@
 package io.micronaut.build.compat;
 
 import com.google.common.io.Files;
+import io.micronaut.build.MicronautBuildExtension;
+import io.micronaut.build.MicronautBuildExtensionPlugin;
 import io.micronaut.build.MicronautPublishingPlugin;
 import me.champeau.gradle.japicmp.JapicmpTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.file.RegularFile;
+import org.gradle.api.plugins.ExtensionAware;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -39,42 +43,38 @@ import java.util.List;
 public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
+        project.getPlugins().apply(MicronautBuildExtensionPlugin.class);
+        MicronautBuildExtension extension = project.getExtensions().getByType(MicronautBuildExtension.class);
+        BinaryCompatibibilityExtension binaryCompatibility = ((ExtensionAware) extension).getExtensions().create("binaryCompatibility", BinaryCompatibibilityExtension.class);
+        binaryCompatibility.getAcceptedRegressionsFile().convention(
+                project.getRootProject().getLayout().getProjectDirectory().file("accepted-api-changes.json")
+        );
         project.getPlugins().withType(MicronautPublishingPlugin.class, unused -> {
             project.getPluginManager().withPlugin("java-library", alsoUnused -> {
                 TaskContainer tasks = project.getTasks();
                 ProviderFactory providers = project.getProviders();
-                TaskProvider<FindBaselineTask> baseline = tasks.register("findBaseline", FindBaselineTask.class, task -> {
+                TaskProvider<FindBaselineTask> baselineTask = tasks.register("findBaseline", FindBaselineTask.class, task -> {
+                    task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
                     task.getGithubSlug().convention(providers.gradleProperty("githubSlug"));
                     task.getCurrentVersion().convention(providers.provider(() -> project.getVersion().toString()));
                     task.getPreviousVersion().convention(project.getLayout().getBuildDirectory().file("baseline.txt"));
                 });
+                Provider<String> baseline = providers.provider(() -> binaryCompatibility.getBaselineVersion().orElse(baselineTask.map(MicronautBinaryCompatibilityPlugin::readBaseline)).get());
                 Configuration oldClasspath = project.getConfigurations().detachedConfiguration();
                 Configuration oldJar = project.getConfigurations().detachedConfiguration();
-                oldClasspath.getDependencies().addLater(baseline.map(baselineTask -> {
-                    String version = readBaseline(baselineTask);
-                    return project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version);
-                }));
-                oldJar.getDependencies().addLater(baseline.map(baselineTask -> {
-                    String version = readBaseline(baselineTask);
-                    return project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version + "@jar");
-                }));
-                RegularFile changesFile = project.getRootProject().getLayout().getProjectDirectory().file("accepted-api-changes.json");
+                oldClasspath.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version)));
+                oldJar.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version + "@jar")));
                 TaskProvider<JapicmpTask> japicmpTask = tasks.register("japiCmp", JapicmpTask.class, task -> {
+                    task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
+                    task.dependsOn(baselineTask);
                     task.getNewClasspath().from(project.getConfigurations().getByName("runtimeClasspath"));
                     task.getOldClasspath().from(oldClasspath);
                     task.getOldArchives().from(oldJar);
-                    task.getInputs().property("accepted-api-changes", providers.provider(changesFile::getAsFile)).optional(true);
                     task.richReport(report -> {
                         report.getReportName().set("binary-compatibility-" + project.getName() + ".html");
-                        report.getTitle().set(baseline.map(baselineTask -> {
-                            String version = readBaseline(baselineTask);
-                            return "Binary compatibility report for Micronaut " + project.getName() + " " + project.getVersion() + " against " + version;
-                        }));
+                        report.getTitle().set(baseline.map(version -> "Binary compatibility report for Micronaut " + project.getName() + " " + project.getVersion() + " against " + version));
                         report.getAddDefaultRules().set(true);
                         report.addViolationTransformer(InternalMicronautTypeRule.class);
-                        report.addViolationTransformer(AcceptedApiChangesRule.class,
-                                Collections.singletonMap(AcceptedApiChangesRule.CHANGES_FILE, changesFile.getAsFile().getAbsolutePath())
-                        );
                     });
                     task.getIgnoreMissingClasses().set(true);
                 });
@@ -84,7 +84,16 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                         jar = tasks.getByName("jar");
                     }
                     Task effectiveJar = jar;
-                    japicmpTask.configure(task -> task.getNewArchives().from(effectiveJar));
+                    japicmpTask.configure(task -> {
+                        File changesFile = binaryCompatibility.getAcceptedRegressionsFile().get().getAsFile();
+                        task.getInputs().property("accepted-api-changes", changesFile).optional(true);
+                        task.getNewArchives().from(effectiveJar);
+                        task.richReport(report ->
+                                report.addViolationTransformer(AcceptedApiChangesRule.class,
+                                        Collections.singletonMap(AcceptedApiChangesRule.CHANGES_FILE, changesFile.getAbsolutePath())
+                                )
+                        );
+                    });
                 });
             });
         });
