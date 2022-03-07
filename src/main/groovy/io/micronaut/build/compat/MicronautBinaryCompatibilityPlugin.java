@@ -27,6 +27,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
@@ -78,6 +79,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                     });
                     task.getIgnoreMissingClasses().set(true);
                 });
+                tasks.named("check").configure(task -> task.dependsOn(japicmpTask));
                 project.afterEvaluate(p -> {
                     Task jar = tasks.findByName("shadowJar");
                     if (jar == null) {
@@ -86,7 +88,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                     Task effectiveJar = jar;
                     japicmpTask.configure(task -> {
                         File changesFile = binaryCompatibility.getAcceptedRegressionsFile().get().getAsFile();
-                        task.getInputs().property("accepted-api-changes", changesFile).optional(true);
+                        task.getInputs().file(changesFile).withPropertyName("accepted-api-changes").withPathSensitivity(PathSensitivity.NONE).optional(true);
                         task.getNewArchives().from(effectiveJar);
                         task.richReport(report ->
                                 report.addViolationTransformer(AcceptedApiChangesRule.class,
