@@ -1,1 +1,3 @@
 rootProject.name = 'micronaut-build'
+
+includeBuild "/home/cchampeau/DEV/PROJECTS/GITHUB/japicmp-gradle-plugin"
