@@ -66,6 +66,7 @@ public class AcceptedApiChangesRule implements ViolationTransformer {
         switch (violation.getSeverity()) {
             case info:
             case accepted:
+            case warning:
                 return Optional.of(violation);
             default:
                 return Optional.of(violation.withDescription(

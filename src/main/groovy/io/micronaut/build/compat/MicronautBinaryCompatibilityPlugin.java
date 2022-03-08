@@ -48,7 +48,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
         MicronautBuildExtension extension = project.getExtensions().getByType(MicronautBuildExtension.class);
         BinaryCompatibibilityExtension binaryCompatibility = ((ExtensionAware) extension).getExtensions().create("binaryCompatibility", BinaryCompatibibilityExtension.class);
         binaryCompatibility.getAcceptedRegressionsFile().convention(
-                project.getRootProject().getLayout().getProjectDirectory().file("accepted-api-changes.json")
+                project.getRootProject().getLayout().getProjectDirectory().file("config/accepted-api-changes.json")
         );
         project.getPlugins().withType(MicronautPublishingPlugin.class, unused -> {
             project.getPluginManager().withPlugin("java-library", alsoUnused -> {
@@ -76,6 +76,8 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                         report.getTitle().set(baseline.map(version -> "Binary compatibility report for Micronaut " + project.getName() + " " + project.getVersion() + " against " + version));
                         report.getAddDefaultRules().set(true);
                         report.addViolationTransformer(InternalMicronautTypeRule.class);
+                        report.addRule(InternalAnnotationCollectorRule.class);
+                        report.addPostProcessRule(InternalAnnotationPostProcessRule.class);
                     });
                     task.getIgnoreMissingClasses().set(true);
                 });
@@ -88,7 +90,9 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                     Task effectiveJar = jar;
                     japicmpTask.configure(task -> {
                         File changesFile = binaryCompatibility.getAcceptedRegressionsFile().get().getAsFile();
-                        task.getInputs().file(changesFile).withPropertyName("accepted-api-changes").withPathSensitivity(PathSensitivity.NONE).optional(true);
+                        if (changesFile.exists()) {
+                            task.getInputs().file(changesFile).withPropertyName("accepted-api-changes").withPathSensitivity(PathSensitivity.NONE).optional(true);
+                        }
                         task.getNewArchives().from(effectiveJar);
                         task.richReport(report ->
                                 report.addViolationTransformer(AcceptedApiChangesRule.class,

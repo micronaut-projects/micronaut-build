@@ -15,11 +15,14 @@
  */
 package io.micronaut.build.compat;
 
+import japicmp.model.JApiHasAnnotations;
 import me.champeau.gradle.japicmp.report.Severity;
 import me.champeau.gradle.japicmp.report.Violation;
 import me.champeau.gradle.japicmp.report.ViolationTransformer;
 
 import java.util.Optional;
+
+import static io.micronaut.build.compat.InternalAnnotationCollectorRule.isAnnotatedWithInternal;
 
 /**
  * This rule turns errors on internal types into warnings.
@@ -40,6 +43,12 @@ public class InternalMicronautTypeRule implements ViolationTransformer {
     public Optional<Violation> transform(String type, Violation violation) {
         if (isInternalType(type) && violation.getSeverity() == Severity.error) {
             return Optional.of(violation.withSeverity(Severity.warning));
+        }
+        if (violation.getMember() instanceof JApiHasAnnotations) {
+            JApiHasAnnotations member = (JApiHasAnnotations) violation.getMember();
+            if (isAnnotatedWithInternal(member)) {
+                return Optional.of(violation.withSeverity(Severity.warning));
+            }
         }
         return Optional.of(violation);
     }
