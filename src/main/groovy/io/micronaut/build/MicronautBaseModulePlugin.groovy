@@ -1,6 +1,7 @@
 package io.micronaut.build
 
 import groovy.transform.CompileStatic
+import io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.internal.GradleInternal
@@ -23,6 +24,7 @@ class MicronautBaseModulePlugin implements Plugin<Project> {
         project.pluginManager.apply(MicronautBuildCommonPlugin)
         project.pluginManager.apply(MicronautDependencyUpdatesPlugin)
         project.pluginManager.apply(MicronautPublishingPlugin)
+        project.pluginManager.apply(MicronautBinaryCompatibilityPlugin)
         configureJUnit(project)
         assertSettingsPluginApplied(project)
     }
