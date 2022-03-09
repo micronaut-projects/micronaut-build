@@ -1,0 +1,4 @@
+allprojects {
+    group = 'io.micronaut.freedom'
+    version = projectVersion
+}
