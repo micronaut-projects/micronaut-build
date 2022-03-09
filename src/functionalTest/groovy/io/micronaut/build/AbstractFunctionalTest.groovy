@@ -22,6 +22,7 @@ import org.gradle.util.GFileUtils
 import spock.lang.Specification
 import spock.lang.TempDir
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 abstract class AbstractFunctionalTest extends Specification {
@@ -172,6 +173,12 @@ abstract class AbstractFunctionalTest extends Specification {
             tasks.each { task ->
                 assert result.task(task) == null: "Task $task should be missing from the task graph but it was found with an outcome of ${result.task(task).outcome}"
             }
+        }
+    }
+
+    protected void dumpRepoContents() {
+        Files.walk(file("build/repo").toPath()).forEach {
+            println(it.toString())
         }
     }
 }

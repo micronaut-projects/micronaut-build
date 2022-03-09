@@ -1,0 +1,5 @@
+rootProject.name = "freedom"
+
+include "freedom-bom"
+include "freedom-foo"
+include "freedom-bar"

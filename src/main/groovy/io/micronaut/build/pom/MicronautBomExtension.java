@@ -94,4 +94,11 @@ public interface MicronautBomExtension {
      * @return the ignored aliases
      */
     SetProperty<String> getExcludedInlinedAliases();
+
+    /**
+     * Defines the property name of the version of project dependencies,
+     * in case it cannot be deduced properly from the root project name
+     * @return the property name
+     */
+    Property<String> getPropertyName();
 }
