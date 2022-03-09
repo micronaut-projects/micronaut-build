@@ -184,6 +184,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
     }
 
     private void configureLate(Project project, MicronautBomExtension bomExtension, PublishingExtension publishing, TaskContainer tasks) {
+        String mainProjectId = bomExtension.getPropertyName().getOrElse(project.getRootProject().getName().replace("-parent", "").replace('-', '.'));
         String publishedName = "micronaut-" + project.getName();
         String group = String.valueOf(project.getGroup());
         Optional<VersionCatalog> versionCatalog = findVersionCatalog(project, bomExtension);
@@ -193,7 +194,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         );
         tasks.named("generateCatalogAsToml", task -> modelConverter.populateModel());
         if (bomExtension.getPublishCatalog().get()) {
-            configureVersionCatalog(project, bomExtension, publishedName, group);
+            configureVersionCatalog(project, bomExtension, publishedName, group, mainProjectId);
         }
         publishing.getPublications().named("maven", MavenPublication.class, pub -> {
             pub.setArtifactId(publishedName);
@@ -226,7 +227,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
 
                     // Add individual module versions as properties
                     forEachProject(bomExtension, project, p -> {
-                        String propertyName = "micronaut." + p.getName().replace('-', '.') + ".version";
+                        String propertyName = "micronaut." + mainProjectId + ".version";
                         String projectGroup = String.valueOf(p.getGroup());
                         Optional<Node> pomDep = forEachNode(node, DEPENDENCY_PATH)
                                 .filter(n -> childOf(n, "artifactId").text().equals("micronaut-" + p.getName()) &&
@@ -249,7 +250,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                 }));
                 forEachProject(bomExtension, project, p -> {
                     project.evaluationDependsOn(p.getPath());
-                    String propertyName = "micronaut." + p.getName().replace('-', '.') + ".version";
+                    String propertyName = "micronaut." + mainProjectId + ".version";
                     pom.getProperties().put(propertyName, assertVersion(p));
                 });
             });
@@ -288,8 +289,9 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                             .create(moduleGroup + ":" + moduleName + ":" + moduleVersion)
             );
 
-            modelConverter.getExtraVersions().put(moduleName, moduleVersion);
-            modelConverter.getExtraLibraries().put(moduleName, VersionCatalogConverter.library(moduleGroup, moduleName, moduleName));
+            String mainModuleName = "micronaut-" + mainProjectId.replace('.', '-');
+            modelConverter.getExtraVersions().put(mainModuleName, moduleVersion);
+            modelConverter.getExtraLibraries().put(moduleName, VersionCatalogConverter.library(moduleGroup, moduleName, mainModuleName));
         });
     }
 
@@ -352,12 +354,13 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         return Optional.ofNullable(versionCatalogsExtension).map(e -> e.named("libs"));
     }
 
-    private void configureVersionCatalog(Project project, MicronautBomExtension bomExtension, String publishedName, String group) {
+    private void configureVersionCatalog(Project project, MicronautBomExtension bomExtension, String publishedName, String group, String mainProjectId) {
         if (bomExtension.getIncludeBomInCatalog().get()) {
             CatalogPluginExtension catalog = project.getExtensions().getByType(CatalogPluginExtension.class);
             catalog.versionCatalog(vc -> {
-                String versionName = publishedName.replace('-', '.');
-                vc.alias(publishedName).to(group, publishedName).versionRef(versionName);
+                String mainModuleName = "micronaut-" + mainProjectId;
+                String versionName = mainModuleName.replace('-', '.');
+                vc.library(publishedName, group, publishedName).versionRef(versionName);
                 vc.version(versionName, String.valueOf(project.getVersion()));
             });
         }
