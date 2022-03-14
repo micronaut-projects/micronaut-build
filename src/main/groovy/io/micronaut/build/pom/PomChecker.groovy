@@ -180,7 +180,10 @@ abstract class PomChecker extends DefaultTask {
             // We have a BOM which imports another BOM. This should only
             // be allowed for Micronaut BOMs themselves
             if (!validation.pomFile.groupId.startsWith("io.micronaut")) {
-                errors.errors.add("BOM ${validation.pomFile.groupId}:${validation.pomFile.artifactId}:${validation.pomFile.version} imports another BOM but is not a Micronaut BOM".toString())
+                validation.pomFile.findImports().each {
+                    String dependency = "${it.groupId}:${it.artifactId}:${it.version}"
+                    errors.error(dependency, "BOM ${validation.pomFile.groupId}:${validation.pomFile.artifactId}:${validation.pomFile.version} (via $validation.dependencyPath) is not a Micronaut BOM but it imports another BOM ($dependency)".toString())
+                }
             }
         }
     }

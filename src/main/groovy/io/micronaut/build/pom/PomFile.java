@@ -17,6 +17,7 @@ package io.micronaut.build.pom;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class PomFile {
     private final String groupId;
@@ -60,6 +61,12 @@ public class PomFile {
     public boolean isImportingBom() {
         return dependencies.stream()
                 .anyMatch(PomDependency::isImport);
+    }
+
+    public List<PomDependency> findImports() {
+        return dependencies.stream()
+                .filter(PomDependency::isImport)
+                .collect(Collectors.toList());
     }
 
     public List<PomDependency> getDependencies() {
