@@ -32,8 +32,16 @@ public class VersionModel implements Comparable<VersionModel> {
 
     private VersionModel(String current, VersionModel leaf) {
         this.current = current;
-        this.currentAsInt = Integer.parseInt(current);
+        this.currentAsInt = parseInt(current);
         this.leaf = leaf;
+    }
+
+    private static int parseInt(String current) {
+        try {
+            return Integer.parseInt(current);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     @Override
