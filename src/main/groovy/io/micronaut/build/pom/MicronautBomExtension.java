@@ -15,11 +15,13 @@
  */
 package io.micronaut.build.pom;
 
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.Nested;
 
 /**
  * Extension to configure BOM projects.
@@ -101,4 +103,11 @@ public interface MicronautBomExtension {
      * @return the property name
      */
     Property<String> getPropertyName();
+
+    @Nested
+    BomSuppressions getSuppressions();
+
+    default void suppressions(Action<? super BomSuppressions> spec) {
+        spec.execute(getSuppressions());
+    }
 }

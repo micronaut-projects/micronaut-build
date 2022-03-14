@@ -179,7 +179,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         TaskContainer tasks = project.getTasks();
         project.afterEvaluate(unused -> configureLate(project, bomExtension, publishing, tasks));
 
-        registerCheckBomTask(project, publishing, tasks);
+        registerCheckBomTask(project, publishing, tasks, bomExtension);
 
     }
 
@@ -326,7 +326,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         }
     }
 
-    private void registerCheckBomTask(Project project, PublishingExtension publishing, TaskContainer tasks) {
+    private void registerCheckBomTask(Project project, PublishingExtension publishing, TaskContainer tasks, MicronautBomExtension bomExtension) {
         TaskProvider<PomChecker> checkBom = tasks.register("checkBom", PomChecker.class, task -> {
             String repoUrl = "https://repo.maven.apache.org/maven2/";
             ArtifactRepository repo = publishing.getRepositories().findByName("Build");
@@ -334,11 +334,17 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                 repoUrl = ((MavenArtifactRepository) repo).getUrl().toString();
             }
             task.getRepositories().add(repoUrl);
+            project.getRepositories().forEach(r ->{
+                if (r instanceof MavenArtifactRepository) {
+                    task.getRepositories().add(((MavenArtifactRepository) r).getUrl().toString());
+                }
+            });
             task.getPomFile().fileProvider(tasks.named("generatePomFileForMavenPublication", GenerateMavenPom.class).map(GenerateMavenPom::getDestination));
             String version = assertVersion(project);
-            task.getPomCoordinates().set(String.format("{}:{}:{}", project.getGroup(), "micronaut-" + project.getName(), version));
-            task.getCheckBomContents().set(false);
-            task.getReport().set(project.getLayout().getBuildDirectory().file("reports/boms/micronaut-bom.txt"));
+            task.getSuppressions().convention(bomExtension.getSuppressions());
+            task.getPomCoordinates().set(project.getGroup() + ":micronaut-" + project.getName() + ":" + version);
+            task.getReportDirectory().set(project.getLayout().getBuildDirectory().dir("reports/boms"));
+            task.getPomsDirectory().set(project.getLayout().getBuildDirectory().dir("poms"));
             task.getFailOnSnapshots().set(!version.endsWith("-SNAPSHOT"));
             task.getFailOnError().set(true);
         });
