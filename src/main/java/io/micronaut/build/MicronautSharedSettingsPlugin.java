@@ -15,10 +15,6 @@
  */
 package io.micronaut.build;
 
-import com.gradle.CommonCustomUserDataGradlePlugin;
-import com.gradle.enterprise.gradleplugin.GradleEnterpriseExtension;
-import com.gradle.enterprise.gradleplugin.GradleEnterprisePlugin;
-import com.gradle.scan.plugin.BuildScanExtension;
 import io.github.gradlenexus.publishplugin.NexusPublishExtension;
 import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Plugin;
@@ -28,15 +24,13 @@ import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
-import org.gradle.caching.configuration.BuildCacheConfiguration;
-import org.gradle.caching.http.HttpBuildCache;
-import org.nosphere.gradle.github.ActionsPlugin;
 
-import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static io.micronaut.build.ProviderUtils.envOrSystemProperty;
 
 public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
     public static final String NEXUS_STAGING_PROFILE_ID = "11bd7bc41716aa";
@@ -44,11 +38,8 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
     @Override
     public void apply(Settings settings) {
         PluginManager pluginManager = settings.getPluginManager();
-        pluginManager.apply(GradleEnterprisePlugin.class);
-        pluginManager.apply(CommonCustomUserDataGradlePlugin.class);
-        GradleEnterpriseExtension ge = settings.getExtensions().getByType(GradleEnterpriseExtension.class);
-        MicronautBuildSettingsExtension micronautBuildSettingsExtension = settings.getExtensions().create("micronautBuild", MicronautBuildSettingsExtension.class);
-        configureGradleEnterprise(settings, ge, micronautBuildSettingsExtension);
+        pluginManager.apply(MicronautBuildSettingsPlugin.class);
+        pluginManager.apply(MicronautGradleEnterprisePlugin.class);
         applyPublishingPlugin(settings);
         assertUniqueProjectNames(settings);
     }
@@ -96,7 +87,7 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         nexusPublish.getRepositoryDescription().set("" + rootProject.getGroup() + ":" + rootProject.getName() + ":" + version);
         nexusPublish.getUseStaging().convention(!version.endsWith("-SNAPSHOT"));
         nexusPublish.repositories(repos -> repos.create("sonatype", repo -> {
-            repo.getAllowInsecureProtocol().convention(rootProject.getProviders().systemProperty("allowInsecurePublishing").forUseAtConfigurationTime().map(Boolean::parseBoolean).orElse(false));
+            repo.getAllowInsecureProtocol().convention(rootProject.getProviders().systemProperty("allowInsecurePublishing").map(Boolean::parseBoolean).orElse(false));
             repo.getUsername().set(ossUser);
             repo.getPassword().set(ossPass);
             repo.getNexusUrl().set(uri(envOrSystemProperty(rootProject.getProviders(), "SONATYPE_REPO_URI", "sonatypeRepoUri", "https://s01.oss.sonatype.org/service/local/")));
@@ -113,98 +104,6 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         }
     }
 
-    private static String envOrSystemProperty(ProviderFactory providers, String envName, String propertyName, String defaultValue) {
-        return providers.environmentVariable(envName)
-                .forUseAtConfigurationTime()
-                .orElse(providers.gradleProperty(propertyName).forUseAtConfigurationTime())
-                .getOrElse(defaultValue);
-    }
 
-    private void configureGradleEnterprise(Settings settings,
-                                           GradleEnterpriseExtension ge,
-                                           MicronautBuildSettingsExtension micronautBuildSettingsExtension) {
-        ProviderFactory providers = settings.getProviders();
-        Provider<Boolean> publishScanOnDemand = providers.gradleProperty("publishScanOnDemand")
-                .forUseAtConfigurationTime()
-                .map(Boolean::parseBoolean)
-                .orElse(false);
-        boolean isCI = guessCI(providers);
-        configureBuildScansPublishing(ge, isCI, publishScanOnDemand);
-        settings.getGradle().projectsLoaded(MicronautSharedSettingsPlugin::applyGitHubActionsPlugin);
-        if (providers.gradleProperty("org.gradle.caching").forUseAtConfigurationTime().map(Boolean::parseBoolean).orElse(true).get()) {
-            settings.getGradle().settingsEvaluated(lateSettings -> {
-                BuildCacheConfiguration buildCache = settings.getBuildCache();
-                boolean localEnabled = micronautBuildSettingsExtension.getUseLocalCache().get();
-                boolean remoteEnabled = micronautBuildSettingsExtension.getUseRemoteCache().get();
-                boolean push = MicronautBuildSettingsExtension.booleanProvider(providers, "cachePush", isCI).get();
-                if (isCI) {
-                    System.out.println("Build cache     enabled     push");
-                    System.out.println("    Local        " + (localEnabled ? "   Y   " : "   N   ") + "     N/A");
-                    System.out.println("    Remote       " + (remoteEnabled ? "   Y   " : "   N   ") + "     " + (push ? " Y" : " N"));
-                }
-                buildCache.getLocal().setEnabled(localEnabled);
-                if (remoteEnabled) {
-                    buildCache.remote(HttpBuildCache.class, remote -> {
-                        remote.setUrl("https://ge.micronaut.io/cache/");
-                        remote.setEnabled(true);
-                        if (push) {
-                            String username = envOrSystemProperty(providers, "GRADLE_ENTERPRISE_CACHE_USERNAME", "gradleEnterpriseCacheUsername", "");
-                            String password = envOrSystemProperty(providers, "GRADLE_ENTERPRISE_CACHE_PASSWORD", "gradleEnterpriseCachePassword", "");
-                            if (!username.isEmpty() && !password.isEmpty()) {
-                                remote.setPush(true);
-                                remote.credentials(creds -> {
-                                    creds.setUsername(username);
-                                    creds.setPassword(password);
-                                });
-                            } else {
-                                System.err.println("WARNING: No credentials for remote build cache, cannot configure push!");
-                            }
-                        }
-                    });
-                }
-            });
-        }
-    }
 
-    private void configureBuildScansPublishing(GradleEnterpriseExtension ge, boolean isCI, Provider<Boolean> publishScanOnDemand) {
-        ge.setServer("https://ge.micronaut.io");
-        ge.buildScan(buildScan -> {
-            if (!publishScanOnDemand.get()) {
-                buildScan.publishAlways();
-            }
-            if (isCI) {
-                buildScan.setUploadInBackground(false);
-            } else {
-                publishIfAuthenticated(buildScan);
-            }
-            buildScan.capture(c ->
-                    c.setTaskInputFiles(true)
-            );
-        });
-    }
-
-    private static void applyGitHubActionsPlugin(Gradle gradle) {
-        gradle.getRootProject().getPluginManager().apply(ActionsPlugin.class);
-    }
-
-    private static void publishIfAuthenticated(BuildScanExtension ext) {
-        try {
-            ext.getClass().getMethod("publishIfAuthenticated").invoke(ext);
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            System.err.println("Unable to set publish if authenticated on build scan extension");
-        }
-    }
-
-    private static boolean guessCI(ProviderFactory providers) {
-        return providers
-                .environmentVariable("CI").forUseAtConfigurationTime()
-                .flatMap(s -> // Not all workflows may have the enterprise key set
-                        providers.environmentVariable("GRADLE_ENTERPRISE_ACCESS_KEY")
-                                .forUseAtConfigurationTime()
-                                .map(env -> true)
-                                .orElse(false)
-                )
-                .orElse(false)
-                .get();
-    }
 }
