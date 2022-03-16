@@ -33,13 +33,11 @@ public class PomDownloader {
     }
 
     public Optional<File> tryDownloadPom(PomDependency dependency) {
-        for (String repository : repositories) {
-            Optional<File> pomFile = tryDownloadPom(dependency, repository);
-            if (pomFile.isPresent()) {
-                return pomFile;
-            }
-        }
-        return Optional.empty();
+        return repositories.stream()
+                .map(repositoryUrl -> tryDownloadPom(dependency, repositoryUrl))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
     }
 
     private Optional<File> tryDownloadPom(PomDependency dependency, String repositoryUrl) {
