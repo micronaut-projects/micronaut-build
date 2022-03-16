@@ -24,12 +24,15 @@ import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.pom.PomChecker;
 import io.micronaut.build.pom.VersionCatalogConverter;
 import org.gradle.api.GradleException;
+import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.DependencyConstraint;
 import org.gradle.api.artifacts.VersionCatalog;
 import org.gradle.api.artifacts.VersionCatalogsExtension;
+import org.gradle.api.artifacts.VersionConstraint;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.attributes.Category;
@@ -179,7 +182,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         TaskContainer tasks = project.getTasks();
         project.afterEvaluate(unused -> configureLate(project, bomExtension, publishing, tasks));
 
-        registerCheckBomTask(project, publishing, tasks);
+        registerCheckBomTask(project, publishing, tasks, bomExtension);
 
     }
 
@@ -257,6 +260,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         });
 
         Configuration api = project.getConfigurations().getByName(JavaPlatformPlugin.API_CONFIGURATION_NAME);
+        Configuration runtime = project.getConfigurations().getByName(JavaPlatformPlugin.RUNTIME_CONFIGURATION_NAME);
         Configuration catalogs = project.getConfigurations().detachedConfiguration();
         catalogs.attributes(attrs -> {
             attrs.attribute(Category.CATEGORY_ATTRIBUTE, project.getObjects().named(Category.class, Category.REGULAR_PLATFORM));
@@ -276,7 +280,11 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                                 .orElseThrow(() -> new RuntimeException("Unexpected missing alias in catalog: " + alias))));
             }
         }));
-        modelConverter.afterBuildingModel(builderState -> maybeInlineNestedCatalogs(bomExtension, catalogs, builderState));
+        modelConverter.afterBuildingModel(builderState -> {
+            api.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
+            runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
+            maybeInlineNestedCatalogs(bomExtension, catalogs, builderState);
+        });
         forEachProject(bomExtension, project, p -> {
             project.evaluationDependsOn(p.getPath());
             String moduleGroup = String.valueOf(p.getGroup());
@@ -326,7 +334,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         }
     }
 
-    private void registerCheckBomTask(Project project, PublishingExtension publishing, TaskContainer tasks) {
+    private void registerCheckBomTask(Project project, PublishingExtension publishing, TaskContainer tasks, MicronautBomExtension bomExtension) {
         TaskProvider<PomChecker> checkBom = tasks.register("checkBom", PomChecker.class, task -> {
             String repoUrl = "https://repo.maven.apache.org/maven2/";
             ArtifactRepository repo = publishing.getRepositories().findByName("Build");
@@ -334,11 +342,17 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                 repoUrl = ((MavenArtifactRepository) repo).getUrl().toString();
             }
             task.getRepositories().add(repoUrl);
+            project.getRepositories().forEach(r ->{
+                if (r instanceof MavenArtifactRepository) {
+                    task.getRepositories().add(((MavenArtifactRepository) r).getUrl().toString());
+                }
+            });
             task.getPomFile().fileProvider(tasks.named("generatePomFileForMavenPublication", GenerateMavenPom.class).map(GenerateMavenPom::getDestination));
             String version = assertVersion(project);
-            task.getPomCoordinates().set(String.format("{}:{}:{}", project.getGroup(), "micronaut-" + project.getName(), version));
-            task.getCheckBomContents().set(false);
-            task.getReport().set(project.getLayout().getBuildDirectory().file("reports/boms/micronaut-bom.txt"));
+            task.getSuppressions().convention(bomExtension.getSuppressions());
+            task.getPomCoordinates().set(project.getGroup() + ":micronaut-" + project.getName() + ":" + version);
+            task.getReportDirectory().set(project.getLayout().getBuildDirectory().dir("reports/boms"));
+            task.getPomsDirectory().set(project.getLayout().getBuildDirectory().dir("poms"));
             task.getFailOnSnapshots().set(!version.endsWith("-SNAPSHOT"));
             task.getFailOnError().set(true);
         });
@@ -371,5 +385,14 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         });
     }
 
+    private static void checkVersionConstraint(DependencyConstraint constraint) {
+        VersionConstraint versionConstraint = constraint.getVersionConstraint();
+        if (versionConstraint.getRequiredVersion().isEmpty()
+                && versionConstraint.getPreferredVersion().isEmpty()
+                && versionConstraint.getStrictVersion().isEmpty()
+                && versionConstraint.getRejectedVersions().isEmpty()) {
+            throw new InvalidUserDataException("A dependency constraint was added on '" + constraint.getModule() + "' without a version. This is invalid: a constraint must specify a version.");
+        }
+    }
 
 }
