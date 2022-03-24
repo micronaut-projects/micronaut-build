@@ -43,6 +43,10 @@ abstract class PomChecker extends DefaultTask {
     @Optional
     abstract RegularFileProperty getPomFile()
 
+    @Input
+    @Optional
+    abstract Property<String> getProjectGroup();
+
     @Nested
     abstract Property<BomSuppressions> getSuppressions()
 
@@ -60,6 +64,11 @@ abstract class PomChecker extends DefaultTask {
         group = VERIFICATION_GROUP
         getFailOnError().convention(true)
         getFailOnSnapshots().convention(getPomCoordinates().map(v -> !v.endsWith("-SNAPSHOT")))
+        String group = project.getProperties().get("projectGroup")
+        if (!group) {
+            group = project.getProperties().get("projectGroupId")
+        }
+        getProjectGroup().convention(group)
     }
 
     @TaskAction
@@ -98,6 +107,7 @@ abstract class PomChecker extends DefaultTask {
             workQueue.await()
             queue.clear()
             reports.each {
+                String projectGroupId = projectGroup.getOrElse("io.micronaut")
                 def validation = PomFileAdapter.parseFromFile(it)
                 String bomPrefix = "BOM ${validation.pomFile.groupId}:${validation.pomFile.artifactId}:${validation.pomFile.version} (via ${validation.dependencyPath})"
                 assertThatImportingBomIsAllowed(validation, errorCollector)
@@ -113,7 +123,7 @@ abstract class PomChecker extends DefaultTask {
                     if (allowedGroups == null) {
                         allowedGroups = bomAuthorizedGroupIds.getOrDefault("${groupId}:${artifactId}:${version}".toString(), [] as Set)
                     }
-                    if (!groupId.startsWith("io.micronaut")) {
+                    if (!groupId.startsWith(projectGroupId)) {
                         validation.pomFile.dependencies.findAll {
                             it.managed && !it.groupId.startsWith(groupId)
                         }.each {
@@ -128,7 +138,7 @@ abstract class PomChecker extends DefaultTask {
                     }
                 }
                 validation.invalidDependencies.each {
-                    if (!it.startsWith("io.micronaut") || !it.endsWith("-SNAPSHOT")) {
+                    if (!it.startsWith(projectGroupId) || !it.endsWith("-SNAPSHOT")) {
                         errorCollector.error(it, "$bomPrefix declares a non-resolvable dependency: $it".toString())
                     }
                 }

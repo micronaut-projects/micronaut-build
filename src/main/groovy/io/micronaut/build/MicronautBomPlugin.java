@@ -23,10 +23,12 @@ import io.micronaut.build.catalogs.internal.Library;
 import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.pom.PomChecker;
 import io.micronaut.build.pom.VersionCatalogConverter;
+import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencyConstraint;
@@ -56,6 +58,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -95,6 +98,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         bomExtension.getCatalogToPropertyNameOverrides().convention(Collections.emptyMap());
         bomExtension.getInlineNestedCatalogs().convention(true);
         bomExtension.getExcludedInlinedAliases().convention(Collections.emptySet());
+        bomExtension.getInferProjectsToInclude().convention(true);
         configureBOM(project, bomExtension);
         project.getRepositories().mavenCentral();
     }
@@ -155,14 +159,25 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         return baseName + ".version";
     }
 
-    private static void forEachProject(MicronautBomExtension ext, Project project, Consumer<? super Project> consumer) {
+    private static void forEachProject(MicronautBomExtension ext,
+                                       Project project,
+                                       Set<String> includedProjects,
+                                       Set<String> skippedProjects,
+                                       Consumer<? super Project> consumer) {
+        boolean inferProjectsToInclude = ext.getInferProjectsToInclude().getOrElse(true);
         Set<String> excludedProjects = ext.getExtraExcludedProjects().get();
         Spec<? super Project> excludeSpec = ext.getExcludeProject().get();
         for (Project p : project.getRootProject().getSubprojects()) {
-            if (excludeSpec.isSatisfiedBy(p) || excludedProjects.contains(p.getName())) {
+            if (p.equals(project) || excludeSpec.isSatisfiedBy(p) || excludedProjects.contains(p.getName())) {
                 continue;
             }
-            consumer.accept(p);
+            project.evaluationDependsOn(p.getPath());
+            if (!inferProjectsToInclude || p.getPlugins().hasPlugin(MicronautPublishingPlugin.class)) {
+                includedProjects.add(p.getPath());
+                consumer.accept(p);
+            } else {
+                skippedProjects.add(p.getPath());
+            }
         }
     }
 
@@ -203,6 +218,8 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
             pub.setArtifactId(publishedName);
             pub.from(project.getComponents().getByName("javaPlatform"));
             pub.pom(pom -> {
+                Set<String> includedProjects = new HashSet<>();
+                Set<String> skippedProjects = new HashSet<>();
                 pom.setPackaging("pom");
                 pom.withXml(xml -> {
                     Node node = xml.asNode();
@@ -227,9 +244,8 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                             }
                         }
                     });
-
                     // Add individual module versions as properties
-                    forEachProject(bomExtension, project, p -> {
+                    forEachProject(bomExtension, project, includedProjects, skippedProjects, p -> {
                         String propertyName = "micronaut." + mainProjectId + ".version";
                         String projectGroup = String.valueOf(p.getGroup());
                         Optional<Node> pomDep = forEachNode(node, DEPENDENCY_PATH)
@@ -251,10 +267,29 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                         });
                     }
                 }));
-                forEachProject(bomExtension, project, p -> {
+                forEachProject(bomExtension, project, includedProjects, skippedProjects, p -> {
                     project.evaluationDependsOn(p.getPath());
                     String propertyName = "micronaut." + mainProjectId + ".version";
                     pom.getProperties().put(propertyName, assertVersion(p));
+                });
+
+                tasks.withType(GenerateMavenPom.class).configureEach(pomTask -> {
+                    //noinspection Convert2Lambda
+                    pomTask.doLast(new Action<Task>() {
+                        @Override
+                        public void execute(Task task) {
+                            System.out.println("Projects included into BOM:\n" + includedProjects.stream()
+                                    .map(p -> "    - " + p)
+                                    .collect(Collectors.joining("\n"))
+                            );
+                            if (!skippedProjects.isEmpty()) {
+                                System.out.println("Skipped projects which do not apply the publishing plugin:\n" + skippedProjects.stream()
+                                        .map(p -> "    - " + p)
+                                        .collect(Collectors.joining("\n"))
+                                );
+                            }
+                        }
+                    });
                 });
             });
         });
@@ -285,8 +320,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             maybeInlineNestedCatalogs(bomExtension, catalogs, builderState);
         });
-        forEachProject(bomExtension, project, p -> {
-            project.evaluationDependsOn(p.getPath());
+        forEachProject(bomExtension, project, new HashSet<>(), new HashSet<>(), p -> {
             String moduleGroup = String.valueOf(p.getGroup());
             String moduleName = "micronaut-" + p.getName();
             String moduleVersion = assertVersion(p);
@@ -342,7 +376,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                 repoUrl = ((MavenArtifactRepository) repo).getUrl().toString();
             }
             task.getRepositories().add(repoUrl);
-            project.getRepositories().forEach(r ->{
+            project.getRepositories().forEach(r -> {
                 if (r instanceof MavenArtifactRepository) {
                     task.getRepositories().add(((MavenArtifactRepository) r).getUrl().toString());
                 }
