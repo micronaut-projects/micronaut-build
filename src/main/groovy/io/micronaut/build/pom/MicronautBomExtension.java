@@ -104,6 +104,14 @@ public interface MicronautBomExtension {
      */
     Property<String> getPropertyName();
 
+    /**
+     * Determines if the projects to include in the BOM are inferred,
+     * in which case it would automatically include projects which
+     * apply the publishing plugin.
+     * @return the infer property
+     */
+    Property<Boolean> getInferProjectsToInclude();
+
     @Nested
     BomSuppressions getSuppressions();
 
