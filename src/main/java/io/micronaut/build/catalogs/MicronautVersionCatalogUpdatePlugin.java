@@ -20,15 +20,10 @@ public class MicronautVersionCatalogUpdatePlugin implements Plugin<Project> {
             throw new IllegalStateException("The " + MicronautVersionCatalogUpdatePlugin.class.getName() + " plugin must be applied on the root project only");
         }
         TaskContainer tasks = project.getTasks();
+        Directory gradleDirectory = project.getLayout().getProjectDirectory().dir("gradle");
         TaskProvider<VersionCatalogUpdate> updater = tasks.register("updateVersionCatalogs", VersionCatalogUpdate.class, task -> {
-            Directory gradleDirectory = project.getLayout().getProjectDirectory().dir("gradle");
             task.getCatalogsDirectory().convention(gradleDirectory);
-            task.getOutputDirectory().convention(
-                    project.getProviders().environmentVariable("CI").forUseAtConfigurationTime()
-                            // On CI we want to create PRs which update the file
-                            .map(value -> gradleDirectory)
-                            .orElse(gradleDirectory.dir("updates"))
-            );
+            task.getOutputDirectory().convention(project.getLayout().getBuildDirectory().dir("catalogs-update"));
             task.getRejectedQualifiers().convention(Arrays.asList("alpha", "beta", "rc", "cr", "m", "preview", "b", "ea"));
             task.getIgnoredModules().convention(Collections.emptySet());
             task.getAllowMajorUpdates().convention(false);
@@ -36,7 +31,7 @@ public class MicronautVersionCatalogUpdatePlugin implements Plugin<Project> {
         tasks.register("useLatestVersions", Copy.class, task -> {
             VersionCatalogUpdate dependent = updater.get();
             task.from(dependent.getOutputDirectory());
-            task.into(dependent.getCatalogsDirectory());
+            task.into(project.getProviders().environmentVariable("CI").map(value -> gradleDirectory).orElse(dependent.getCatalogsDirectory()));
         });
         tasks.register("dependencyUpdates", task -> task.setDescription("Compatibility task with the old update mechanism"));
     }

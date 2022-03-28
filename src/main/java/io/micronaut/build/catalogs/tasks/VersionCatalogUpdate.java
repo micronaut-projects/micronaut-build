@@ -90,6 +90,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
                 getLogger().info("Didn't find any version catalog to process");
             }
             for (File catalog : catalogs) {
+                getLogger().info("Processing {}", catalog);
                 updateCatalog(catalog, new File(outputDir, catalog.getName()), logFile);
             }
         } else {
