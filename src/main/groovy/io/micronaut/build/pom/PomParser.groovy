@@ -20,6 +20,7 @@ class PomParser {
         if (!properties.containsKey("project.version")) {
             properties['project.version'] = version
         }
+        properties = resolve(properties)
         def parentGroupId = pom.parent.groupId.text()
         def parentArtifactId = pom.parent.artifactId.text()
         def parentVersion = pom.parent.version.text()
@@ -52,19 +53,32 @@ class PomParser {
     static PomDependency parseDependency(Object model, String group, boolean managed, Map<String, String> properties) {
         String depGroup = model.groupId.text().replace('${project.groupId}', group)
         String depArtifact = model.artifactId.text()
-        String depVersion = model.version.text()
+        String depVersion = substitute(properties, model.version.text())
+        String depScope = model.scope.text()
+        new PomDependency(managed, depGroup, depArtifact, depVersion, depScope)
+    }
+
+    private static String substitute(Map<String, String> properties, String value) {
         boolean substituteProperties = true
         while (substituteProperties) {
             substituteProperties = false
             for (Map.Entry<String, String> property : properties) {
-                if (depVersion == "\${${property.key}}" || depVersion == "\$${property.key}") {
-                    depVersion = property.value
+                String token = "\${${property.key}}"
+                if (value.contains(token)) {
+                    value = value.replace(token, property.value)
                     substituteProperties = true // need to recurse because some properties can reference others
                     break
                 }
             }
         }
-        String depScope = model.scope.text()
-        new PomDependency(managed, depGroup, depArtifact, depVersion, depScope)
+        value
+    }
+
+    private static Map<String, String> resolve(Map<String, String> properties) {
+        Map<String, String> result = [:]
+        properties.each { k, value ->
+            result[k] = substitute(properties, value)
+        }
+        result
     }
 }
