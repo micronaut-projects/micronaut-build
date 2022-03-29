@@ -73,6 +73,10 @@ public class PomFile {
         return dependencies;
     }
 
+    public Map<String, String> getProperties() {
+        return properties;
+    }
+
     @Override
     public String toString() {
         return "PomFile{" +
