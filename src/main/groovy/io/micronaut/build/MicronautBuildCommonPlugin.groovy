@@ -108,6 +108,37 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             }
         }
 
+        // Predictive test selection is enabled if:
+        // an environment variable is explicitly configured and set to true
+        // or a system property is explicitly configured and set to true
+        // or it's a local build
+        def testSelectionEnabled = project.providers.environmentVariable("PREDICTIVE_TEST_SELECTION")
+                .orElse(project.providers.systemProperty("predictiveTestSelection"))
+                .map {
+                    if (it.trim()) {
+                        Boolean.parseBoolean(it)
+                    } else {
+                        true
+                    }
+                }
+                .orElse(micronautBuildExtension.environment.isNotGithubAction())
+
+        project.dependencies {
+            testImplementation(testSelectionEnabled.map { enabled ->
+                if (enabled) {
+                    platform('org.junit:junit-bom') {
+                        version {
+                            require '[5.8,)'
+                            prefer '5.8.2'
+                        }
+                        because "Predictive test selection requires JUnit 5.8+"
+                    }
+                } else {
+                    null
+                }
+            })
+        }
+
         project.tasks.withType(Test).configureEach {
             jvmArgs '-Duser.country=US'
             jvmArgs '-Duser.language=en'
@@ -123,6 +154,9 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 }
                 failOnPassedAfterRetry.set(false)
             }
+            predictiveSelection {
+                enabled = testSelectionEnabled
+            }
         }
 
         project.tasks.withType(GroovyCompile).configureEach {
@@ -132,12 +166,12 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         project.afterEvaluate {
             def compileOptions = micronautBuildExtension.compileOptions
             project.tasks.withType(JavaCompile).configureEach {
-                    options.encoding = "UTF-8"
-                    options.compilerArgs.add('-parameters')
-                    if (micronautBuildExtension.enableProcessing.get()) {
-                        options.compilerArgs.add("-Amicronaut.processing.group=$project.group")
-                        options.compilerArgs.add("-Amicronaut.processing.module=micronaut-$project.name")
-                    }
+                options.encoding = "UTF-8"
+                options.compilerArgs.add('-parameters')
+                if (micronautBuildExtension.enableProcessing.get()) {
+                    options.compilerArgs.add("-Amicronaut.processing.group=$project.group")
+                    options.compilerArgs.add("-Amicronaut.processing.module=micronaut-$project.name")
+                }
                 compileOptions.applyTo(options)
             }
             project.tasks.withType(GroovyCompile).configureEach {

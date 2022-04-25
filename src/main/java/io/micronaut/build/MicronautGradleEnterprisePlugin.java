@@ -18,6 +18,7 @@ package io.micronaut.build;
 import com.gradle.CommonCustomUserDataGradlePlugin;
 import com.gradle.enterprise.gradleplugin.GradleEnterpriseExtension;
 import com.gradle.enterprise.gradleplugin.GradleEnterprisePlugin;
+import com.gradle.enterprise.gradleplugin.testdistribution.TestDistributionPlugin;
 import com.gradle.scan.plugin.BuildScanExtension;
 import org.gradle.api.Plugin;
 import org.gradle.api.initialization.Settings;
@@ -39,6 +40,7 @@ public class MicronautGradleEnterprisePlugin implements Plugin<Settings> {
         PluginManager pluginManager = settings.getPluginManager();
         pluginManager.apply(MicronautBuildSettingsPlugin.class);
         pluginManager.apply(GradleEnterprisePlugin.class);
+        pluginManager.apply(TestDistributionPlugin.class);
         pluginManager.apply(CommonCustomUserDataGradlePlugin.class);
         GradleEnterpriseExtension ge = settings.getExtensions().getByType(GradleEnterpriseExtension.class);
         MicronautBuildSettingsExtension micronautBuildSettingsExtension = settings.getExtensions().getByType(MicronautBuildSettingsExtension.class);
