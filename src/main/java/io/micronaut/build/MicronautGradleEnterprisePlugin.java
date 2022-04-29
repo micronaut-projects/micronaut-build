@@ -32,11 +32,12 @@ import org.nosphere.gradle.github.ActionsPlugin;
 
 import java.lang.reflect.InvocationTargetException;
 
+import static io.micronaut.build.BuildEnvironment.PREDICTIVE_TEST_SELECTION_ENV_VAR;
 import static io.micronaut.build.ProviderUtils.envOrSystemProperty;
 
 public class MicronautGradleEnterprisePlugin implements Plugin<Settings> {
     private static final String[] SAFE_TO_LOG_ENV_VARIABLES = new String[] {
-            "PREDICTIVE_TEST_SELECTION"
+            PREDICTIVE_TEST_SELECTION_ENV_VAR
     };
 
     @Override

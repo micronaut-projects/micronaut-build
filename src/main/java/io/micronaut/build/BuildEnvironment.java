@@ -20,6 +20,8 @@ import org.gradle.api.provider.ProviderFactory;
 
 public class BuildEnvironment {
 
+    public static final String PREDICTIVE_TEST_SELECTION_ENV_VAR = "PREDICTIVE_TEST_SELECTION";
+    public static final String PREDICTIVE_TEST_SELECTION_SYSPROP = "predictiveTestSelection";
     private final ProviderFactory providers;
     private final Provider<Boolean> githubAction;
     private final boolean isMigrationActive;
@@ -52,8 +54,8 @@ public class BuildEnvironment {
         // an environment variable is explicitly configured and set to true
         // or a system property is explicitly configured and set to true
         // or it's a local build
-        return providers.environmentVariable("PREDICTIVE_TEST_SELECTION")
-                .orElse(providers.systemProperty("predictiveTestSelection"))
+        return providers.environmentVariable(PREDICTIVE_TEST_SELECTION_ENV_VAR)
+                .orElse(providers.systemProperty(PREDICTIVE_TEST_SELECTION_SYSPROP))
                 .map(it -> {
                     if (it.trim().length() > 0) {
                         return Boolean.parseBoolean(it);
