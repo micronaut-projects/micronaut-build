@@ -20,13 +20,15 @@ import org.gradle.api.provider.ProviderFactory;
 
 public class BuildEnvironment {
 
+    public static final String PREDICTIVE_TEST_SELECTION_ENV_VAR = "PREDICTIVE_TEST_SELECTION";
+    public static final String PREDICTIVE_TEST_SELECTION_SYSPROP = "predictiveTestSelection";
     private final ProviderFactory providers;
     private final Provider<Boolean> githubAction;
     private final boolean isMigrationActive;
 
     public BuildEnvironment(ProviderFactory providers) {
         this.providers = providers;
-        this.githubAction = trueWhenEnvVarPresent( "GITHUB_ACTIONS");
+        this.githubAction = trueWhenEnvVarPresent("GITHUB_ACTIONS");
         this.isMigrationActive = !providers.systemProperty("strictBuild")
                 .forUseAtConfigurationTime()
                 .isPresent();
@@ -45,6 +47,22 @@ public class BuildEnvironment {
                 .forUseAtConfigurationTime()
                 .map(s -> true)
                 .orElse(false);
+    }
+
+    public Provider<Boolean> isTestSelectionEnabled() {
+        // Predictive test selection is enabled if:
+        // an environment variable is explicitly configured and set to true
+        // or a system property is explicitly configured and set to true
+        // or it's a local build
+        return providers.environmentVariable(PREDICTIVE_TEST_SELECTION_ENV_VAR)
+                .orElse(providers.systemProperty(PREDICTIVE_TEST_SELECTION_SYSPROP))
+                .map(it -> {
+                    if (it.trim().length() > 0) {
+                        return Boolean.parseBoolean(it);
+                    }
+                    return false;
+                })
+                .orElse(isNotGithubAction());
     }
 
     public void duringMigration(Runnable action) {
