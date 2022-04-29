@@ -35,6 +35,10 @@ import java.lang.reflect.InvocationTargetException;
 import static io.micronaut.build.ProviderUtils.envOrSystemProperty;
 
 public class MicronautGradleEnterprisePlugin implements Plugin<Settings> {
+    private static final String[] SAFE_TO_LOG_ENV_VARIABLES = new String[] {
+            "PREDICTIVE_TEST_SELECTION"
+    };
+
     @Override
     public void apply(Settings settings) {
         PluginManager pluginManager = settings.getPluginManager();
@@ -89,6 +93,18 @@ public class MicronautGradleEnterprisePlugin implements Plugin<Settings> {
                     });
                 }
             });
+            BuildEnvironment buildEnvironment = new BuildEnvironment(providers);
+            if (Boolean.TRUE.equals(buildEnvironment.isTestSelectionEnabled().get())) {
+                ge.getBuildScan().tag("Predictive Test Selection");
+            }
+            captureSafeEnvironmentVariables(ge);
+        }
+    }
+
+    private void captureSafeEnvironmentVariables(GradleEnterpriseExtension ge) {
+        for (String variable : SAFE_TO_LOG_ENV_VARIABLES) {
+            String value = System.getenv(variable);
+            ge.getBuildScan().value("env." + variable, value == null ? "<undefined>" : value);
         }
     }
 

@@ -108,21 +108,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             }
         }
 
-        // Predictive test selection is enabled if:
-        // an environment variable is explicitly configured and set to true
-        // or a system property is explicitly configured and set to true
-        // or it's a local build
-        def testSelectionEnabled = project.providers.environmentVariable("PREDICTIVE_TEST_SELECTION")
-                .orElse(project.providers.systemProperty("predictiveTestSelection"))
-                .map {
-                    if (it.trim()) {
-                        Boolean.parseBoolean(it)
-                    } else {
-                        true
-                    }
-                }
-                .orElse(micronautBuildExtension.environment.isNotGithubAction())
-
+        def testSelectionEnabled = micronautBuildExtension.environment.isTestSelectionEnabled()
         project.dependencies {
             testImplementation(testSelectionEnabled.map { enabled ->
                 if (enabled) {
