@@ -108,23 +108,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             }
         }
 
-        def testSelectionEnabled = micronautBuildExtension.environment.isTestSelectionEnabled()
-        project.dependencies {
-            testImplementation(testSelectionEnabled.map { enabled ->
-                if (enabled) {
-                    platform('org.junit:junit-bom') {
-                        version {
-                            require '[5.8,)'
-                            prefer '5.8.2'
-                        }
-                        because "Predictive test selection requires JUnit 5.8+"
-                    }
-                } else {
-                    null
-                }
-            })
-        }
-
         project.tasks.withType(Test).configureEach {
             jvmArgs '-Duser.country=US'
             jvmArgs '-Duser.language=en'
@@ -141,7 +124,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 failOnPassedAfterRetry.set(false)
             }
             predictiveSelection {
-                enabled = testSelectionEnabled
+                enabled = micronautBuildExtension.environment.isTestSelectionEnabled()
             }
         }
 
