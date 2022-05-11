@@ -25,7 +25,7 @@ public class MicronautBuildSettingsPlugin implements Plugin<Settings> {
 
     @Override
     public void apply(Settings settings) {
-        settings.getExtensions().create("micronautBuild", MicronautBuildSettingsExtension.class);
+        settings.getExtensions().create("micronautBuild", MicronautBuildSettingsExtension.class, settings);
     }
 
 }
