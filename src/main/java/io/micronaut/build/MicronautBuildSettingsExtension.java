@@ -41,20 +41,21 @@ public abstract class MicronautBuildSettingsExtension {
     protected abstract ProviderFactory getProviders();
 
     private final Settings settings;
+    private final String micronautVersion;
 
     @Inject
     public MicronautBuildSettingsExtension(ProviderFactory providers, Settings settings) {
         this.settings = settings;
         getUseLocalCache().convention(booleanProvider(providers, "localCache", true));
         getUseRemoteCache().convention(booleanProvider(providers, "remoteCache", true));
+        this.micronautVersion = determineMicronautVersion();
     }
 
-    /**
-     * Exposes the Micronaut version catalog so that
-     * it can be used in modules using type safe accessors.
-     * Importing the catalog will implicitly add the shared repositories.
-     */
-    public void importMicronautCatalog() {
+    public String getMicronautVersion() {
+        return micronautVersion;
+    }
+
+    private String determineMicronautVersion() {
         // Because we're a settings plugin, the "libs" version catalog
         // isn't available yet. So we have to parse it ourselves to find
         // the micronaut version!
@@ -75,12 +76,20 @@ public abstract class MicronautBuildSettingsExtension {
         if (!micronautVersion.isPresent()) {
             micronautVersion = Optional.ofNullable(getProviders().gradleProperty("micronautVersion").getOrNull());
         }
-        if (micronautVersion.isPresent()) {
-            String version = micronautVersion.get();
+        return micronautVersion.orElse(null);
+    }
+
+    /**
+     * Exposes the Micronaut version catalog so that
+     * it can be used in modules using type safe accessors.
+     * Importing the catalog will implicitly add the shared repositories.
+     */
+    public void importMicronautCatalog() {
+        if (micronautVersion != null) {
             settings.dependencyResolutionManagement(mgmt -> {
                 mgmt.getRepositoriesMode().set(RepositoriesMode.PREFER_PROJECT);
                 mgmt.repositories(RepositoryHandler::mavenCentral);
-                mgmt.getVersionCatalogs().create("mn", catalog -> catalog.from("io.micronaut:micronaut-bom:" + version));
+                mgmt.getVersionCatalogs().create("mn", catalog -> catalog.from("io.micronaut:micronaut-bom:" + micronautVersion));
             });
         }
     }
