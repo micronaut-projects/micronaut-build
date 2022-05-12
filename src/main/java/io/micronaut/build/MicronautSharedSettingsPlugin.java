@@ -21,6 +21,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
+import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
@@ -42,6 +43,13 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         pluginManager.apply(MicronautGradleEnterprisePlugin.class);
         applyPublishingPlugin(settings);
         assertUniqueProjectNames(settings);
+        MicronautBuildSettingsExtension buildSettingsExtension = settings.getExtensions().findByType(MicronautBuildSettingsExtension.class);
+        settings.getGradle().beforeProject(p -> {
+            ExtraPropertiesExtension extraProperties = p.getExtensions().getExtraProperties();
+            if (!extraProperties.has("micronautVersion")) {
+                extraProperties.set("micronautVersion", buildSettingsExtension.getMicronautVersion());
+            }
+        });
     }
 
     private void assertUniqueProjectNames(Settings settings) {

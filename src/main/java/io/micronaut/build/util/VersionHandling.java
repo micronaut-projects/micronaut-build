@@ -47,7 +47,7 @@ public class VersionHandling {
                 .orElseGet(() -> projectProperty(project, alias));
     }
 
-    private static String projectProperty(Project p, String alias) {
+    private static String propertyNameFor(String alias) {
         String[] components = alias.split("[.-_]");
         String propertyName = IntStream.range(0, components.length)
                 .mapToObj(i -> {
@@ -59,7 +59,11 @@ public class VersionHandling {
                     }
                 })
                 .collect(Collectors.joining(""));
-        Object projectProp = p.findProperty(propertyName + "Version");
+        return propertyName + "Version";
+    }
+
+    private static String projectProperty(Project p, String alias) {
+        Object projectProp = p.findProperty(propertyNameFor(alias));
         if (projectProp != null) {
             return String.valueOf(projectProp);
         }
