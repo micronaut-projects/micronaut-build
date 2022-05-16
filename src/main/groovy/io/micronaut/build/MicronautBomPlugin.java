@@ -89,6 +89,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         plugins.apply(VersionCatalogPlugin.class);
         plugins.apply(MicronautBuildExtensionPlugin.class);
         plugins.apply(MicronautPublishingPlugin.class);
+        plugins.apply(MicronautDependencyResolutionConfigurationPlugin.class);
         MicronautBomExtension bomExtension = project.getExtensions().create("micronautBom", MicronautBomExtension.class);
         bomExtension.getPublishCatalog().convention(true);
         bomExtension.getIncludeBomInCatalog().convention(true);
@@ -100,7 +101,6 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         bomExtension.getExcludedInlinedAliases().convention(Collections.emptySet());
         bomExtension.getInferProjectsToInclude().convention(true);
         configureBOM(project, bomExtension);
-        project.getRepositories().mavenCentral();
     }
 
     private static String nameOf(Node n) {

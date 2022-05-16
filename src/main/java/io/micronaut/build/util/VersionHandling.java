@@ -48,7 +48,7 @@ public class VersionHandling {
     }
 
     private static String propertyNameFor(String alias) {
-        String[] components = alias.split("[.-_]");
+        String[] components = alias.split("[.\\-_]");
         String propertyName = IntStream.range(0, components.length)
                 .mapToObj(i -> {
                     if (i == 0) {
