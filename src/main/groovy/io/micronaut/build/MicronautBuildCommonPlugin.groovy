@@ -70,7 +70,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
                 documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"
 
-                if (project.hasProperty('micronautVersion')) {
+                if (micronautVersion) {
                     testCompileOnly "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
                 }
 
