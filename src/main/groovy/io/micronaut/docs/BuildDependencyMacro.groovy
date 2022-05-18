@@ -122,7 +122,7 @@ class BuildDependencyMacro extends InlineMacroProcessor implements ValueAtAttrib
             case 'testRuntimeOnly':
             case 'testImplementation':
                 return 'test'
-            case 'developmentOnly'
+            case 'developmentOnly':
             case 'compileOnly': 
                 return 'provided'
             case 'runtimeOnly': return 'runtime'
