@@ -15,7 +15,6 @@
  */
 package io.micronaut.build.compat;
 
-import com.google.common.io.Files;
 import io.micronaut.build.MicronautBuildExtension;
 import io.micronaut.build.MicronautBuildExtensionPlugin;
 import io.micronaut.build.MicronautPublishingPlugin;
@@ -32,8 +31,7 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -60,7 +58,10 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                     task.getCurrentVersion().convention(providers.provider(() -> project.getVersion().toString()));
                     task.getPreviousVersion().convention(project.getLayout().getBuildDirectory().file("baseline.txt"));
                 });
-                Provider<String> baseline = providers.provider(() -> binaryCompatibility.getBaselineVersion().orElse(baselineTask.map(MicronautBinaryCompatibilityPlugin::readBaseline)).get());
+                Provider<String> baseline = binaryCompatibility.getBaselineVersion().orElse(
+                        providers.fileContents(baselineTask.flatMap(FindBaselineTask::getPreviousVersion))
+                                .getAsText().map(MicronautBinaryCompatibilityPlugin::readBaseline)
+                );
                 Configuration oldClasspath = project.getConfigurations().detachedConfiguration();
                 Configuration oldJar = project.getConfigurations().detachedConfiguration();
                 oldClasspath.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version)));
@@ -105,15 +106,11 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
         });
     }
 
-    private static String readBaseline(FindBaselineTask baselineTask) {
-        List<String> lines;
-        try {
-            lines = Files.readLines(baselineTask.getPreviousVersion().getAsFile().get(), StandardCharsets.UTF_8);
-            if (lines.size() > 0) {
-                return lines.get(0);
-            }
-        } catch (IOException e) {
-            return "+";
+    private static String readBaseline(String baselineText) {
+        List<String> lines = Arrays.asList(baselineText.split("[\\r\\n]+"));
+        if (!lines.isEmpty()) {
+            String baseline = lines.get(0);
+            return baseline;
         }
         return "+";
     }
