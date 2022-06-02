@@ -38,7 +38,9 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
 
             p.getTasks().named("checkstyleTest").configure(task -> task.setEnabled(false));
             p.getTasks().named("checkstyleMain").configure(task -> {
-                task.dependsOn("spotlessCheck");
+                p.getPluginManager().withPlugin("com.diffplug.spotless", unused ->
+                        task.dependsOn("spotlessCheck")
+                );
                 project.getRootProject().getPluginManager().withPlugin("org.sonarqube", sq -> {
                     project.getRootProject().getTasks().named("sonarqube").configure(t -> t.dependsOn(task));
                 });
