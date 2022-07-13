@@ -9,12 +9,6 @@ plugins {
 version project.projectVersion
 group "io.micronaut.build.internal"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
-    }
-}
-
 repositories {
     mavenCentral()
     gradlePluginPortal()
@@ -38,9 +32,6 @@ configurations {
 }
 
 tasks.withType(Test).configureEach {
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(8)
-    })
     useJUnitPlatform()
 }
 

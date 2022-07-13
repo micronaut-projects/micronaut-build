@@ -77,6 +77,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                         report.getTitle().set(baseline.map(version -> "Binary compatibility report for Micronaut " + project.getName() + " " + project.getVersion() + " against " + version));
                         report.getAddDefaultRules().set(true);
                         report.addViolationTransformer(InternalMicronautTypeRule.class);
+                        report.addViolationTransformer(JavaBridgeAndSyntheticRule.class);
                         report.addRule(InternalAnnotationCollectorRule.class);
                         report.addPostProcessRule(InternalAnnotationPostProcessRule.class);
                     });
