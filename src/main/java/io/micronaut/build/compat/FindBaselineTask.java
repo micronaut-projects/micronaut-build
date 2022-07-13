@@ -20,16 +20,21 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
@@ -45,43 +50,66 @@ public abstract class FindBaselineTask extends DefaultTask {
     @Input
     public abstract Property<String> getCurrentVersion();
 
-    @OutputFile
-    public abstract RegularFileProperty getPreviousVersion();
+    @Input
+    protected Provider<byte[]> getJson() {
+        return getGithubSlug().map(this::fetchReleasesFromGitHub);
+    }
 
-    @TaskAction
-    public void execute() {
-        String releasesUrl = "https://api.github.com/repos/" + normalizeSlug(getGithubSlug().get()) + "/releases";
+    private byte[] fetchReleasesFromGitHub(String slug) {
+        String releasesUrl = "https://api.github.com/repos/" + normalizeSlug(slug) + "/releases";
         try {
             URL url = new URL(releasesUrl);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
             con.setRequestProperty("Accept", "application/vnd.github.v3+json");
-            InputStream is = con.getInputStream();
-            JsonSlurper slurper = new JsonSlurper();
-            List<Map<String, Object>> json = (List<Map<String, Object>>) slurper.parse(is);
-            List<VersionModel> releases = json.stream()
-                    .filter(release -> !Objects.equals(release.get("draft"), true) && !Objects.equals(release.get("prerelease"), true))
-                    .map(release -> (String) release.get("tag_name"))
-                    .map(tag -> {
-                        if (tag.startsWith("v")) {
-                            return tag.substring(1);
-                        }
-                        return tag;
-                    }).filter(v -> !v.contains("-"))
-                    .map(VersionModel::of)
-                    .sorted()
-                    .collect(Collectors.toList());
-            VersionModel current = VersionModel.of(trimVersion());
-            Optional<VersionModel> previous = releases.stream()
-                    .filter(v -> v.compareTo(current) < 0)
-                    .reduce((a, b) -> b);
-            if (!previous.isPresent()) {
-                throw new IllegalStateException("Could not find a previous version for " + current);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            try (ReadableByteChannel rbc = Channels.newChannel(con.getInputStream()); WritableByteChannel wbc=Channels.newChannel(out)){
+                ByteBuffer buffer = ByteBuffer.allocateDirect(16 * 1024);
+                while (rbc.read(buffer) != -1) {
+                    buffer.flip();
+                    wbc.write(buffer);
+                    buffer.compact();
+                }
+                buffer.flip();
+                while (buffer.hasRemaining()) {
+                    wbc.write(buffer);
+                }
+                return out.toByteArray();
             }
-            Files.write(getPreviousVersion().get().getAsFile().toPath(), previous.get().toString().getBytes("UTF-8"));
-        } catch (IOException e) {
-            throw new GradleException("Unable to determine previous release", e);
+        } catch (IOException ex) {
+            throw new GradleException("Failed to read releases from " + releasesUrl, ex);
         }
+    }
+
+    @OutputFile
+    public abstract RegularFileProperty getPreviousVersion();
+
+    @TaskAction
+    public void execute() throws IOException {
+        byte[] jsonBytes = getJson().get();
+
+        JsonSlurper slurper = new JsonSlurper();
+        List<Map<String, Object>> json = (List<Map<String, Object>>) slurper.parse(jsonBytes);
+        List<VersionModel> releases = json.stream()
+                .filter(release -> !Objects.equals(release.get("draft"), true) && !Objects.equals(release.get("prerelease"), true))
+                .map(release -> (String) release.get("tag_name"))
+                .map(tag -> {
+                    if (tag.startsWith("v")) {
+                        return tag.substring(1);
+                    }
+                    return tag;
+                }).filter(v -> !v.contains("-"))
+                .map(VersionModel::of)
+                .sorted()
+                .collect(Collectors.toList());
+        VersionModel current = VersionModel.of(trimVersion());
+        Optional<VersionModel> previous = releases.stream()
+                .filter(v -> v.compareTo(current) < 0)
+                .reduce((a, b) -> b);
+        if (!previous.isPresent()) {
+            throw new IllegalStateException("Could not find a previous version for " + current);
+        }
+        Files.write(getPreviousVersion().get().getAsFile().toPath(), previous.get().toString().getBytes("UTF-8"));
     }
 
     @NotNull
