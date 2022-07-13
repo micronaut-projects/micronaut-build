@@ -26,7 +26,7 @@ jobs:
       run: ./gradlew check
     - name: Publish Test Report
       if: ${{ always() }}
-      uses: mikepenz/action-junit-report@v3.0.2
+      uses: mikepenz/action-junit-report@v3.1.0
       with:
         check_name: Java CI / Test Report
         report_paths: '**/build/test-results/*/TEST-*.xml'
