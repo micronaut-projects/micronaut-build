@@ -22,6 +22,7 @@ import me.champeau.gradle.japicmp.JapicmpTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.provider.Provider;
@@ -29,6 +30,7 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Arrays;
@@ -48,16 +50,12 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
         binaryCompatibility.getAcceptedRegressionsFile().convention(
                 project.getRootProject().getLayout().getProjectDirectory().file("config/accepted-api-changes.json")
         );
+        TaskContainer rootTasks = project.getRootProject().getTasks();
+        TaskContainer tasks = project.getTasks();
+        ProviderFactory providers = project.getProviders();
+        TaskProvider<FindBaselineTask> baselineTask = getOrCreateBaselineTask(rootTasks, project, binaryCompatibility, providers);
         project.getPlugins().withType(MicronautPublishingPlugin.class, unused -> {
             project.getPluginManager().withPlugin("java-library", alsoUnused -> {
-                TaskContainer tasks = project.getTasks();
-                ProviderFactory providers = project.getProviders();
-                TaskProvider<FindBaselineTask> baselineTask = tasks.register("findBaseline", FindBaselineTask.class, task -> {
-                    task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
-                    task.getGithubSlug().convention(providers.gradleProperty("githubSlug"));
-                    task.getCurrentVersion().convention(providers.provider(() -> project.getVersion().toString()));
-                    task.getPreviousVersion().convention(project.getLayout().getBuildDirectory().file("baseline.txt"));
-                });
                 Provider<String> baseline = binaryCompatibility.getBaselineVersion().orElse(
                         providers.fileContents(baselineTask.flatMap(FindBaselineTask::getPreviousVersion))
                                 .getAsText().map(MicronautBinaryCompatibilityPlugin::readBaseline)
@@ -105,6 +103,20 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 });
             });
         });
+    }
+
+    @NotNull
+    private TaskProvider<FindBaselineTask> getOrCreateBaselineTask(TaskContainer rootTasks, Project project, BinaryCompatibibilityExtension binaryCompatibility, ProviderFactory providers) {
+        try {
+            return rootTasks.named("findBaseline", FindBaselineTask.class);
+        } catch (UnknownTaskException e) {
+            return rootTasks.register("findBaseline", FindBaselineTask.class, task -> {
+                task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
+                task.getGithubSlug().convention(providers.gradleProperty("githubSlug"));
+                task.getCurrentVersion().convention(providers.provider(() -> project.getVersion().toString()));
+                task.getPreviousVersion().convention(project.getRootProject().getLayout().getBuildDirectory().file("baseline.txt"));
+            });
+        }
     }
 
     private static String readBaseline(String baselineText) {
