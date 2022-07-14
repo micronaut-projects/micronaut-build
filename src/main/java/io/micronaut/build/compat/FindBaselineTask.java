@@ -62,6 +62,9 @@ public abstract class FindBaselineTask extends DefaultTask {
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
             con.setRequestProperty("Accept", "application/vnd.github.v3+json");
+            if (System.getenv("GITHUB_TOKEN") != null) {
+                con.setRequestProperty("Authorization", "Bearer " + System.getenv("GITHUB_TOKEN"));
+            }
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             try (ReadableByteChannel rbc = Channels.newChannel(con.getInputStream()); WritableByteChannel wbc=Channels.newChannel(out)){
                 ByteBuffer buffer = ByteBuffer.allocateDirect(16 * 1024);
