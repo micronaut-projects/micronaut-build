@@ -21,12 +21,15 @@ import org.gradle.api.GradleException;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.jetbrains.annotations.NotNull;
 
+import javax.inject.Inject;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -44,6 +47,9 @@ import java.util.stream.Collectors;
 
 @CacheableTask
 public abstract class FindBaselineTask extends DefaultTask {
+
+    public static final int CACHE_IN_SECONDS = 3600;
+
     @Input
     public abstract Property<String> getGithubSlug();
 
@@ -51,9 +57,21 @@ public abstract class FindBaselineTask extends DefaultTask {
     public abstract Property<String> getCurrentVersion();
 
     @Input
+    protected Provider<Long> getTimestamp() {
+        return getProviders().provider(() -> {
+            long seconds = System.currentTimeMillis() / 1000;
+            long base = seconds / CACHE_IN_SECONDS;
+            return base * CACHE_IN_SECONDS;
+        });
+    }
+
+    @Internal
     protected Provider<byte[]> getJson() {
         return getGithubSlug().map(this::fetchReleasesFromGitHub);
     }
+
+    @Inject
+    protected abstract ProviderFactory getProviders();
 
     private byte[] fetchReleasesFromGitHub(String slug) {
         String releasesUrl = "https://api.github.com/repos/" + normalizeSlug(slug) + "/releases";
