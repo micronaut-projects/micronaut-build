@@ -38,4 +38,23 @@ public interface BomSuppressions {
      */
     @Input
     MapProperty<String, Set<String>> getBomAuthorizedGroupIds();
+
+    /**
+     * This property can be used to declare a set of version aliases which
+     * were present in a previous version of the catalog, but are not in
+     * the current version, in case it's a legitimate change.
+     * @return the set of accepted regressions
+     */
+    @Input
+    SetProperty<String> getAcceptedVersionRegressions();
+
+    /**
+     * This property can be used to declare a set of library aliases which
+     * were present in a previous version of the catalog, but are not in
+     * the current version, in case it's a legitimate change.
+     * @return the set of accepted regressions
+     */
+    @Input
+    SetProperty<String> getAcceptedLibraryRegressions();
+
 }

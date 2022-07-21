@@ -20,6 +20,7 @@ import groovy.namespace.QName;
 import groovy.util.Node;
 import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
 import io.micronaut.build.catalogs.internal.Library;
+import io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin;
 import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.pom.PomChecker;
 import io.micronaut.build.pom.VersionCatalogConverter;
@@ -90,6 +91,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         plugins.apply(MicronautBuildExtensionPlugin.class);
         plugins.apply(MicronautPublishingPlugin.class);
         plugins.apply(MicronautDependencyResolutionConfigurationPlugin.class);
+        plugins.apply(MicronautBinaryCompatibilityPlugin.class);
         MicronautBomExtension bomExtension = project.getExtensions().create("micronautBom", MicronautBomExtension.class);
         bomExtension.getPublishCatalog().convention(true);
         bomExtension.getIncludeBomInCatalog().convention(true);
