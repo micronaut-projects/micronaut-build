@@ -106,6 +106,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 Configuration baselineConfig = project.getConfigurations().detachedConfiguration();
                 baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version + "@toml")));
                 TaskProvider<VersionCatalogCompatibilityCheck> compatibilityCheckTaskProvider = tasks.register("checkVersionCatalogCompatibility", VersionCatalogCompatibilityCheck.class, task -> {
+                    task.dependsOn(baselineTask);
                     task.getBaseline().convention(project.getProviders().provider(() -> {
                                 RegularFileProperty property = project.getObjects().fileProperty();
                                 property.set(baselineConfig.getSingleFile());
