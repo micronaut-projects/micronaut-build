@@ -24,7 +24,6 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.catalog.internal.TomlFileGenerator;
 import org.gradle.api.provider.Provider;
@@ -106,13 +105,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 Configuration baselineConfig = project.getConfigurations().detachedConfiguration();
                 baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version + "@toml")));
                 TaskProvider<VersionCatalogCompatibilityCheck> compatibilityCheckTaskProvider = tasks.register("checkVersionCatalogCompatibility", VersionCatalogCompatibilityCheck.class, task -> {
-                    task.dependsOn(baselineTask);
-                    task.getBaseline().convention(project.getProviders().provider(() -> {
-                                RegularFileProperty property = project.getObjects().fileProperty();
-                                property.set(baselineConfig.getSingleFile());
-                                return property.get();
-                            }
-                    ));
+                    task.getBaseline().fileProvider(baselineTask.map(b -> baselineConfig.getSingleFile()));
                     task.getCurrent().convention(tasks.named("generateCatalogAsToml", TomlFileGenerator.class).flatMap(TomlFileGenerator::getOutputFile));
                     task.getReportFile().convention(project.getLayout().getBuildDirectory().file("reports/version-catalog-compatibility.txt"));
                     MicronautBomExtension bomExtension = project.getExtensions().findByType(MicronautBomExtension.class);
