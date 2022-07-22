@@ -58,7 +58,7 @@ dependencies {
     implementation "com.adarshr:gradle-test-logger-plugin:3.2.0"
     implementation "io.github.gradle-nexus:publish-plugin:1.1.0"
     implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.18"
-    implementation "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.3"
+    implementation "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.4.0.2513"
     implementation('com.lowagie:itext:2.0.8')
     implementation 'org.jsoup:jsoup:1.15.2'
     implementation('org.xhtmlrenderer:core-renderer:8.0') {
