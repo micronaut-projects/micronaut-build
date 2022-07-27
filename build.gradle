@@ -51,7 +51,7 @@ dependencies {
         'org.yaml:snakeyaml:1.30'
     implementation "io.github.groovylang.groovydoc:io.github.groovylang.groovydoc.gradle.plugin:1.0.1"
     // TODO: upgrade to new asciidoctor
-    implementation 'org.asciidoctor:asciidoctorj:2.5.4'
+    implementation 'org.asciidoctor:asciidoctorj:2.5.5'
     implementation "io.spring.nohttp:nohttp-gradle:0.0.10"
     implementation "com.github.ben-manes:gradle-versions-plugin:0.42.0"
     implementation "com.diffplug.spotless:spotless-plugin-gradle:6.8.0"
