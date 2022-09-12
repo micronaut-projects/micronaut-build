@@ -48,7 +48,7 @@ tasks.named('check') {
 dependencies {
     implementation "commons-lang:commons-lang:2.6",
         'org.grails:grails-gdoc-engine:1.0.1',
-        'org.yaml:snakeyaml:1.30'
+        'org.yaml:snakeyaml:1.32'
     implementation "io.github.groovylang.groovydoc:io.github.groovylang.groovydoc.gradle.plugin:1.0.1"
     // TODO: upgrade to new asciidoctor
     implementation 'org.asciidoctor:asciidoctorj:2.5.5'
