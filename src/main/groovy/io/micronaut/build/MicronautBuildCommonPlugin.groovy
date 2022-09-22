@@ -1,6 +1,5 @@
 package io.micronaut.build
 
-
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -37,12 +36,16 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             String micronautVersion = versionOrDefault(project, "micronaut")
             String groovyVersion = versionOrDefault(project, "groovy")
 
+            String groovyGroup = groovyVersion.split("\\.").first().toInteger() <= 3 ?
+                    'org.codehaus.groovy' :
+                    'org.apache.groovy'
+
             project.configurations {
                 documentation
                 all {
                     resolutionStrategy.eachDependency { DependencyResolveDetails details ->
                         String group = details.requested.group
-                        if (group == 'org.codehaus.groovy') {
+                        if (group == groovyGroup) {
                             details.useVersion(groovyVersion)
                         }
                     }
