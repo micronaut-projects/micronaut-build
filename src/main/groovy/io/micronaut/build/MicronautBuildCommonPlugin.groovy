@@ -70,8 +70,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     testAnnotationProcessor "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
                 }
 
-                documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
-                documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"
+                documentation "$groovyGroup:groovy-templates:$groovyVersion"
+                documentation "$groovyGroup:groovy-dateutil:$groovyVersion"
 
                 if (micronautVersion) {
                     testCompileOnly "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
@@ -81,7 +81,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 testImplementation "org.objenesis:objenesis:3.1"
 
                 testRuntimeOnly "ch.qos.logback:logback-classic:1.2.3"
-                testImplementation "org.codehaus.groovy:groovy-test:$groovyVersion"
+                testImplementation "$groovyGroup:groovy-test:$groovyVersion"
             }
         }
 
