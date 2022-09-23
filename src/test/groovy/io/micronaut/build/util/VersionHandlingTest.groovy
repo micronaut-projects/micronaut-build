@@ -10,7 +10,7 @@ class VersionHandlingTest extends Specification {
         project.ext.micronautDocsVersion = "1.5.0"
 
         when:
-        def version = VersionHandling.versionOrDefault(project, alias)
+        def version = VersionHandling.versionProviderOrDefault(project, alias, '').get()
 
         then:
         version == expectedVersion
