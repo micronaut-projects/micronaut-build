@@ -95,6 +95,6 @@ public abstract class MicronautBuildSettingsExtension {
     }
 
     static Provider<Boolean> booleanProvider(ProviderFactory providers, String gradleProperty, boolean defaultValue) {
-        return providers.gradleProperty(gradleProperty).forUseAtConfigurationTime().map(Boolean::parseBoolean).orElse(defaultValue);
+        return providers.gradleProperty(gradleProperty).map(Boolean::parseBoolean).orElse(defaultValue);
     }
 }

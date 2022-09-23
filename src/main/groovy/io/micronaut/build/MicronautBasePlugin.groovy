@@ -37,7 +37,7 @@ class MicronautBasePlugin implements Plugin<Project> {
     }
 
     private void configureProjectVersion(Project project) {
-        project.version = project.providers.gradleProperty("projectVersion").forUseAtConfigurationTime().orElse("undefined").get()
+        project.version = project.providers.gradleProperty("projectVersion").orElse("undefined").get()
     }
 
 }

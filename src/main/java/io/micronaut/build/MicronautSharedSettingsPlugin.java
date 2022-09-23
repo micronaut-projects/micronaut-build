@@ -70,8 +70,8 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         String ossUser = envOrSystemProperty(providers, "SONATYPE_USERNAME", "sonatypeOssUsername", "");
         String ossPass = envOrSystemProperty(providers, "SONATYPE_PASSWORD", "sonatypeOssPassword", "");
         settings.getGradle().projectsLoaded(gradle -> {
-            String projectVersion = providers.gradleProperty("projectVersion").forUseAtConfigurationTime().getOrElse("unspecified");
-            Provider<String> projectGroup = providers.gradleProperty("projectGroup").forUseAtConfigurationTime();
+            String projectVersion = providers.gradleProperty("projectVersion").getOrElse("unspecified");
+            Provider<String> projectGroup = providers.gradleProperty("projectGroup");
             gradle.getRootProject().getAllprojects().forEach(project -> {
                 project.setVersion(projectVersion);
                 if (projectGroup.isPresent()) {

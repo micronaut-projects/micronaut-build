@@ -106,17 +106,11 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
                 publishing {
                     repositories {
-                        def externalRepo = providers.systemProperty("io.micronaut.publishing.uri")
-                                .forUseAtConfigurationTime()
-                                .orNull
+                        def externalRepo = providers.systemProperty("io.micronaut.publishing.uri").orNull
                         if (externalRepo) {
 
-                            def externalRepoUsername = providers.systemProperty("io.micronaut.publishing.username")
-                                    .forUseAtConfigurationTime()
-                                    .orNull
-                            def externalRepoPassword = providers.systemProperty("io.micronaut.publishing.password")
-                                    .forUseAtConfigurationTime()
-                                    .orNull
+                            def externalRepoUsername = providers.systemProperty("io.micronaut.publishing.username").orNull
+                            def externalRepoPassword = providers.systemProperty("io.micronaut.publishing.password").orNull
 
                             maven {
                                 name = "External"
