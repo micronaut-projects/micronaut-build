@@ -3,7 +3,6 @@ package io.micronaut.build
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.artifacts.DependencyResolveDetails
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.compile.GroovyCompile
 import org.gradle.api.tasks.compile.JavaCompile
@@ -13,6 +12,7 @@ import org.gradle.jvm.tasks.Jar
 import org.groovy.lang.groovydoc.tasks.GroovydocTask
 
 import static io.micronaut.build.util.VersionHandling.versionOrDefault
+
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
@@ -42,14 +42,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
 
             project.configurations {
                 documentation
-                all {
-                    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                        String group = details.requested.group
-                        if (group == groovyGroup) {
-                            details.useVersion(groovyVersion)
-                        }
-                    }
-                }
             }
 
             project.dependencies {
@@ -107,11 +99,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         project.tasks.withType(Test).configureEach {
             jvmArgs '-Duser.country=US'
             jvmArgs '-Duser.language=en'
-
-            String groovyVersion = project.findProperty("groovyVersion")
-            if (groovyVersion?.startsWith("3")) {
-                useJUnitPlatform()
-            }
+            useJUnitPlatform()
             retry {
                 if (micronautBuildExtension.environment.isGithubAction().getOrElse(false)) {
                     maxRetries.set(2)
