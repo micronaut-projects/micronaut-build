@@ -11,8 +11,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.groovy.lang.groovydoc.tasks.GroovydocTask
 
-import static io.micronaut.build.util.VersionHandling.versionOrDefault
-
+import static io.micronaut.build.util.VersionHandling.versionProviderOrDefault
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
@@ -31,52 +30,67 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
     }
 
     private void configureDependencies(Project project, MicronautBuildExtension micronautBuild) {
-        project.afterEvaluate {
-
-            String micronautVersion = versionOrDefault(project, "micronaut")
-            String groovyVersion = versionOrDefault(project, "groovy")
-
-            String groovyGroup = groovyVersion.split("\\.").first().toInteger() <= 3 ?
+        def micronautVersionProvider = versionProviderOrDefault(project, 'micronaut', '')
+        def groovyVersionProvider = versionProviderOrDefault(project, 'groovy', '')
+        def groovyGroupProvider = groovyVersionProvider.map { groovyVersion ->
+            groovyVersion.split("\\.").first().toInteger() <= 3 ?
                     'org.codehaus.groovy' :
                     'org.apache.groovy'
+        }
+        def cgLibVersionProvider = versionProviderOrDefault(project, 'cglib', '3.3.0')
+        def objenesisVersionProvider = versionProviderOrDefault(project, 'objenesis', '3.1')
+        def logbackVersionProvider = versionProviderOrDefault(project, 'logback', '1.2.3')
 
-            project.configurations {
-                documentation
+        project.configurations {
+            documentation
+            globalBoms {
+                canBeResolved = false
+                canBeConsumed = false
             }
+            implementation.extendsFrom(globalBoms)
+            annotationProcessor.extendsFrom(globalBoms)
+            testAnnotationProcessor.extendsFrom(globalBoms)
+        }
 
-            project.dependencies {
-                if (micronautBuild.enableBom.get()) {
+        def injectGroovyIfProcessingEnabled = micronautBuild.enableProcessing.map { enabled ->
+            enabled ? [project.dependencies.create("io.micronaut:micronaut-inject-groovy")] : []
+        }
+        project.dependencies.with { dependencies ->
+            project.configurations.globalBoms.dependencies.addAllLater(micronautBuild.enableBom.zip(micronautVersionProvider) { enabled, micronautVersion ->
+                if (enabled) {
                     if (micronautBuild.enforcedPlatform.get()) {
                         throw new GradleException("Do not use enforcedPlatform. Please remove the micronautBuild.enforcedPlatform setting")
                     }
-                    String p = "platform"
-                    implementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-                    annotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-                    testAnnotationProcessor "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-                    testImplementation "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
-                    compileOnly "$p"("io.micronaut:micronaut-bom:${micronautVersion}")
+                    [project.dependencies.platform("io.micronaut:micronaut-bom:$micronautVersion")]
+                } else {
+                    []
                 }
+            })
+            project.configurations.annotationProcessor.dependencies.addAllLater(injectGroovyIfProcessingEnabled)
+            project.configurations.testAnnotationProcessor.dependencies.addAllLater(injectGroovyIfProcessingEnabled)
 
-                if (micronautBuild.enableProcessing.get()) {
-                    annotationProcessor "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
-                    testAnnotationProcessor "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
-                }
-
-                documentation "$groovyGroup:groovy-templates:$groovyVersion"
-                documentation "$groovyGroup:groovy-dateutil:$groovyVersion"
-
-                if (micronautVersion) {
-                    testCompileOnly "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
-                }
-
-                testImplementation "cglib:cglib-nodep:3.3.0"
-                testImplementation "org.objenesis:objenesis:3.1"
-
-                testRuntimeOnly "ch.qos.logback:logback-classic:1.2.3"
-                testImplementation "$groovyGroup:groovy-test:$groovyVersion"
-            }
+            dependencies.addProvider("documentation", groovyGroupProvider.zip(groovyVersionProvider) { groovyGroup, groovyVersion ->
+               "$groovyGroup:groovy-templates:$groovyVersion"
+            })
+            dependencies.addProvider("documentation", groovyGroupProvider.zip(groovyVersionProvider) { groovyGroup, groovyVersion ->
+               "$groovyGroup:groovy-dateutil:$groovyVersion"
+            })
+            dependencies.addProvider("testCompileOnly", micronautVersionProvider.map { micronautVersion ->
+                "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
+            })
+            dependencies.addProvider("testImplementation",groovyGroupProvider.zip(groovyVersionProvider) { groovyGroup, groovyVersion ->
+                "$groovyGroup:groovy-test:$groovyVersion"
+            })
+            dependencies.addProvider("testImplementation", cgLibVersionProvider.map {
+                "cglib:cglib-nodep:$it"
+            })
+            dependencies.addProvider("testImplementation", objenesisVersionProvider.map {
+                "org.objenesis:objenesis:$it"
+            })
+            dependencies.addProvider("testRuntimeOnly", logbackVersionProvider.map {
+                "ch.qos.logback:logback-classic:$it"
+            })
         }
-
 
         project.tasks.withType(GroovydocTask).configureEach {
             classpath += project.configurations.documentation
