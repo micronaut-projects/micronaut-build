@@ -3,7 +3,7 @@ package io.micronaut.build
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.compile.GroovyCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.diagnostics.DependencyReportTask
@@ -103,7 +103,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         project.pluginManager.apply('org.gradle.test-retry')
 
         project.afterEvaluate {
-            JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
+            def convention = project.extensions.findByType(JavaPluginExtension)
             convention.with {
                 sourceCompatibility = micronautBuildExtension.sourceCompatibility.get()
                 targetCompatibility = micronautBuildExtension.targetCompatibility.get()
