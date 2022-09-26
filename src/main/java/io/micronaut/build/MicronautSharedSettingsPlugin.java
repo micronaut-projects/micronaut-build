@@ -33,12 +33,14 @@ import java.util.Map;
 
 import static io.micronaut.build.ProviderUtils.envOrSystemProperty;
 
+@SuppressWarnings("unused")
 public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
     public static final String NEXUS_STAGING_PROFILE_ID = "11bd7bc41716aa";
 
     @Override
     public void apply(Settings settings) {
         PluginManager pluginManager = settings.getPluginManager();
+        settings.getGradle().getSharedServices().registerIfAbsent(InternalStateCheckingService.NAME, InternalStateCheckingService.class, spec -> spec.parameters(p -> p.getRegisteredByProjectPlugin().set(false))).get();
         pluginManager.apply(MicronautBuildSettingsPlugin.class);
         pluginManager.apply(MicronautGradleEnterprisePlugin.class);
         applyPublishingPlugin(settings);
@@ -70,8 +72,8 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         String ossUser = envOrSystemProperty(providers, "SONATYPE_USERNAME", "sonatypeOssUsername", "");
         String ossPass = envOrSystemProperty(providers, "SONATYPE_PASSWORD", "sonatypeOssPassword", "");
         settings.getGradle().projectsLoaded(gradle -> {
-            String projectVersion = providers.gradleProperty("projectVersion").forUseAtConfigurationTime().getOrElse("unspecified");
-            Provider<String> projectGroup = providers.gradleProperty("projectGroup").forUseAtConfigurationTime();
+            String projectVersion = providers.gradleProperty("projectVersion").getOrElse("unspecified");
+            Provider<String> projectGroup = providers.gradleProperty("projectGroup");
             gradle.getRootProject().getAllprojects().forEach(project -> {
                 project.setVersion(projectVersion);
                 if (projectGroup.isPresent()) {
@@ -111,7 +113,6 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
             throw new RuntimeException(e);
         }
     }
-
 
 
 }

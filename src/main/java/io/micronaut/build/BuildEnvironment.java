@@ -30,7 +30,6 @@ public class BuildEnvironment {
         this.providers = providers;
         this.githubAction = trueWhenEnvVarPresent("GITHUB_ACTIONS");
         this.isMigrationActive = !providers.systemProperty("strictBuild")
-                .forUseAtConfigurationTime()
                 .isPresent();
     }
 
@@ -44,7 +43,6 @@ public class BuildEnvironment {
 
     public Provider<Boolean> trueWhenEnvVarPresent(String envVar) {
         return providers.environmentVariable(envVar)
-                .forUseAtConfigurationTime()
                 .map(s -> true)
                 .orElse(false);
     }

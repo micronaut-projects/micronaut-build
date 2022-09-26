@@ -27,7 +27,7 @@ import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
@@ -50,11 +50,11 @@ public abstract class ConfigurationPropertiesPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
         project.getPluginManager().withPlugin("java", plugin -> {
-            JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
+            JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
             TaskContainer tasks = project.getTasks();
             DirectoryProperty buildDirectory = project.getLayout().getBuildDirectory();
             Provider<Directory> genDir = buildDirectory.dir("config-properties");
-            SourceSet mainSourceSet = javaPluginConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            SourceSet mainSourceSet = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
             TaskProvider<JavaDocAtValueReplacementTask> javaDocAtReplacement = tasks.register("javaDocAtReplacement", JavaDocAtValueReplacementTask.class, task -> {
                 task.setGroup(DOCUMENTATION_GROUP);

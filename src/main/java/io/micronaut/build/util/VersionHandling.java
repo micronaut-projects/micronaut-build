@@ -18,6 +18,7 @@ package io.micronaut.build.util;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.VersionCatalogsExtension;
 import org.gradle.api.artifacts.VersionConstraint;
+import org.gradle.api.provider.Provider;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,12 +29,13 @@ public class VersionHandling {
      * Returns a version defined in the catalog. If not found,
      * looks for a property (typically declared in gradle.properties).
      */
-    public static String versionOrDefault(
+    private static String versionOrDefault(
             Project project,
-            String alias) {
+            String alias,
+            String defaultVersion) {
         VersionCatalogsExtension catalogs = project.getExtensions().findByType(VersionCatalogsExtension.class);
         if (catalogs == null) {
-            return projectProperty(project, alias);
+            return projectProperty(project, alias, defaultVersion);
         }
         return catalogs.find("libs")
                 .flatMap(catalog -> {
@@ -44,7 +46,18 @@ public class VersionHandling {
                     return catalog.findVersion("managed." + alias);
                 })
                 .map(VersionConstraint::getRequiredVersion)
-                .orElseGet(() -> projectProperty(project, alias));
+                .orElseGet(() -> projectProperty(project, alias, defaultVersion));
+    }
+
+    /**
+     * Returns a version provider defined in the catalog. If not found,
+     * looks for a property (typically declared in gradle.properties).
+     */
+    public static Provider<String> versionProviderOrDefault(
+            Project project,
+            String alias,
+            String defaultVersion) {
+        return project.provider(() -> versionOrDefault(project, alias, defaultVersion));
     }
 
     private static String propertyNameFor(String alias) {
@@ -62,11 +75,11 @@ public class VersionHandling {
         return propertyName + "Version";
     }
 
-    private static String projectProperty(Project p, String alias) {
+    private static String projectProperty(Project p, String alias, String defaultVersion) {
         Object projectProp = p.findProperty(propertyNameFor(alias));
         if (projectProp != null) {
             return String.valueOf(projectProp);
         }
-        return "";
+        return defaultVersion;
     }
 }

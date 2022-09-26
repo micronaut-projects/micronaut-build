@@ -105,6 +105,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 Configuration baselineConfig = project.getConfigurations().detachedConfiguration();
                 baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version + "@toml")));
                 TaskProvider<VersionCatalogCompatibilityCheck> compatibilityCheckTaskProvider = tasks.register("checkVersionCatalogCompatibility", VersionCatalogCompatibilityCheck.class, task -> {
+                    task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
                     task.getBaseline().fileProvider(baselineTask.map(b -> baselineConfig.getSingleFile()));
                     task.getCurrent().convention(tasks.named("generateCatalogAsToml", TomlFileGenerator.class).flatMap(TomlFileGenerator::getOutputFile));
                     task.getReportFile().convention(project.getLayout().getBuildDirectory().file("reports/version-catalog-compatibility.txt"));

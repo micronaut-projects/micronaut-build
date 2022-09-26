@@ -3,15 +3,17 @@ on:
   push:
     branches:
     - master
+    - '[1-9]+.[0-9]+.x'
   pull_request:
     branches:
-    - master    
+    - master
+    - '[1-9]+.[0-9]+.x'
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/cache@v3.0.5
+    - uses: actions/cache@v3.0.8
       with:
         path: ~/.gradle/caches
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
@@ -26,7 +28,7 @@ jobs:
       run: ./gradlew check
     - name: Publish Test Report
       if: ${{ always() }}
-      uses: mikepenz/action-junit-report@v3.2.0
+      uses: mikepenz/action-junit-report@v3.5.0
       with:
         check_name: Java CI / Test Report
         report_paths: '**/build/test-results/*/TEST-*.xml'
