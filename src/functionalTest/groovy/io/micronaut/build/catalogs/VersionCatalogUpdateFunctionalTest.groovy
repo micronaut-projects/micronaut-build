@@ -23,6 +23,7 @@ import org.mockserver.model.HttpRequest
 import org.mockserver.model.HttpResponse
 import org.mockserver.model.MediaType
 import org.mockserver.socket.tls.KeyStoreFactory
+import org.mockserver.configuration.Configuration;
 import spock.lang.IgnoreIf
 
 import javax.net.ssl.HttpsURLConnection
@@ -41,7 +42,7 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
 
     def setup() {
         repository = startClientAndServer()
-        HttpsURLConnection.setDefaultSSLSocketFactory(new KeyStoreFactory(new MockServerLogger()).sslContext().socketFactory)
+        HttpsURLConnection.setDefaultSSLSocketFactory(new KeyStoreFactory(new Configuration(), new MockServerLogger()).sslContext().socketFactory)
         buildFile << """
             plugins {
                 id 'io.micronaut.build.internal.version-catalog-updates'            

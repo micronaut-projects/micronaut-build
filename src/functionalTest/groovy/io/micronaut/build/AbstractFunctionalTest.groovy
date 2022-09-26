@@ -18,7 +18,6 @@ package io.micronaut.build
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
-import org.gradle.util.GFileUtils
 import spock.lang.Specification
 import spock.lang.TempDir
 
@@ -76,7 +75,7 @@ abstract class AbstractFunctionalTest extends Specification {
 
     protected void withSample(String name) {
         File sampleDir = new File("src/functionalTest/gradle-projects/$name")
-        GFileUtils.copyDirectory(sampleDir, testDirectory.toFile())
+        copyDirectory(sampleDir.toPath(), testDirectory)
     }
 
     void run(String... args) {
@@ -179,6 +178,17 @@ abstract class AbstractFunctionalTest extends Specification {
     protected void dumpRepoContents() {
         Files.walk(file("build/repo").toPath()).forEach {
             println(it.toString())
+        }
+    }
+
+    private static void copyDirectory(Path source, Path destination) {
+        Files.walk(source).forEach { sourcePath ->
+            Path destinationPath = destination.resolve(source.relativize(sourcePath))
+            if (Files.isDirectory(sourcePath)) {
+                Files.createDirectories(destinationPath)
+            } else {
+                Files.copy(sourcePath, destinationPath)
+            }
         }
     }
 }

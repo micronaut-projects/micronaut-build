@@ -23,7 +23,7 @@ import org.gradle.api.attributes.Attribute;
 import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.javadoc.Javadoc;
@@ -44,8 +44,8 @@ public class AggregatedJavadocParticipantPlugin implements Plugin<Project> {
             Configuration javadocElementClasspath = createJavadocElementClasspath(project);
             TaskProvider<PrepareJavadocAggregationTask> prepareTask = project.getTasks().register("prepareJavadocAggregation", PrepareJavadocAggregationTask.class, task -> {
                 Javadoc javadoc = project.getTasks().named("javadoc", Javadoc.class).get();
-                JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
-                SourceSet sourceSet = javaPluginConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+                SourceSet sourceSet = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
                 task.getSources().from(sourceSet.getAllJava().getSourceDirectories());
                 task.getIncludes().set(javadoc.getIncludes());
                 task.getExcludes().set(javadoc.getExcludes());
