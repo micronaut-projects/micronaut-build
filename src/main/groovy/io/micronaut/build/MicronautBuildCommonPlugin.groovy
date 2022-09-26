@@ -1,6 +1,5 @@
 package io.micronaut.build
 
-
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -37,12 +36,16 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             String micronautVersion = versionOrDefault(project, "micronaut")
             String groovyVersion = versionOrDefault(project, "groovy")
 
+            String groovyGroup = groovyVersion.split("\\.").first().toInteger() <= 3 ?
+                    'org.codehaus.groovy' :
+                    'org.apache.groovy'
+
             project.configurations {
                 documentation
                 all {
                     resolutionStrategy.eachDependency { DependencyResolveDetails details ->
                         String group = details.requested.group
-                        if (group == 'org.codehaus.groovy') {
+                        if (group == groovyGroup) {
                             details.useVersion(groovyVersion)
                         }
                     }
@@ -67,8 +70,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     testAnnotationProcessor "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
                 }
 
-                documentation "org.codehaus.groovy:groovy-templates:$groovyVersion"
-                documentation "org.codehaus.groovy:groovy-dateutil:$groovyVersion"
+                documentation "$groovyGroup:groovy-templates:$groovyVersion"
+                documentation "$groovyGroup:groovy-dateutil:$groovyVersion"
 
                 if (micronautVersion) {
                     testCompileOnly "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
@@ -78,7 +81,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 testImplementation "org.objenesis:objenesis:3.1"
 
                 testRuntimeOnly "ch.qos.logback:logback-classic:1.2.3"
-                testImplementation "org.codehaus.groovy:groovy-test:$groovyVersion"
+                testImplementation "$groovyGroup:groovy-test:$groovyVersion"
             }
         }
 
