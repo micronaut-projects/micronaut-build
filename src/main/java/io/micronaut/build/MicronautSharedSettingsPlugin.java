@@ -33,6 +33,7 @@ import java.util.Map;
 
 import static io.micronaut.build.ProviderUtils.envOrSystemProperty;
 
+@SuppressWarnings("unused")
 public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
     public static final String NEXUS_STAGING_PROFILE_ID = "11bd7bc41716aa";
 

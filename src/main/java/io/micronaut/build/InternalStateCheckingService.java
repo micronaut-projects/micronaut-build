@@ -33,26 +33,24 @@ public abstract class InternalStateCheckingService implements BuildService<Inter
     public void close() {
         Boolean state = getParameters().getRegisteredByProjectPlugin().get();
         if (Boolean.TRUE.equals(state)) {
-            LOGGER.warn("""
-WARNING!
-
-The internal Micronaut Build plugins have been updated, but the settings plugin hasn't been applied.
-You must apply the shared settings plugin by modifying the settings.gradle(.kts) file by adding on the top:
-
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-    }
-}
-
-plugins {
-    id("io.micronaut.build.shared.settings") version "<plugin version>"
-}
-
-Not doing so will result in a failure when publishing.
-
-""");
+            LOGGER.warn("WARNING!\n" +
+                        "\n" +
+                        "The internal Micronaut Build plugins have been updated, but the settings plugin hasn't been applied.\n" +
+                        "You must apply the shared settings plugin by modifying the settings.gradle(.kts) file by adding on the top:\n" +
+                        "\n" +
+                        "pluginManagement {\n" +
+                        "    repositories {\n" +
+                        "        gradlePluginPortal()\n" +
+                        "        mavenCentral()\n" +
+                        "    }\n" +
+                        "}\n" +
+                        "\n" +
+                        "plugins {\n" +
+                        "    id(\"io.micronaut.build.shared.settings\") version \"<plugin version>\"\n" +
+                        "}\n" +
+                        "\n" +
+                        "Not doing so will result in a failure when publishing.\n" +
+                        "\n");
         }
     }
 }
