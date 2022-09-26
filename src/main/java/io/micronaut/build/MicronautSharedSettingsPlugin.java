@@ -39,6 +39,7 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
     @Override
     public void apply(Settings settings) {
         PluginManager pluginManager = settings.getPluginManager();
+        settings.getGradle().getSharedServices().registerIfAbsent(InternalStateCheckingService.NAME, InternalStateCheckingService.class, spec -> spec.parameters(p -> p.getRegisteredByProjectPlugin().set(false))).get();
         pluginManager.apply(MicronautBuildSettingsPlugin.class);
         pluginManager.apply(MicronautGradleEnterprisePlugin.class);
         applyPublishingPlugin(settings);
@@ -111,7 +112,6 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
             throw new RuntimeException(e);
         }
     }
-
 
 
 }
