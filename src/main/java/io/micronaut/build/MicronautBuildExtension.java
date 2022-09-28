@@ -2,14 +2,17 @@ package io.micronaut.build;
 
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
-import javax.inject.Inject;
 import org.gradle.api.artifacts.ResolutionStrategy;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 
+import javax.inject.Inject;
+
 public abstract class MicronautBuildExtension {
 
   public static final String DEFAULT_DEPENDENCY_UPDATES_PATTERN = "(?i).+(-|\\.?)(b|M|RC|Dev)\\d?.*";
+  public static final int DEFAULT_JAVA_VERSION = 17;
+  public static final String DEFAULT_CHECKSTYLE_VERSION = "8.33";
 
   private final BuildEnvironment environment;
 
@@ -25,9 +28,8 @@ public abstract class MicronautBuildExtension {
     this.environment = buildEnvironment;
     this.compileOptions = getObjects().newInstance(MicronautCompileOptions.class);
 
-    getSourceCompatibility().convention("1.8");
-    getTargetCompatibility().convention("1.8");
-    getCheckstyleVersion().convention("8.33");
+    getJavaVersion().convention(DEFAULT_JAVA_VERSION);
+    getCheckstyleVersion().convention(DEFAULT_CHECKSTYLE_VERSION);
     getDependencyUpdatesPattern().convention(DEFAULT_DEPENDENCY_UPDATES_PATTERN);
     getEnforcedPlatform().convention(false);
     getEnableProcessing().convention(false);
@@ -47,13 +49,24 @@ public abstract class MicronautBuildExtension {
   }
 
   /**
-   * The default source compatibility
+   * The version of Java this project is supporting. This is equivalent
+   * to setting the Java language version on the Java extension.
+   * @return the java version for this project
    */
+  public abstract Property<Integer> getJavaVersion();
+
+  /**
+   * The default source compatibility
+   * @deprecated prefer using {@link #getJavaVersion()} instead
+   */
+  @Deprecated
   public abstract Property<String> getSourceCompatibility();
 
   /**
    * The default target compatibility
+   * @deprecated prefer using {@link #getJavaVersion()} instead
    */
+  @Deprecated
   public abstract Property<String> getTargetCompatibility();
 
   /**
