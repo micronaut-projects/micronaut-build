@@ -53,7 +53,6 @@ dependencies {
     // TODO: upgrade to new asciidoctor
     implementation 'org.asciidoctor:asciidoctorj:2.5.5'
     implementation "io.spring.nohttp:nohttp-gradle:0.0.10"
-    implementation "com.github.ben-manes:gradle-versions-plugin:0.42.0"
     implementation "com.diffplug.spotless:spotless-plugin-gradle:6.11.0"
     implementation "com.adarshr:gradle-test-logger-plugin:3.2.0"
     implementation "io.github.gradle-nexus:publish-plugin:1.1.0"
