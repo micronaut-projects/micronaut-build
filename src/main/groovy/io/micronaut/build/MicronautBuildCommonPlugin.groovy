@@ -9,6 +9,7 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.diagnostics.DependencyReportTask
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.groovy.lang.groovydoc.tasks.GroovydocTask
 
 import static io.micronaut.build.util.VersionHandling.versionProviderOrDefault
@@ -97,16 +98,28 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         }
     }
 
+    @SuppressWarnings('GrDeprecatedAPIUsage')
     private void configureJavaPlugin(Project project, MicronautBuildExtension micronautBuildExtension) {
         project.apply plugin: "groovy"
         project.apply plugin: "java-library"
         project.pluginManager.apply('org.gradle.test-retry')
 
+        def javaPluginExtension = project.extensions.findByType(JavaPluginExtension)
+        javaPluginExtension.toolchain.languageVersion.convention(micronautBuildExtension.javaVersion.map(JavaLanguageVersion::of))
         project.afterEvaluate {
-            def convention = project.extensions.findByType(JavaPluginExtension)
-            convention.with {
-                sourceCompatibility = micronautBuildExtension.sourceCompatibility.get()
-                targetCompatibility = micronautBuildExtension.targetCompatibility.get()
+            if (micronautBuildExtension.sourceCompatibility.isPresent() || micronautBuildExtension.targetCompatibility.isPresent()) {
+                project.logger.warn """
+The "sourceCompatibility" and "targetCompatibility" properties are deprecated.
+Please use "micronautBuild.javaVersion" instead.
+You can do this directly in the project, or, better, in a convention plugin if it exists.
+"""
+                // Remove convention or Gradle will complain that you can't use both
+                javaPluginExtension.toolchain.languageVersion.convention(null)
+                javaPluginExtension.with {
+                    // orElse makes it work even if only one of the 2 properties is set
+                    sourceCompatibility = micronautBuildExtension.sourceCompatibility.orElse(micronautBuildExtension.targetCompatibility).get()
+                    targetCompatibility = micronautBuildExtension.targetCompatibility.orElse(micronautBuildExtension.sourceCompatibility).get()
+                }
             }
         }
 

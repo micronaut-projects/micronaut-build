@@ -46,6 +46,7 @@ import java.util.regex.Pattern;
 public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
     private final static Pattern MICRONAUT_DOCS_URI_PATTERN = Pattern.compile("^(https?://micronaut-projects\\.github\\.io/micronaut-(?:[a-z-A-Z0-9]-?)+/latest/api/)(.*)$");
 
+    @SuppressWarnings("deprecation")
     @Override
     public void apply(Project project) {
         // todo: replace with a narrower plugin once
@@ -78,8 +79,12 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
             options.author(true);
             javadoc.exclude("example/**");
             // Use Java Toolchain to render consistent javadocs
-            javadoc.getJavadocTool().convention(toolchains.javadocToolFor(spec -> spec.getLanguageVersion().set(asLanguageVersion(micronautBuildExtension))));
-            options.setSource(micronautBuildExtension.getSourceCompatibility().get());
+            javadoc.getJavadocTool().convention(toolchains.javadocToolFor(spec -> spec.getLanguageVersion().set(micronautBuildExtension.getJavaVersion().map(JavaLanguageVersion::of))));
+            if (micronautBuildExtension.getSourceCompatibility().isPresent()) {
+                options.setSource(micronautBuildExtension.getSourceCompatibility().get());
+            } else {
+                options.setSource(micronautBuildExtension.getJavaVersion().map(String::valueOf).get());
+            }
             options.links(project.getProperties()
                     .entrySet()
                     .stream()
@@ -101,14 +106,6 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
             javadoc.setSource(javadocAggregator);
             javadoc.setClasspath(javadocAggregatorClasspath);
         });
-    }
-
-    private static JavaLanguageVersion asLanguageVersion(MicronautBuildExtension micronautBuildExtension) {
-        String sourceCompatibility = micronautBuildExtension.getSourceCompatibility().get();
-        if (sourceCompatibility.startsWith("1.")) {
-            sourceCompatibility = sourceCompatibility.substring(2);
-        }
-        return JavaLanguageVersion.of(sourceCompatibility);
     }
 
     private Configuration createAggregationConfiguration(Project project, Configuration javadocAggregatorBase) {
@@ -141,7 +138,7 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
     }
 
     public static class AggregationCompatibilityRule implements AttributeCompatibilityRule<Usage> {
-        private final static Set<String> COMPATIBLE_VALUES = Collections.unmodifiableSet(new HashSet<String>() {{
+        private static final Set<String> COMPATIBLE_VALUES = Collections.unmodifiableSet(new HashSet<String>() {{
             add(Usage.JAVA_API);
             add(Usage.JAVA_RUNTIME);
         }});
