@@ -131,9 +131,10 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
                     }
                     publications {
+                        String aid = "micronaut-" + project.name.substring(project.name.indexOf('/') + 1)
                         if (project.extensions.findByType(PublishingExtension).publications.empty) {
                             maven(MavenPublication) { publication ->
-                                artifactId( "micronaut-" + project.name.substring(project.name.indexOf('/') + 1) )
+                                artifactId( aid )
 
                                 if (!project.name.endsWith("bom")) {
                                     versionMapping {
@@ -228,6 +229,17 @@ class MicronautPublishingPlugin implements Plugin<Project> {
                                     }
                                 }
 
+                            }
+                        }
+                        // Include a pom.xml file into the jar
+                        // so that automated vulnerability scanners are happy
+                        tasks.withType(Jar).configureEach {
+                            if (it.name in ['jar', 'shadowJar']) {
+                                into("META-INF/maven/${project.group}/${aid}") {
+                                    from(tasks.named("generatePomFileForMavenPublication")) {
+                                        rename("pom-default.xml", "pom.xml")
+                                    }
+                                }
                             }
                         }
                     }
