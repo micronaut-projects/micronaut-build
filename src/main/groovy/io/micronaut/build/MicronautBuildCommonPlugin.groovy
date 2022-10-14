@@ -38,7 +38,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     'org.codehaus.groovy' :
                     'org.apache.groovy'
         }
-        def cgLibVersionProvider = versionProviderOrDefault(project, 'cglib', '3.3.0')
+        def byteBuddyVersionProvider = versionProviderOrDefault(project, 'bytebuddy', '1.12.18')
         def objenesisVersionProvider = versionProviderOrDefault(project, 'objenesis', '3.1')
         def logbackVersionProvider = versionProviderOrDefault(project, 'logback', '1.2.3')
 
@@ -82,8 +82,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             dependencies.addProvider("testImplementation",groovyGroupProvider.zip(groovyVersionProvider) { groovyGroup, groovyVersion ->
                 "$groovyGroup:groovy-test:$groovyVersion"
             })
-            dependencies.addProvider("testImplementation", cgLibVersionProvider.map {
-                "cglib:cglib-nodep:$it"
+            dependencies.addProvider("testImplementation", byteBuddyVersionProvider.map {
+                "net.bytebuddy:byte-buddy:$it"
             })
             dependencies.addProvider("testImplementation", objenesisVersionProvider.map {
                 "org.objenesis:objenesis:$it"
