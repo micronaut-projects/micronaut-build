@@ -12,7 +12,7 @@ public abstract class MicronautBuildExtension {
 
   public static final String DEFAULT_DEPENDENCY_UPDATES_PATTERN = "(?i).+(-|\\.?)(b|M|RC|Dev)\\d?.*";
   public static final int DEFAULT_JAVA_VERSION = 17;
-  public static final String DEFAULT_CHECKSTYLE_VERSION = "8.33";
+  public static final String DEFAULT_CHECKSTYLE_VERSION = "8.41.1";
 
   private final BuildEnvironment environment;
 
