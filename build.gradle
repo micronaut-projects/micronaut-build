@@ -57,7 +57,7 @@ dependencies {
     implementation "com.adarshr:gradle-test-logger-plugin:3.2.0"
     implementation "io.github.gradle-nexus:publish-plugin:1.1.0"
     implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.18"
-    implementation "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.4.0.2513"
+    implementation "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.5.0.2730"
     implementation('com.lowagie:itext:2.0.8') {
         exclude(group: 'bouncycastle')
                 .because("we don't use this, and it clashes with the one in mockserver")
