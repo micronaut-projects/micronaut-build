@@ -123,7 +123,7 @@ abstract class PomChecker extends DefaultTask {
                     if (allowedGroups == null) {
                         allowedGroups = bomAuthorizedGroupIds.getOrDefault("${groupId}:${artifactId}:${version}".toString(), [] as Set)
                     }
-                    if (!groupId.startsWith(projectGroupId)) {
+                    if (!groupId.startsWith(projectGroupId) && !isMicronautBom(groupId, artifactId)) {
                         validation.pomFile.dependencies.findAll {
                             it.managed && !it.groupId.startsWith(groupId)
                         }.each {
@@ -157,6 +157,16 @@ abstract class PomChecker extends DefaultTask {
         if (failOnError.get() && errorCollector.errors) {
             throw new GradleException("BOM verification failed. See report in ${reportFile}")
         }
+    }
+
+    /**
+     * Determines if the GAV coordinates correspond to a Micronaut BOM.
+     * @param groupId the group ID
+     * @param artifactId the artifact id
+     * @return true if the GAV coordinates correspond to a Micronaut BOM
+     */
+    private static boolean isMicronautBom(String groupId, String artifactId) {
+        groupId.startsWith('io.micronaut') && artifactId.contains('bom')
     }
 
     private File writeReport(List<String> errors) {
