@@ -15,11 +15,12 @@
  */
 package io.micronaut.build.pom;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
@@ -85,8 +86,13 @@ public class PomDownloader {
         String uri = repositoryUrl + basedir + "maven-metadata.xml";
         try {
             URL url = new URL(uri);
-            try (InputStream in = url.openStream()) {
-                String text = new String(in.readAllBytes(), StandardCharsets.UTF_8).replaceAll("[\\r\\n\\t ]", "");
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+                String text = sb.toString().replaceAll("[\\r\\n\\t ]", "");
                 Matcher matcher = SNAPSHOT_PATTERN.matcher(text);
                 if (matcher.find()) {
                     text = matcher.group();
