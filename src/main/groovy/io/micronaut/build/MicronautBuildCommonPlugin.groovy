@@ -62,7 +62,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     if (micronautBuild.enforcedPlatform.get()) {
                         throw new GradleException("Do not use enforcedPlatform. Please remove the micronautBuild.enforcedPlatform setting")
                     }
-                    [project.dependencies.platform("io.micronaut:micronaut-bom:$micronautVersion")]
+                    [project.dependencies.platform("io.micronaut.bom:micronaut-bom:$micronautVersion")]
                 } else {
                     []
                 }
