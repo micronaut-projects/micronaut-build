@@ -39,6 +39,8 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static io.micronaut.build.BomSupport.coreBomArtifactId;
+
 public abstract class MicronautBuildSettingsExtension {
 
     abstract Property<Boolean> getUseLocalCache();
@@ -106,12 +108,7 @@ public abstract class MicronautBuildSettingsExtension {
         if (micronautVersion != null) {
             settings.dependencyResolutionManagement(mgmt -> {
                 configureRepositories(mgmt);
-                String artifactId = Arrays.stream(micronautVersion.split("[.]"))
-                        .findFirst()
-                        .map(Integer::parseInt)
-                        .filter(v -> v <= 3)
-                        .map(v -> "micronaut-bom")
-                        .orElse("micronaut-core-bom");
+                String artifactId = coreBomArtifactId(micronautVersion);
                 mgmt.getVersionCatalogs().create("mn", catalog -> catalog.from("io.micronaut:" + artifactId + ":" + micronautVersion));
             });
         }
