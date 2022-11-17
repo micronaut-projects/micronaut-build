@@ -70,7 +70,7 @@ dependencies {
     implementation 'org.gradle:test-retry-gradle-plugin:1.4.1'
     implementation 'me.champeau.gradle:japicmp-gradle-plugin:0.4.1'
 
-    implementation 'org.tomlj:tomlj:1.0.0'
+    implementation 'org.tomlj:tomlj:1.1.0'
 
     testImplementation platform("org.spockframework:spock-bom:2.1-groovy-3.0")
     testImplementation("org.spockframework:spock-core")
