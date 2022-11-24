@@ -41,4 +41,21 @@ You can do this directly in the project, or, better, in a convention plugin if i
        property << ["sourceCompatibility", "targetCompatibility"]
     }
 
+    void "can detect accidental upgrade of Micronaut"() {
+        given:
+        withSample("test-micronaut-module")
+
+        file("subproject1/build.gradle") << """
+            dependencies {
+                implementation("io.micronaut:micronaut-core:3.7.3")
+            }
+        """
+
+        when:
+        fails 'compileJava'
+
+        then:
+        errorOutputContains "Micronaut version mismatch: project declares 3.2.3 but resolved version is 3.7.3. You probably have a dependency which triggered an upgrade of micronaut-core. In order to determine where it comes from, you can run ./gradlew --dependencyInsight --configuration compileClasspath --dependency io.micronaut:micronaut-core"
+    }
+
 }
