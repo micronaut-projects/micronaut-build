@@ -135,7 +135,7 @@ public abstract class MicronautBuildSettingsExtension {
             List<String> parts = Arrays.asList(gavCoordinates.split(":"));
             String groupId = parts.get(0);
             String artifactId = parts.get(1);
-            if ("micronaut-bom".equals(groupId) && "micronaut-bom".equals(artifactId)) {
+            if (isMicronautPlatform(groupId, artifactId)) {
                 throw new IllegalStateException("Projects must not import the platform BOM or it would create a cyclic dependency. Please use the core BOM instead.");
             }
             if (parts.size() == 3) {
@@ -154,6 +154,11 @@ public abstract class MicronautBuildSettingsExtension {
                 throw new IllegalStateException("Invalid version catalog GAV coordinates: " + gavCoordinates + ". Expected format: group:artifact:version");
             }
         });
+    }
+
+    private static boolean isMicronautPlatform(String groupId, String artifactId) {
+        return ("micronaut-bom".equals(groupId) && "micronaut-bom".equals(artifactId)) ||
+               ("micronaut-platform".equals(groupId) && "micronaut-platform".equals(artifactId));
     }
 
     /**
@@ -187,7 +192,7 @@ public abstract class MicronautBuildSettingsExtension {
             List<String> parts = Arrays.asList(gavCoordinates.split(":"));
             String groupId = parts.get(0);
             String artifactId = parts.get(1);
-            if ("micronaut-bom".equals(groupId) && "micronaut-bom".equals(artifactId)) {
+            if (isMicronautPlatform(groupId, artifactId)) {
                 throw new IllegalStateException("Projects must not import the platform BOM or it would create a cyclic dependency. Please use the core BOM instead.");
             }
             if (parts.size() == 3) {
