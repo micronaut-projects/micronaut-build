@@ -27,6 +27,8 @@ import org.gradle.api.initialization.resolve.RepositoriesMode;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 import static io.micronaut.build.BomSupport.coreBomArtifactId;
 
 public abstract class MicronautBuildSettingsExtension {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MicronautBuildSettingsExtension.class);
 
     abstract Property<Boolean> getUseLocalCache();
 
@@ -53,6 +56,7 @@ public abstract class MicronautBuildSettingsExtension {
     private final AtomicBoolean repositoriesAdded = new AtomicBoolean();
     private final Settings settings;
     private final String micronautVersion;
+    private final String micronautTestVersion;
     private final VersionCatalogTomlModel versionCatalogTomlModel;
 
     @Inject
@@ -62,6 +66,7 @@ public abstract class MicronautBuildSettingsExtension {
         getUseRemoteCache().convention(booleanProvider(providers, "remoteCache", true));
         this.versionCatalogTomlModel = loadVersionCatalogTomlModel();
         this.micronautVersion = determineMicronautVersion();
+        this.micronautTestVersion = determineMicronautTestVersion();
     }
 
     private VersionCatalogTomlModel loadVersionCatalogTomlModel() {
@@ -86,15 +91,29 @@ public abstract class MicronautBuildSettingsExtension {
     }
 
     private String determineMicronautVersion() {
+        return determineMicronautVersion("micronaut");
+    }
+
+    private String determineMicronautTestVersion() {
+        return determineMicronautVersion("micronaut-test");
+    }
+
+    private String determineMicronautVersion(String moduleNameKebabCase) {
         Optional<String> micronautVersion = Optional.empty();
         if (versionCatalogTomlModel != null) {
-            Optional<VersionModel> micronaut = versionCatalogTomlModel.findVersion("micronaut");
+            Optional<VersionModel> micronaut = versionCatalogTomlModel.findVersion(moduleNameKebabCase);
             if (micronaut.isPresent()) {
                 micronautVersion = Optional.ofNullable(micronaut.get().getVersion().getRequire());
             }
         }
         if (!micronautVersion.isPresent()) {
-            micronautVersion = Optional.ofNullable(getProviders().gradleProperty("micronautVersion").getOrNull());
+            String capitalizedName = moduleNameKebabCase.charAt(0) +
+                                     Arrays.stream(moduleNameKebabCase.split("-"))
+                                             .map(StringUtils::capitalize)
+                                             .collect(Collectors.joining())
+                                             .substring(1)
+                                     + "Version";
+            micronautVersion = Optional.ofNullable(getProviders().gradleProperty(capitalizedName).getOrNull());
         }
         return micronautVersion.orElse(null);
     }
@@ -110,6 +129,18 @@ public abstract class MicronautBuildSettingsExtension {
                 configureRepositories(mgmt);
                 String artifactId = coreBomArtifactId(micronautVersion);
                 mgmt.getVersionCatalogs().create("mn", catalog -> catalog.from("io.micronaut:" + artifactId + ":" + micronautVersion));
+            });
+        }
+        if (micronautTestVersion != null) {
+            settings.getGradle().settingsEvaluated(unused -> {
+                settings.dependencyResolutionManagement(mgmt -> {
+                    configureRepositories(mgmt);
+                    if (mgmt.getVersionCatalogs().findByName("mnTest") == null) {
+                        mgmt.getVersionCatalogs().create("mnTest", catalog -> catalog.from("io.micronaut.test:micronaut-test-bom:" + micronautTestVersion));
+                    } else {
+                        LOGGER.warn("Version catalog 'mnTest' can be automatically imported. You can remove it from settings.gradle(.kts) file.");
+                    }
+                });
             });
         }
     }
@@ -173,22 +204,22 @@ public abstract class MicronautBuildSettingsExtension {
         settings.dependencyResolutionManagement(mgmt -> {
             configureRepositories(mgmt);
             String gavCoordinates = versionCatalogTomlModel.getLibrariesTable()
-                                            .stream()
-                                            .filter(lib -> lib.getAlias().equals(alias))
-                                            .findFirst()
-                                            .map(library -> {
-                                                String version;
-                                                if (library.getVersion().getReference() != null) {
-                                                    version = versionCatalogTomlModel.findVersion(library.getVersion().getReference())
-                                                            .map(VersionModel::getVersion)
-                                                            .map(RichVersion::getRequire)
-                                                            .orElse(null);
-                                                } else {
-                                                    version = library.getVersion().getVersion().getRequire();
-                                                }
-                                                return library.getGroup() + ":" + library.getName() + ":" + version;
-                                            })
-                                            .orElseThrow(() -> new IllegalStateException("Version catalog doesn't contain a library with alias: " + alias));
+                    .stream()
+                    .filter(lib -> lib.getAlias().equals(alias))
+                    .findFirst()
+                    .map(library -> {
+                        String version;
+                        if (library.getVersion().getReference() != null) {
+                            version = versionCatalogTomlModel.findVersion(library.getVersion().getReference())
+                                    .map(VersionModel::getVersion)
+                                    .map(RichVersion::getRequire)
+                                    .orElse(null);
+                        } else {
+                            version = library.getVersion().getVersion().getRequire();
+                        }
+                        return library.getGroup() + ":" + library.getName() + ":" + version;
+                    })
+                    .orElseThrow(() -> new IllegalStateException("Version catalog doesn't contain a library with alias: " + alias));
             List<String> parts = Arrays.asList(gavCoordinates.split(":"));
             String groupId = parts.get(0);
             String artifactId = parts.get(1);
