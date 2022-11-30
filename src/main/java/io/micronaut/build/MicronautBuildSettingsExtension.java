@@ -136,7 +136,7 @@ public abstract class MicronautBuildSettingsExtension {
                 settings.dependencyResolutionManagement(mgmt -> {
                     configureRepositories(mgmt);
                     if (mgmt.getVersionCatalogs().findByName("mnTest") == null) {
-                        mgmt.getVersionCatalogs().create("mnTest", catalog -> catalog.from("io.micronaut.test:micronaut-test-bo:" + micronautTestVersion));
+                        mgmt.getVersionCatalogs().create("mnTest", catalog -> catalog.from("io.micronaut.test:micronaut-test-bom:" + micronautTestVersion));
                     } else {
                         LOGGER.warn("Version catalog 'mnTest' can be automatically imported. You can remove it from settings.gradle(.kts) file.");
                     }
