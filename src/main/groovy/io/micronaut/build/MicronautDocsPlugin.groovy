@@ -187,9 +187,6 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 version = projectVersion
                 sourceIndex = publishGuide.flatMap { it.targetDir.file("guide/index.html") }
                 outputIndex = layout.buildDir.file("working/05-dropdown/index.html")
-                versionsJson = providers.provider {
-                    new URL("https://api.github.com/repos/${slug.get()}/tags").text
-                }
             }
 
             def assembleFinalDocs = tasks.register("assembleFinalDocs", Copy) {
