@@ -62,6 +62,9 @@ public abstract class CreateReleasesDropdownTask extends DefaultTask {
     @OutputFile
     public abstract RegularFileProperty getOutputIndex();
 
+    @Input
+    public abstract Property<String> getVersionsJson();
+
     @Inject
     protected abstract ProviderFactory getProviders();
 
@@ -70,8 +73,8 @@ public abstract class CreateReleasesDropdownTask extends DefaultTask {
         String slug = getSlug().get();
         String version = getVersion().get();
 
+        String selectHtml = composeSelectHtml(getVersionsJson().get(), slug, version);
 
-        String selectHtml = composeSelectHtml(slug, version);
 
         String versionHtml = "<p><strong>Version:</strong> " + version + "</p>";
         String substitute = selectHtml.replaceAll(" style='margin-top: 10px' ", " style='max-width: 200px' ");
@@ -88,28 +91,7 @@ public abstract class CreateReleasesDropdownTask extends DefaultTask {
         }
     }
 
-    private static String versionUrlString(String slug) {
-        return "https://api.github.com/repos/" + slug + "/tags";
-    }
-
-    private static String stream(URL url) throws IOException {
-        try (InputStream input = url.openStream()) {
-            InputStreamReader isr = new InputStreamReader(input);
-            BufferedReader reader = new BufferedReader(isr);
-            StringBuilder json = new StringBuilder();
-            int c;
-            while ((c = reader.read()) != -1) {
-                json.append((char) c);
-            }
-            return json.toString();
-        }
-    }
-
-    public static String composeSelectHtml(String slug, String version) {
-        return composeSelectHtml(slug, version, versionUrl -> stream(new URL(versionUrl)));
-    }
-
-    public static String composeSelectHtml(String slug, String version, JsonFetcher jsonFetcher) {
+    public static String composeSelectHtml(String json, String slug, String version) {
         String[] splitted = slug.split("/");
         String org = splitted[0];
         String repo = splitted[1];
@@ -119,20 +101,15 @@ public abstract class CreateReleasesDropdownTask extends DefaultTask {
         selectHtml.append(option(snapshotHref, "SNAPSHOT", version.endsWith("SNAPSHOT")));
         String latestHref = latestRefUrl(org, repo);
         selectHtml.append(option(latestHref, "LATEST", false));
-        String versionUrl = versionUrlString(slug);
-        try {
-            GitHubTagsParser.toVersions(jsonFetcher.json(versionUrl)).forEach(softwareVersion -> {
-                String versionName = softwareVersion.getVersionText();
-                String href = "https://" + org + ".github.io/" + repo + "/" + versionName + "/guide/index.html";
-                if (PROJECTS_MICRONAUT_CORE.equals(slug)) {
-                    href = "https://docs.micronaut.io/" + versionName + "/guide/index.html";
-                }
-                selectHtml.append(option(href, versionName, version.equals(versionName)));
+        GitHubTagsParser.toVersions(json).forEach(softwareVersion -> {
+            String versionName = softwareVersion.getVersionText();
+            String href = "https://" + org + ".github.io/" + repo + "/" + versionName + "/guide/index.html";
+            if (PROJECTS_MICRONAUT_CORE.equals(slug)) {
+                href = "https://docs.micronaut.io/" + versionName + "/guide/index.html";
+            }
+            selectHtml.append(option(href, versionName, version.equals(versionName)));
 
-            });
-        } catch (IOException e) {
-            LOG.warn("Failed to fetch {}", versionUrl);
-        }
+        });
         selectHtml.append("</select>");
         return selectHtml.toString();
     }

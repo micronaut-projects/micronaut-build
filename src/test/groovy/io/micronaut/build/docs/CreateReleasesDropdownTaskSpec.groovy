@@ -4,11 +4,9 @@ import spock.lang.Specification
 
 class CreateReleasesDropdownTaskSpec extends Specification {
 
-    void "IOException is catched"() {
+    void "empty JSON array returned when error fetching JSON is handled correctly"() {
         when:
-        String html = CreateReleasesDropdownTask.composeSelectHtml("micronaut-projects/micronaut-liquibase", "5.6.0", url -> {
-            throw new IOException("Server returned HTTP response code: 403 for URL: https://api.github.com/repos/micronaut-projects/micronaut-liquibase/tags")
-        })
+        String html = CreateReleasesDropdownTask.composeSelectHtml("[]", "micronaut-projects/micronaut-liquibase", "5.6.0")
 
         then:
         noExceptionThrown()
@@ -18,8 +16,18 @@ class CreateReleasesDropdownTaskSpec extends Specification {
 
     }
     void "options are correctly populated"() {
+        given:
+        String slug = "micronaut-projects/micronaut-liquibase"
+
         when:
-        String html = CreateReleasesDropdownTask.composeSelectHtml("micronaut-projects/micronaut-liquibase", "5.6.0")
+        String url = "https://api.github.com/repos/${slug}/tags"
+        String json = new URL(url).text
+
+        then:
+        noExceptionThrown()
+
+        when:
+        String html = CreateReleasesDropdownTask.composeSelectHtml(json, "micronaut-projects/micronaut-liquibase", "5.6.0")
 
         then:
         noExceptionThrown()
