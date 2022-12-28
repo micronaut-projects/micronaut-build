@@ -82,6 +82,8 @@ public abstract class FindBaselineTask extends DefaultTask {
             con.setRequestProperty("Accept", "application/vnd.github.v3+json");
             if (System.getenv("GITHUB_TOKEN") != null) {
                 con.setRequestProperty("Authorization", "Bearer " + System.getenv("GITHUB_TOKEN"));
+            } else {
+                getLogger().warn("Environment variable GITHUB_TOKEN not defined");
             }
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             try (ReadableByteChannel rbc = Channels.newChannel(con.getInputStream()); WritableByteChannel wbc=Channels.newChannel(out)){
