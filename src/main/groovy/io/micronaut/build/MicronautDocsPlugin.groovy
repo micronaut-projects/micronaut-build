@@ -196,6 +196,7 @@ class MicronautDocsPlugin implements Plugin<Project> {
                         return "[]"
                     }
                 }
+                doNotCacheIf { versionsJson.get() == "[]" }
             }
 
             def assembleFinalDocs = tasks.register("assembleFinalDocs", Copy) {
