@@ -188,8 +188,15 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 sourceIndex = publishGuide.flatMap { it.targetDir.file("guide/index.html") }
                 outputIndex = layout.buildDir.file("working/05-dropdown/index.html")
                 versionsJson = providers.provider {
-                    new URL("https://api.github.com/repos/${slug.get()}/tags").text
+                    String url = "https://api.github.com/repos/${slug.get()}/tags"
+                    try {
+                        return new URL(url).text
+                    } catch(IOException e) {
+                        logger.error("IOException fetching " + url)
+                        return "[]"
+                    }
                 }
+                doNotCacheIf { versionsJson.get() == "[]" }
             }
 
             def assembleFinalDocs = tasks.register("assembleFinalDocs", Copy) {

@@ -15,6 +15,7 @@
  */
 package io.micronaut.build.docs;
 
+import io.micronaut.build.JsonFetcher;
 import io.micronaut.docs.GitHubTagsParser;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -28,15 +29,22 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.URL;
 
 @CacheableTask
 public abstract class CreateReleasesDropdownTask extends DefaultTask {
+    private static final Logger LOG = LoggerFactory.getLogger(CreateReleasesDropdownTask.class);
     private static final String MICRONAUT_GITHUB_ORGANIZATION = "micronaut-projects";
     private static final String MICRONAUT_CORE_REPOSITORY = "micronaut-core";
     public static final String PROJECTS_MICRONAUT_CORE = "micronaut-projects/micronaut-core";
@@ -64,7 +72,9 @@ public abstract class CreateReleasesDropdownTask extends DefaultTask {
     public void createDropdown() throws IOException {
         String slug = getSlug().get();
         String version = getVersion().get();
+
         String selectHtml = composeSelectHtml(getVersionsJson().get(), slug, version);
+
 
         String versionHtml = "<p><strong>Version:</strong> " + version + "</p>";
         String substitute = selectHtml.replaceAll(" style='margin-top: 10px' ", " style='max-width: 200px' ");
@@ -88,32 +98,45 @@ public abstract class CreateReleasesDropdownTask extends DefaultTask {
 
         StringBuilder selectHtml = new StringBuilder("<select style='margin-top: 10px' onChange='window.document.location.href=this.options[this.selectedIndex].value;'>");
         String snapshotHref = snapshotRefUrl(org, repo);
-        if (version.endsWith("SNAPSHOT")) {
-            selectHtml.append("<option selected='selected' value='").append(snapshotHref).append("'>SNAPSHOT</option>");
-        } else {
-            selectHtml.append("<option value='").append(snapshotHref).append("'>SNAPSHOT</option>");
-        }
+        selectHtml.append(option(snapshotHref, "SNAPSHOT", version.endsWith("SNAPSHOT")));
+        String latestHref = latestRefUrl(org, repo);
+        selectHtml.append(option(latestHref, "LATEST", false));
         GitHubTagsParser.toVersions(json).forEach(softwareVersion -> {
             String versionName = softwareVersion.getVersionText();
             String href = "https://" + org + ".github.io/" + repo + "/" + versionName + "/guide/index.html";
             if (PROJECTS_MICRONAUT_CORE.equals(slug)) {
                 href = "https://docs.micronaut.io/" + versionName + "/guide/index.html";
             }
-            if (version.equals(versionName)) {
-                selectHtml.append("<option selected='selected' value='").append(href).append("'>").append(versionName).append("</option>");
-            } else {
-                selectHtml.append("<option value='").append(href).append("'>").append(versionName).append("</option>");
-            }
+            selectHtml.append(option(href, versionName, version.equals(versionName)));
+
         });
         selectHtml.append("</select>");
         return selectHtml.toString();
     }
+
+    private static String option(String href, String text, boolean selected) {
+        StringBuilder sb = new StringBuilder();
+        if (selected) {
+            sb.append("<option selected='selected' value='").append(href).append("'>").append(text).append("</option>");
+        } else {
+            sb.append("<option value='").append(href).append("'>").append(text).append("</option>");
+        }
+        return sb.toString();
+    }
+
 
     static String snapshotRefUrl(String org, String repo) {
         if (MICRONAUT_GITHUB_ORGANIZATION.equals(org) && MICRONAUT_CORE_REPOSITORY.equals(repo)) {
             return "https://docs.micronaut.io/snapshot/guide/index.html";
         }
         return String.format("https://%s.github.io/%s/snapshot/guide/index.html", org, repo);
+    }
+
+    static String latestRefUrl(String org, String repo) {
+        if (MICRONAUT_GITHUB_ORGANIZATION.equals(org) && MICRONAUT_CORE_REPOSITORY.equals(repo)) {
+            return "https://docs.micronaut.io/latest/guide/index.html";
+        }
+        return String.format("https://%s.github.io/%s/latest/guide/index.html", org, repo);
     }
 
 }
