@@ -31,7 +31,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         configureIdeaPlugin(project)
         configureLicensePlugin(project)
         configureTestLoggerPlugin(project)
-        configureMiscPlugins(project)
     }
 
     private void configureDependencies(Project project, MicronautBuildExtension micronautBuild) {
@@ -254,13 +253,4 @@ You can do this directly in the project, or, better, in a convention plugin if i
         }
     }
 
-    void configureMiscPlugins(Project project) {
-        project.with {
-            apply plugin: "io.spring.nohttp"
-            nohttp {
-                source.exclude "src/test/**", "build/**"
-            }
-
-        }
-    }
 }
