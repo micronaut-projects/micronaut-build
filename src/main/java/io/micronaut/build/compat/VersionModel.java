@@ -15,8 +15,6 @@
  */
 package io.micronaut.build.compat;
 
-import org.jetbrains.annotations.NotNull;
-
 public class VersionModel implements Comparable<VersionModel> {
     private final String current;
     private final int currentAsInt;
@@ -45,7 +43,7 @@ public class VersionModel implements Comparable<VersionModel> {
     }
 
     @Override
-    public int compareTo(@NotNull VersionModel o) {
+    public int compareTo(VersionModel o) {
         int result = Integer.compare(currentAsInt, o.currentAsInt);
         if (result != 0) {
             return result;
