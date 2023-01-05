@@ -22,8 +22,8 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
     }
 
     private void configureCheckstyle(final Project project, final MicronautBuildExtension micronautBuildExtension) {
+        project.getPluginManager().apply(CheckstylePlugin.class);
         project.afterEvaluate(p -> {
-            p.getPluginManager().apply(CheckstylePlugin.class);
             final CheckstyleExtension checkstyle = p.getExtensions().findByType(CheckstyleExtension.class);
             if (checkstyle != null) {
                 checkstyle.setConfigFile(p.getRootProject().getLayout().getProjectDirectory().file("config/checkstyle/checkstyle.xml").getAsFile());
