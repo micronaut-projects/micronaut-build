@@ -27,7 +27,6 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.io.ByteArrayOutputStream;
@@ -135,7 +134,6 @@ public abstract class FindBaselineTask extends DefaultTask {
         Files.write(getPreviousVersion().get().getAsFile().toPath(), previous.get().toString().getBytes("UTF-8"));
     }
 
-    @NotNull
     private String trimVersion() {
         String version = getCurrentVersion().get();
         int idx = version.indexOf('-');

@@ -31,7 +31,6 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Arrays;
@@ -119,7 +118,6 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
         });
     }
 
-    @NotNull
     private Provider<String> createBaselineProvider(BinaryCompatibibilityExtension binaryCompatibility, ProviderFactory providers, TaskProvider<FindBaselineTask> baselineTask) {
         return binaryCompatibility.getBaselineVersion().orElse(
                 providers.fileContents(baselineTask.flatMap(FindBaselineTask::getPreviousVersion))
@@ -127,7 +125,6 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
         );
     }
 
-    @NotNull
     private TaskProvider<FindBaselineTask> registerFindBaselineTask(Project project, BinaryCompatibibilityExtension binaryCompatibility, TaskContainer tasks, ProviderFactory providers) {
         return tasks.register("findBaseline", FindBaselineTask.class, task -> {
             task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));

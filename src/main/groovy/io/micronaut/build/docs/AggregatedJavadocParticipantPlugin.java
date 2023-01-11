@@ -27,7 +27,6 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.javadoc.Javadoc;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A plugin which marks a project as a participant
@@ -72,7 +71,6 @@ public class AggregatedJavadocParticipantPlugin implements Plugin<Project> {
         });
     }
 
-    @NotNull
     private Configuration createFilteredJavadocSourcesElements(Project project) {
         return project.getConfigurations().create("internalJavadocElements", conf -> {
             conf.setCanBeConsumed(true);
