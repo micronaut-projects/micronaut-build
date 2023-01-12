@@ -5,13 +5,19 @@ var BUILD_GRADLE_KOTLIN = "gradle-kotlin";
 var LANG_JAVA = "java";
 var LANG_GROOVY = "groovy";
 var LANG_KOTLIN = "kotlin";
+var CONFIG_YAML = "yaml";
+var CONFIG_TOML = "toml";
+var CONFIG_HOCON = "hocon";
+var CONFIG_PROPERTIES = "properties";
 var MICRONAUT_SUPPORTED_BUILDS = [BUILD_GRADLE, BUILD_GRADLE_GROOVY, BUILD_GRADLE_KOTLIN, BUILD_MAVEN];
 var MICRONAUT_SUPPORTED_LANGS = [LANG_JAVA, LANG_GROOVY, LANG_KOTLIN];
+var MICRONAUT_SUPPORTED_CONFIG_LANGS = [CONFIG_YAML, CONFIG_TOML, CONFIG_HOCON, CONFIG_PROPERTIES];
 var DEFAULT_SUPPORTED_LANG = LANG_JAVA;
 var DEFAULT_BUILD = BUILD_GRADLE;
+var DEFAULT_CONFIG = CONFIG_YAML;
 var LOCALSTORAGE_KEY_LANG = "preferred-micronaut-language";
 var LOCALSTORAGE_KEY_BUILD = "preferred-micronaut-build";
-
+var LOCALSTORAGE_KEY_CONFIG = "preferred-micronaut-config";
 
 function addCopyToClipboardButtons() {
     var elements = document.getElementsByClassName("multi-language-sample");
@@ -31,12 +37,16 @@ function postProcessCodeBlocks() {
 
     var preferredLanguage = initPreferredLanguage();
     var preferredBuild = initPreferredBuild();
+    var preferredConfig = initPreferredConfig();
 
     function isBuild(optionId) {
         return MICRONAUT_SUPPORTED_BUILDS.indexOf(optionId) > -1
     }
     function isLang(optionId) {
         return MICRONAUT_SUPPORTED_LANGS.indexOf(optionId) > -1
+    }
+    function isConfig(optionId) {
+        return MICRONAUT_SUPPORTED_CONFIG_LANGS.indexOf(optionId) > -1
     }
 
     // Ensure preferred Language is valid, defaulting to JAVA
@@ -59,6 +69,16 @@ function postProcessCodeBlocks() {
         return build;
     }
 
+    // Ensure preferred config language is valid, defaulting to YAML
+    function initPreferredConfig() {
+        var lang = window.localStorage.getItem(LOCALSTORAGE_KEY_CONFIG);
+        if (MICRONAUT_SUPPORTED_CONFIG_LANGS.indexOf(lang) === -1) {
+            window.localStorage.setItem(LOCALSTORAGE_KEY_CONFIG, DEFAULT_CONFIG);
+            lang = DEFAULT_CONFIG;
+        }
+        return lang;
+    }
+
     // This makes the dash separated sub-langs display better
     function makeTitleForSnippetSelector(string) {
         var langSlices = string.split("-");
@@ -74,11 +94,11 @@ function postProcessCodeBlocks() {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
 
-    function processSampleEl(sampleEl, prefLangId, prefBuildId) {
+    function processSampleEl(sampleEl, prefLangId, prefBuildId, prefConfigId) {
         var codeEl = sampleEl.querySelector("code[data-lang]");
         if (codeEl != null) {
             sampleEl.setAttribute("data-lang", codeEl.getAttribute("data-lang"));
-            if (codeEl.getAttribute("data-lang") !== prefLangId && codeEl.getAttribute("data-lang") !== prefBuildId) {
+            if (codeEl.getAttribute("data-lang") !== prefLangId && codeEl.getAttribute("data-lang") !== prefBuildId && codeEl.getAttribute("data-lang") !== prefConfigId) {
                 sampleEl.classList.add("hidden");
             } else {
                 sampleEl.classList.remove("hidden");
@@ -96,16 +116,22 @@ function postProcessCodeBlocks() {
                 codeEl.classList.add('language-xml');
                 hljs.highlightBlock(codeEl);
             }
+            // This block corrects highlighting issues for HOCON, which isn't supported by hljs
+            if(codeEl.classList.contains("language-" + CONFIG_HOCON)) {
+                codeEl.classList.remove('language-' + CONFIG_HOCON);
+                codeEl.classList.add('language-json');
+                hljs.highlightBlock(codeEl);
+            }
         }
     }
 
-    function switchSampleLanguage(languageId, buildId) {
+    function switchSampleLanguage(languageId, buildId, configId) {
 
         // First make sure all the code sample sections are created
-        ensureMultiLanguageSampleSectionsHydrated(languageId, buildId);
+        ensureMultiLanguageSampleSectionsHydrated(languageId, buildId, configId);
 
         [].slice.call(document.querySelectorAll(".multi-language-selector .language-option")).forEach(function (optionEl) {
-            if (optionEl.getAttribute("data-lang") === languageId || optionEl.getAttribute("data-lang") === buildId) {
+            if (optionEl.getAttribute("data-lang") === languageId || optionEl.getAttribute("data-lang") === buildId || optionEl.getAttribute("data-lang") === configId ) {
                 optionEl.classList.add("selected");
             } else {
                 optionEl.classList.remove("selected");
@@ -113,7 +139,7 @@ function postProcessCodeBlocks() {
         });
 
         [].slice.call(document.querySelectorAll(".multi-language-text")).forEach(function (el) {
-            if (!el.classList.contains("lang-" + languageId) && !el.classList.contains("lang-" + buildId)) {
+            if (!el.classList.contains("lang-" + languageId) && !el.classList.contains("lang-" + buildId) && !el.classList.contains("lang-" + configId)) {
                 el.classList.add("hidden");
             } else {
                 el.classList.remove("hidden");
@@ -121,18 +147,18 @@ function postProcessCodeBlocks() {
         });
     }
 
-    function ensureMultiLanguageSampleSectionsHydrated(languageId, buildId) {
+    function ensureMultiLanguageSampleSectionsHydrated(languageId, buildId, configId) {
         var multiLanguageSampleElements = [].slice.call(document.querySelectorAll(".multi-language-sample"));
         // Array of Arrays, each top-level array representing a single collection of samples
         var multiLanguageSets = [];
         for (var i = 0; i < multiLanguageSampleElements.length; i++) {
             var currentCollection = [multiLanguageSampleElements[i]];
             var currentSampleElement = multiLanguageSampleElements[i];
-            processSampleEl(currentSampleElement, languageId, buildId);
+            processSampleEl(currentSampleElement, languageId, buildId, configId);
             while (currentSampleElement.nextElementSibling != null && currentSampleElement.nextElementSibling.classList.contains("multi-language-sample")) {
                 currentCollection.push(currentSampleElement.nextElementSibling);
                 currentSampleElement = currentSampleElement.nextElementSibling;
-                processSampleEl(currentSampleElement, languageId, buildId);
+                processSampleEl(currentSampleElement, languageId, buildId, configId);
                 i++;
             }
 
@@ -171,14 +197,18 @@ function postProcessCodeBlocks() {
                             var optionId = optionEl.getAttribute("data-lang");
                             var isOptionBuild = isBuild(optionId);
                             var isOptionLang = isLang(optionId);
+                            var isOptionConfig = isConfig(optionId);
                             if (isOptionBuild) {
                                 window.localStorage.setItem(LOCALSTORAGE_KEY_BUILD, optionId);
                             }
                             if (isOptionLang) {
                                 window.localStorage.setItem(LOCALSTORAGE_KEY_LANG, optionId);
                             }
+                            if (isOptionConfig) {
+                                window.localStorage.setItem(LOCALSTORAGE_KEY_CONFIG, optionId);
+                            }
 
-                            switchSampleLanguage(isOptionLang ? optionId : initPreferredLanguage(), isOptionBuild ? optionId : initPreferredBuild());
+                            switchSampleLanguage(isOptionLang ? optionId : initPreferredLanguage(), isOptionBuild ? optionId : initPreferredBuild(), isOptionConfig ? optionId : initPreferredConfig());
 
                             // scroll to multi-lange selector. Offset the scroll a little bit to focus.
                             optionEl.scrollIntoView();
@@ -211,7 +241,7 @@ function postProcessCodeBlocks() {
         });
     }
 
-    switchSampleLanguage(preferredLanguage, preferredBuild);
+    switchSampleLanguage(preferredLanguage, preferredBuild, preferredConfig);
 }
 
 function createCopyToClipboardElement() {
