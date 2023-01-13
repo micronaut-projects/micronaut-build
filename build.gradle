@@ -77,6 +77,8 @@ dependencies {
     testImplementation platform("org.spockframework:spock-bom:2.1-groovy-3.0")
     testImplementation("org.spockframework:spock-core")
 
+    testImplementation("com.typesafe:config:1.4.2")
+
     functionalTestImplementation("org.mock-server:mockserver-netty:5.14.0")
     functionalTestImplementation("org.mock-server:mockserver-client-java:5.14.0")
 

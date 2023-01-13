@@ -1,6 +1,7 @@
 package io.micronaut.docs
 
 import groovy.transform.CompileStatic
+import io.micronaut.docs.converter.YamlFormatConverter
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
 import org.asciidoctor.Options
@@ -28,16 +29,16 @@ class ConfigurationPropertiesMacro extends BlockProcessor {
     Object process(StructuralNode parent, Reader reader, Map<String, Object> attributes) {
         String content = reader.read()
         String title = attributes["title"]
-        TomlFormatConverter converter = new TomlFormatConverter(content)
+        YamlFormatConverter converter = new YamlFormatConverter(content)
         Block compound = createBlock(parent, "open", "", attributes)
-        Block yaml = createBlock(compound, "pass", toLanguageSample(converter.toYaml(), 'yaml', title))
+        Block javaProperties = createBlock(compound, "pass", toLanguageSample(converter.toJavaProperties(), 'properties', title))
+        compound.append(javaProperties)
+        Block yaml = createBlock(compound, "pass", toLanguageSample(content, 'yaml', title))
         compound.append(yaml)
-        Block toml = createBlock(compound, "pass", toLanguageSample(content, 'toml', title))
+        Block toml = createBlock(compound, "pass", toLanguageSample(converter.toToml(), 'toml', title))
         compound.append(toml)
         Block hocon = createBlock(compound, "pass", toLanguageSample(converter.toHocon(), 'hocon', title))
         compound.append(hocon)
-        Block javaProperties = createBlock(compound, "pass", toLanguageSample(converter.toJavaProperties(), 'properties', title))
-        compound.append(javaProperties)
         compound
     }
 
