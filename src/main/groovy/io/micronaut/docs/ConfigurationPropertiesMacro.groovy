@@ -37,6 +37,8 @@ class ConfigurationPropertiesMacro extends BlockProcessor {
         compound.append(yaml)
         Block toml = createBlock(compound, "pass", toLanguageSample(converter.toToml(), 'toml', title))
         compound.append(toml)
+        Block groovy = createBlock(compound, "pass", toLanguageSample(converter.toGroovy(), 'groovy-config', title))
+        compound.append(groovy)
         Block hocon = createBlock(compound, "pass", toLanguageSample(converter.toHocon(), 'hocon', title))
         compound.append(hocon)
         compound

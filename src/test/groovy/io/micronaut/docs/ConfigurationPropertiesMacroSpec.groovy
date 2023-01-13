@@ -36,7 +36,8 @@ class ConfigurationPropertiesMacroSpec extends Specification {
 [configuration]
 ----
 micronaut:
-    server.port: 8080
+    server:
+        port: 8080
 
 mongodb:
     uri: mongodb://username:password@localhost:27017/databaseName
@@ -44,18 +45,19 @@ mongodb:
 
 """
         then:
-        converted == """<div class="openblock">
+        converted == '''<div class="openblock">
 <div class="content">
 <div class="listingblock multi-language-sample">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.server\\\\.port=8080
+<pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.server.port=8080
 mongodb.uri=mongodb://username:password@localhost:27017/databaseName</code></pre>
 </div>
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">micronaut:
-    server.port: 8080
+    server:
+        port: 8080
 
 mongodb:
     uri: mongodb://username:password@localhost:27017/databaseName</code></pre>
@@ -64,16 +66,31 @@ mongodb:
 <div class="listingblock multi-language-sample">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">[micronaut]
-  "server.port"=8080
+  [micronaut.server]
+    port=8080
 [mongodb]
   uri="mongodb://username:password@localhost:27017/databaseName"</code></pre>
 </div>
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy-config hljs" data-lang="groovy-config">micronaut {
+  server {
+    port = 8080
+  }
+}
+mongodb {
+  uri = "mongodb://username:password@localhost:27017/databaseName"
+}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="content">
 <pre class="highlightjs highlight"><code class="language-hocon hljs" data-lang="hocon">{
   micronaut {
-    "server.port" = 8080
+    server {
+      port = 8080
+    }
   }
   mongodb {
     uri = "mongodb://username:password@localhost:27017/databaseName"
@@ -82,7 +99,7 @@ mongodb:
 </div>
 </div>
 </div>
-</div>"""
+</div>'''
     }
 
     void convert(String input) {

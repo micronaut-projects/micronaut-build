@@ -9,9 +9,10 @@ var CONFIG_YAML = "yaml";
 var CONFIG_TOML = "toml";
 var CONFIG_HOCON = "hocon";
 var CONFIG_PROPERTIES = "properties";
+var CONFIG_GROOVY = "groovy-config";
 var MICRONAUT_SUPPORTED_BUILDS = [BUILD_GRADLE, BUILD_GRADLE_GROOVY, BUILD_GRADLE_KOTLIN, BUILD_MAVEN];
 var MICRONAUT_SUPPORTED_LANGS = [LANG_JAVA, LANG_GROOVY, LANG_KOTLIN];
-var MICRONAUT_SUPPORTED_CONFIG_LANGS = [CONFIG_YAML, CONFIG_TOML, CONFIG_HOCON, CONFIG_PROPERTIES];
+var MICRONAUT_SUPPORTED_CONFIG_LANGS = [CONFIG_YAML, CONFIG_TOML, CONFIG_HOCON, CONFIG_PROPERTIES, CONFIG_GROOVY];
 var DEFAULT_SUPPORTED_LANG = LANG_JAVA;
 var DEFAULT_BUILD = BUILD_GRADLE;
 var DEFAULT_CONFIG = CONFIG_YAML;
@@ -81,6 +82,9 @@ function postProcessCodeBlocks() {
 
     // This makes the dash separated sub-langs display better
     function makeTitleForSnippetSelector(string) {
+        if (CONFIG_GROOVY === string) {
+            return "Groovy";
+        }
         var langSlices = string.split("-");
         var title = capitalizeWord(langSlices[0]);
         if(langSlices.length == 2) {
@@ -120,6 +124,12 @@ function postProcessCodeBlocks() {
             if(codeEl.classList.contains("language-" + CONFIG_HOCON)) {
                 codeEl.classList.remove('language-' + CONFIG_HOCON);
                 codeEl.classList.add('language-json');
+                hljs.highlightBlock(codeEl);
+            }
+            // This block corrects highlighting issues for Groovy config, which isn't supported by hljs
+            if(codeEl.classList.contains("language-" + CONFIG_GROOVY)) {
+                codeEl.classList.remove('language-' + CONFIG_GROOVY);
+                codeEl.classList.add('language-groovy');
                 hljs.highlightBlock(codeEl);
             }
         }

@@ -9,6 +9,7 @@ class YamlFormatConverterTest extends Specification {
     String toml
     String hocon
     String properties
+    String groovy
     Map<String, Object> map
 
     def "converts a simple toml file"() {
@@ -37,6 +38,12 @@ foo.baz=stuff
     bar = "test"
     baz = "stuff"
   }
+}
+"""
+        hasGroovy """
+foo {
+  bar = "test"
+  baz = "stuff"
 }
 """
     }
@@ -78,6 +85,13 @@ some-simple-string=Hello
 some-string-as-number=42
 
 """
+        hasGroovy """
+someInt = 42
+someDouble = 2.5
+someBoolean = false
+someSimpleString = "Hello"
+someStringAsNumber = "42"
+"""
     }
 
     def "converts a simple array"() {
@@ -106,6 +120,9 @@ foo[1]=stuff
 {
   foo = ["test", "stuff"]
 }
+"""
+        hasGroovy """
+foo = ["test", "stuff"]
 """
     }
 
@@ -159,6 +176,24 @@ netty:
 micronaut.application.name=demo
 micronaut.server.port=9090
 netty.default.allocator.max-order=3
+"""
+
+        hasGroovy """
+micronaut {
+  application {
+    name = "demo"
+  }
+  server {
+    port = 9090
+  }
+}
+netty {
+  'default' {
+    allocator {
+      maxOrder = 3
+    }
+  }
+}
 """
     }
 
@@ -240,6 +275,25 @@ servers[1].services[0].port=8080
 servers[1].services[1].id=firewall
 servers[1].services[1].port=12444
 """
+
+        hasGroovy """
+servers = [{
+    name = "front"
+    ip = "10.0.0.1"
+    tags = ["js", "react"]
+  }, {
+    name = "back"
+    ip = "10.0.0.2"
+    tags = ["micronaut"]
+    services = [{
+        id = "proxy"
+        port = 8080
+      }, {
+        id = "firewall"
+        port = 12444
+      }]
+  }]
+"""
     }
 
     def "converts entries with dots"() {
@@ -277,6 +331,14 @@ logger.levels.ROOT=INFO
 logger.levels.io\\\\.github\\\\.jhipster\\\\.sample=INFO
 logger.levels.io\\\\.github\\\\.jhipster=INFO
 """
+
+        hasGroovy """logger {
+  levels {
+    ROOT = "INFO"
+    io.github.jhipster.sample = "INFO"
+    io.github.jhipster = "INFO"
+  }
+}"""
     }
 
     private void hasToml(String toml) {
@@ -309,6 +371,10 @@ logger.levels.io\\\\.github\\\\.jhipster=INFO
         println(props)
     }
 
+    private void hasGroovy(String groovy) {
+        assertEqualsTrimmed(this.groovy, groovy)
+    }
+
     private static void assertEqualsTrimmed(String actual, String expected) {
         actual = actual.trim()
         expected = expected.trim()
@@ -320,6 +386,7 @@ logger.levels.io\\\\.github\\\\.jhipster=INFO
         toml = converter.toToml()
         properties = converter.toJavaProperties()
         hocon = converter.toHocon()
+        groovy = converter.toGroovy()
         map = converter.asMap()
     }
 }

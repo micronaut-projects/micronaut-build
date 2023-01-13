@@ -47,6 +47,10 @@ public class YamlFormatConverter {
         return convert(new HoconGenerator(model));
     }
 
+    public String toGroovy() {
+        return convert(new ConfigSlurperGenerator(model));
+    }
+
     private String convert(AbstractModelVisitor generator) {
         generator.visit();
         return generator.toString();
