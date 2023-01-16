@@ -8,6 +8,7 @@ import io.micronaut.build.docs.PublishGuideTask
 import io.micronaut.build.docs.ValidateAsciidocOutputTask
 import io.micronaut.build.docs.props.MergeConfigurationReferenceTask
 import io.micronaut.build.docs.props.PublishConfigurationReferenceTask
+import io.micronaut.build.utils.GithubApiUtils
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.FileTreeElement
@@ -188,15 +189,16 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 sourceIndex = publishGuide.flatMap { it.targetDir.file("guide/index.html") }
                 outputIndex = layout.buildDir.file("working/05-dropdown/index.html")
                 versionsJson = providers.provider {
-                    String url = "https://api.github.com/repos/${slug.get()}/tags"
+                    String ghslug = slug.get()
                     try {
-                        return new URL(url).text
+                        byte[] jsonArr = GithubApiUtils.fetchTagsFromGitHub(ghslug)
+                        return new String(jsonArr, "UTF-8")
                     } catch(IOException e) {
-                        logger.error("IOException fetching " + url)
+                        logger.error("IOException fetching github tags for " + ghslug)
                         return "[]"
                     }
                 }
-                doNotCacheIf { versionsJson.get() == "[]" }
+                outputs.doNotCacheIf("error while fetching releases list") { versionsJson.get() == "[]" }
             }
 
             def assembleFinalDocs = tasks.register("assembleFinalDocs", Copy) {
