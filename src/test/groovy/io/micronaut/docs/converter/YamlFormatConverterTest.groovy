@@ -328,8 +328,8 @@ logger:
 
         hasProperties """
 logger.levels.ROOT=INFO
-logger.levels.io\\\\.github\\\\.jhipster\\\\.sample=INFO
-logger.levels.io\\\\.github\\\\.jhipster=INFO
+logger.levels.io.github.jhipster.sample=INFO
+logger.levels.io.github.jhipster=INFO
 """
 
         hasGroovy """logger {

@@ -15,7 +15,6 @@
  */
 package io.micronaut.docs.converter;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -94,16 +93,6 @@ public class JavaPropertiesGenerator extends AbstractModelVisitor {
     }
 
     private static String escape(String str) {
-        if (str.contains(".")) {
-            return Arrays.stream(str.split("\\."))
-                    .map(JavaPropertiesGenerator::escape)
-                    .reduce("", (cur, item) -> {
-                        if ("".equals(cur)) {
-                            return item;
-                        }
-                        return cur + "\\\\." + item;
-                    });
-        }
         return NON_ASCII_CHARS.matcher(str).replaceAll("\\\\$0");
     }
 
