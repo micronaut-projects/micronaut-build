@@ -3,6 +3,7 @@ package io.micronaut.docs.dropdown
 import groovy.json.JsonSlurper
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
+import io.micronaut.build.utils.GithubApiUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
@@ -38,7 +39,8 @@ class CreateReleasesDropdownTask extends DefaultTask {
         String repo = slug.split('/')[1]
         String org = slug.split('/')[0]
         JsonSlurper slurper = new JsonSlurper()
-        String json = new URL("https://api.github.com/repos/${slug}/tags").text
+        byte[] jsonArr = GithubApiUtils.fetchTagsFromGitHub(getLogger(), slug);
+        String json = new String(jsonArr, "UTF-8")
         def result = slurper.parseText(json)
         String selectHtml = "<select onChange='window.document.location.href=this.options[this.selectedIndex].value;'>"
         String snapshotHref = "https://${org}.github.io/${repo}/snapshot/guide/single.html"

@@ -26,6 +26,9 @@ jobs:
         java-version: '8'
     - name: Check plugin
       run: ./gradlew check
+      env:
+        GH_TOKEN_PUBLIC_REPOS_READONLY: ${{ secrets.GH_TOKEN_PUBLIC_REPOS_READONLY }}
+        GH_USERNAME: ${{ secrets.GH_USERNAME }}
     - name: Publish Test Report
       if: ${{ always() }}
       uses: mikepenz/action-junit-report@v3.6.1

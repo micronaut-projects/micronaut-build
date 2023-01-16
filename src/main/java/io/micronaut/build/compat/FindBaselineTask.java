@@ -16,8 +16,8 @@
 package io.micronaut.build.compat;
 
 import groovy.json.JsonSlurper;
+import io.micronaut.build.utils.GithubApiUtils;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.GradleException;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -29,14 +29,7 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import javax.inject.Inject;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
@@ -63,45 +56,15 @@ public abstract class FindBaselineTask extends DefaultTask {
             return base * CACHE_IN_SECONDS;
         });
     }
-
     @Internal
     protected Provider<byte[]> getJson() {
-        return getGithubSlug().map(this::fetchReleasesFromGitHub);
+        return getGithubSlug().map(slug -> GithubApiUtils.fetchReleasesFromGitHub(getLogger(), slug));
     }
 
     @Inject
     protected abstract ProviderFactory getProviders();
 
-    private byte[] fetchReleasesFromGitHub(String slug) {
-        String releasesUrl = "https://api.github.com/repos/" + normalizeSlug(slug) + "/releases";
-        try {
-            URL url = new URL(releasesUrl);
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-            con.setRequestProperty("Accept", "application/vnd.github.v3+json");
-            if (System.getenv("GITHUB_TOKEN") != null) {
-                con.setRequestProperty("Authorization", "Bearer " + System.getenv("GITHUB_TOKEN"));
-            } else {
-                getLogger().warn("Environment variable GITHUB_TOKEN not defined");
-            }
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            try (ReadableByteChannel rbc = Channels.newChannel(con.getInputStream()); WritableByteChannel wbc=Channels.newChannel(out)){
-                ByteBuffer buffer = ByteBuffer.allocateDirect(16 * 1024);
-                while (rbc.read(buffer) != -1) {
-                    buffer.flip();
-                    wbc.write(buffer);
-                    buffer.compact();
-                }
-                buffer.flip();
-                while (buffer.hasRemaining()) {
-                    wbc.write(buffer);
-                }
-                return out.toByteArray();
-            }
-        } catch (IOException ex) {
-            throw new GradleException("Failed to read releases from " + releasesUrl, ex);
-        }
-    }
+
 
     @OutputFile
     public abstract RegularFileProperty getPreviousVersion();
@@ -109,7 +72,6 @@ public abstract class FindBaselineTask extends DefaultTask {
     @TaskAction
     public void execute() throws IOException {
         byte[] jsonBytes = getJson().get();
-
         JsonSlurper slurper = new JsonSlurper();
         List<Map<String, Object>> json = (List<Map<String, Object>>) slurper.parse(jsonBytes);
         List<VersionModel> releases = json.stream()
@@ -141,15 +103,5 @@ public abstract class FindBaselineTask extends DefaultTask {
             return version.substring(0, idx);
         }
         return version;
-    }
-
-    private static String normalizeSlug(String slug) {
-        if (slug.startsWith("/")) {
-            slug = slug.substring(1);
-        }
-        if (slug.endsWith("/")) {
-            slug = slug.substring(0, slug.length() - 1);
-        }
-        return slug;
     }
 }
