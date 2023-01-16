@@ -55,13 +55,30 @@ public interface ModelVisitor {
 
     void visit(Context context, Object object);
 
-    record Context(Context parent, String key, NodeKind parentKind) {
+    class Context {
+        private final Context parent;
+        private final String key;
+        private final NodeKind parentKind;
+
+        public Context(Context parent, String key, NodeKind parentKind) {
+            this.parent = parent;
+            this.key = key;
+            this.parentKind = parentKind;
+        }
 
         public int depth() {
             if (parent == null) {
                 return 0;
             }
             return 1 + parent.depth();
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public NodeKind parentKind() {
+            return parentKind;
         }
 
         public Context child(String childKey, NodeKind parentKind) {
@@ -99,10 +116,7 @@ public interface ModelVisitor {
         OBJECT;
 
         public boolean isComplex() {
-            return switch (this) {
-                case MAP, LIST -> true;
-                default -> false;
-            };
+            return this == MAP || this == LIST;
         }
 
         public boolean isMap() {

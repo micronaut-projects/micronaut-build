@@ -71,11 +71,21 @@ public abstract class AbstractModelVisitor implements ModelVisitor {
     @Override
     public void visit(Context context, Object object) {
         switch (ModelVisitor.kindOf(object)) {
-            case MAP -> visitMap(context, (Map<String, Object>) object);
-            case LIST -> visitList(context, (List<Object>) object);
-            case STRING -> visitString(context, (String) object);
-            case NUMBER -> visitNumber(context, (Number) object);
-            case OBJECT -> visitObject(context, object);
+            case MAP:
+                visitMap(context, (Map<String, Object>) object);
+                break;
+            case LIST:
+                visitList(context, (List<Object>) object);
+                break;
+            case STRING:
+                visitString(context, (String) object);
+                break;
+            case NUMBER:
+                visitNumber(context, (Number) object);
+                break;
+            case OBJECT:
+                visitObject(context, object);
+                break;
         }
     }
 

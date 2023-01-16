@@ -18,6 +18,8 @@ package io.micronaut.docs.converter;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -28,7 +30,7 @@ import java.util.stream.Collectors;
 public class ConfigSlurperGenerator extends AbstractModelVisitor {
     private static final String INDENT = "  ";
     private static final Pattern NON_ASCII_CHARS = Pattern.compile("[^\\p{ASCII}]");
-    private static final Set<String> KEYWORDS = Set.of(
+    private static final Set<String> KEYWORDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             "default",
             "while",
             "for",
@@ -81,13 +83,16 @@ public class ConfigSlurperGenerator extends AbstractModelVisitor {
             "null",
             "true",
             "false"
-    );
+    )));
+
     public ConfigSlurperGenerator(Map<String, Object> model) {
         super(model);
     }
 
     private void indent(Context context) {
-        append(INDENT.repeat(Math.max(0, context.depth() - 1)));
+        for (int i = 0; i < context.depth() - 1; i++) {
+            append(INDENT);
+        }
     }
 
     @Override
@@ -110,9 +115,10 @@ public class ConfigSlurperGenerator extends AbstractModelVisitor {
         indent(context);
         String escaped = escapeToken(entryKey);
         append(escaped);
-        switch (ModelVisitor.kindOf(entryValue)) {
-            case MAP -> append(" ");
-            default -> append(" = ");
+        if (ModelVisitor.kindOf(entryValue) == NodeKind.MAP) {
+            append(" ");
+        } else {
+            append(" = ");
         }
         visit(context, entryValue);
     }

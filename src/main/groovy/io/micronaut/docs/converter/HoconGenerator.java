@@ -26,7 +26,9 @@ public class HoconGenerator extends AbstractModelVisitor {
     }
 
     private void indent(Context context) {
-        append(INDENT.repeat(context.depth()));
+        for (int i=0; i<context.depth(); i++) {
+            append(INDENT);
+        }
     }
 
     @Override
@@ -52,9 +54,10 @@ public class HoconGenerator extends AbstractModelVisitor {
         if (addQuotes) {
             append("\"");
         }
-        switch (ModelVisitor.kindOf(entryValue)) {
-            case MAP -> append(" ");
-            default -> append(" = ");
+        if (ModelVisitor.kindOf(entryValue) == NodeKind.MAP) {
+            append(" ");
+        } else {
+            append(" = ");
         }
         visit(context, entryValue);
     }
