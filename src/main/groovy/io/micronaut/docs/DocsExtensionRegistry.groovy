@@ -36,7 +36,6 @@ class DocsExtensionRegistry implements ExtensionRegistry {
         javaExtensionRegistry.inlineMacro 'reactor', ReactorJavaApiMacro
         javaExtensionRegistry.inlineMacro 'dependency', BuildDependencyMacro
         javaExtensionRegistry.blockMacro(new LanguageSnippetMacro("snippet", new HashMap<String, Object>(), asciidoctor))
-
-
+        javaExtensionRegistry.block(new ConfigurationPropertiesMacro(asciidoctor))
     }
 }
