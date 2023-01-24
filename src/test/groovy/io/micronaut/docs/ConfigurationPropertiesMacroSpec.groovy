@@ -98,6 +98,20 @@ mongodb {
 }</code></pre>
 </div>
 </div>
+<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json-config hljs" data-lang="json-config">{
+  "micronaut": {
+    "server": {
+      "port": 8080
+    }
+  },
+  "mongodb": {
+    "uri": "mongodb://username:password@localhost:27017/databaseName"
+  }
+}</code></pre>
+</div>
+</div>
 </div>
 </div>'''
     }

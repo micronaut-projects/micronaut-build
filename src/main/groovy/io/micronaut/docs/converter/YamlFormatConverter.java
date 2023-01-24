@@ -47,6 +47,10 @@ public class YamlFormatConverter {
         return convert(new HoconGenerator(model));
     }
 
+    public String toJson() {
+        return convert(new JsonGenerator(model));
+    }
+
     public String toGroovy() {
         return convert(new ConfigSlurperGenerator(model));
     }
