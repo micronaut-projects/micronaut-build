@@ -10,6 +10,7 @@ class YamlFormatConverterTest extends Specification {
     String hocon
     String properties
     String groovy
+    String json
     Map<String, Object> map
 
     def "converts a simple toml file"() {
@@ -40,6 +41,15 @@ foo.baz=stuff
   }
 }
 """
+        hasJson """
+{
+  "foo": {
+    "bar": "test", 
+    "baz": "stuff"
+  }
+}
+"""
+
         hasGroovy """
 foo {
   bar = "test"
@@ -73,6 +83,17 @@ some-string-as-number="42"
   some-boolean = false
   some-simple-string = "Hello"
   some-string-as-number = "42"
+}
+
+"""
+
+        hasJson """
+{
+  "some-int": 42, 
+  "some-double": 2.5, 
+  "some-boolean": false, 
+  "some-simple-string": "Hello", 
+  "some-string-as-number": "42"
 }
 
 """
@@ -121,6 +142,11 @@ foo[1]=stuff
   foo = ["test", "stuff"]
 }
 """
+        hasJson """
+{
+  "foo": ["test", "stuff"]
+}
+"""
         hasGroovy """
 foo = ["test", "stuff"]
 """
@@ -167,6 +193,25 @@ netty:
     default {
       allocator {
         max-order = 3
+      }
+    }
+  }
+}
+"""
+        hasJson """
+{
+  "micronaut": {
+    "application": {
+      "name": "demo"
+    }, 
+    "server": {
+      "port": 9090
+    }
+  }, 
+  "netty": {
+    "default": {
+      "allocator": {
+        "max-order": 3
       }
     }
   }
@@ -261,6 +306,26 @@ servers:
     }]
 }
 """
+        hasJson """
+{
+  "servers": [{
+      "name": "front", 
+      "ip": "10.0.0.1", 
+      "tags": ["js", "react"]
+    }, {
+      "name": "back", 
+      "ip": "10.0.0.2", 
+      "tags": ["micronaut"], 
+      "services": [{
+          "id": "proxy", 
+          "port": 8080
+        }, {
+          "id": "firewall", 
+          "port": 12444
+        }]
+    }]
+}
+"""
 
         hasProperties """
 servers[0].name=front
@@ -325,6 +390,17 @@ logger:
     }
   }
 }"""
+        hasJson """
+{
+  "logger": {
+    "levels": {
+      "ROOT": "INFO", 
+      "io.github.jhipster.sample": "INFO", 
+      "io.github.jhipster": "INFO"
+    }
+  }
+}
+"""
 
         hasProperties """
 logger.levels.ROOT=INFO
@@ -343,6 +419,10 @@ logger.levels.io.github.jhipster=INFO
 
     private void hasToml(String toml) {
         assertEqualsTrimmed(this.toml, toml)
+    }
+
+    private void hasJson(String json) {
+        assertEqualsTrimmed(this.json, json)
     }
 
     private void hasHocon(String hocon) {
@@ -387,6 +467,7 @@ logger.levels.io.github.jhipster=INFO
         properties = converter.toJavaProperties()
         hocon = converter.toHocon()
         groovy = converter.toGroovy()
+        json = converter.toJson()
         map = converter.asMap()
     }
 }

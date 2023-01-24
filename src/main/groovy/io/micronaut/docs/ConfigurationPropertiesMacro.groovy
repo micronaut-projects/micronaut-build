@@ -41,6 +41,8 @@ class ConfigurationPropertiesMacro extends BlockProcessor {
         compound.append(groovy)
         Block hocon = createBlock(compound, "pass", toLanguageSample(converter.toHocon(), 'hocon', title))
         compound.append(hocon)
+        Block json = createBlock(compound, "pass", toLanguageSample(converter.toJson(), 'json-config', title))
+        compound.append(json)
         compound
     }
 
