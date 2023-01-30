@@ -17,25 +17,42 @@ package io.micronaut.build;
 
 import io.github.gradlenexus.publishplugin.NexusPublishExtension;
 import org.gradle.api.InvalidUserCodeException;
-import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.initialization.ProjectDescriptor;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+import org.slf4j.Logger;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
-import static io.micronaut.build.ProviderUtils.envOrSystemProperty;
+import static io.micronaut.build.utils.ProviderUtils.envOrSystemProperty;
 
 @SuppressWarnings("unused")
-public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
+public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> {
+    private static final Logger LOGGER = Logging.getLogger(MicronautSharedSettingsPlugin.class);
+
     public static final String NEXUS_STAGING_PROFILE_ID = "11bd7bc41716aa";
+    private static final String STANDARDIZED_PROJECT_NAMES_WARNING = "=========================================================\n" +
+                                                                     "Standardized project names are disabled.\n" +
+                                                                     "Consider enabling them with\n" +
+                                                                     "    micronautBuild.useStandardizedProjectNames=true\n" +
+                                                                     "in settings.gradle.\n\n" +
+                                                                     "Then you will need to replace project dependencies from\n" +
+                                                                     "   project(':foo')\n" +
+                                                                     "to\n" +
+                                                                     "   project(':micronaut-foo')\n" +
+                                                                     "in your build scripts\n" +
+                                                                     "=========================================================";
 
     @Override
     public void apply(Settings settings) {
@@ -43,15 +60,43 @@ public class MicronautSharedSettingsPlugin implements Plugin<Settings> {
         settings.getGradle().getSharedServices().registerIfAbsent(InternalStateCheckingService.NAME, InternalStateCheckingService.class, spec -> spec.parameters(p -> p.getRegisteredByProjectPlugin().set(false))).get();
         pluginManager.apply(MicronautBuildSettingsPlugin.class);
         pluginManager.apply(MicronautGradleEnterprisePlugin.class);
-        applyPublishingPlugin(settings);
-        assertUniqueProjectNames(settings);
         MicronautBuildSettingsExtension buildSettingsExtension = settings.getExtensions().findByType(MicronautBuildSettingsExtension.class);
+        applyPublishingPlugin(settings);
+        configureProjectNames(settings, buildSettingsExtension);
+        assertUniqueProjectNames(settings);
         settings.getGradle().beforeProject(p -> {
             ExtraPropertiesExtension extraProperties = p.getExtensions().getExtraProperties();
             if (!extraProperties.has("micronautVersion")) {
                 extraProperties.set("micronautVersion", buildSettingsExtension.getMicronautVersion());
             }
         });
+    }
+
+    private void configureProjectNames(Settings settings, MicronautBuildSettingsExtension buildSettings) {
+        settings.getGradle().settingsEvaluated(unused -> {
+            Boolean useStandardProjectNames = buildSettings.getUseStandardizedProjectNames().get();
+            if (Boolean.TRUE.equals(useStandardProjectNames)) {
+                Set<ProjectDescriptor> visited = new HashSet<>();
+                configureProjectName(settings.getRootProject(), visited);
+            } else {
+                LOGGER.warn(STANDARDIZED_PROJECT_NAMES_WARNING);
+            }
+        });
+    }
+
+    private void configureProjectName(ProjectDescriptor project, Set<ProjectDescriptor> visited) {
+        if (visited.add(project)) {
+            if (!(":".equals(project.getPath()))) {
+                String name = project.getName();
+                if (!name.startsWith(MICRONAUT_PROJECT_PREFIX) && !name.startsWith(TEST_SUITE_PROJECT_PREFIX)) {
+                    name = MICRONAUT_PROJECT_PREFIX + name;
+                    project.setName(name);
+                }
+            }
+            for (ProjectDescriptor child : project.getChildren()) {
+                configureProjectName(child, visited);
+            }
+        }
     }
 
     private void assertUniqueProjectNames(Settings settings) {

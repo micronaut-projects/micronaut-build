@@ -1,5 +1,6 @@
 package io.micronaut.build.util
 
+import io.micronaut.build.utils.VersionHandling
 import org.gradle.testfixtures.ProjectBuilder
 import spock.lang.Specification
 

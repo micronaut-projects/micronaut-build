@@ -14,6 +14,9 @@ import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.plugins.signing.Sign
+
+import static io.micronaut.build.MicronautPlugin.moduleNameOf
+
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
@@ -131,7 +134,7 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
                     }
                     publications {
-                        String aid = "micronaut-" + project.name.substring(project.name.indexOf('/') + 1)
+                        String aid = moduleNameOf(project.name.substring(project.name.indexOf('/') + 1))
                         if (project.extensions.findByType(PublishingExtension).publications.empty) {
                             maven(MavenPublication) { publication ->
                                 artifactId( aid )

@@ -27,7 +27,6 @@ import io.micronaut.build.pom.VersionCatalogConverter;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.InvalidUserDataException;
-import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
@@ -79,7 +78,7 @@ import java.util.stream.Stream;
  * prefixed with `managed-`.
  */
 @SuppressWarnings({"UnstableApiUsage", "HardCodedStringLiteral"})
-public abstract class MicronautBomPlugin implements Plugin<Project> {
+public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
 
     public static final List<String> DEPENDENCY_PATH = Arrays.asList("dependencyManagement", "dependencies", "dependency");
 
@@ -96,7 +95,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         bomExtension.getPublishCatalog().convention(true);
         bomExtension.getIncludeBomInCatalog().convention(true);
         bomExtension.getImportProjectCatalog().convention(true);
-        bomExtension.getExcludeProject().convention(p -> p.getName().contains("bom") || p.getName().startsWith("test-suite") || !p.getSubprojects().isEmpty());
+        bomExtension.getExcludeProject().convention(p -> p.getName().contains("bom") || p.getName().startsWith(TEST_SUITE_PROJECT_PREFIX) || !p.getSubprojects().isEmpty());
         bomExtension.getExtraExcludedProjects().add(project.getName());
         bomExtension.getCatalogToPropertyNameOverrides().convention(Collections.emptyMap());
         bomExtension.getInlineNestedCatalogs().convention(true);
@@ -205,7 +204,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
 
     private void configureLate(Project project, MicronautBomExtension bomExtension, PublishingExtension publishing, TaskContainer tasks) {
         String mainProjectId = bomExtension.getPropertyName().getOrElse(project.getRootProject().getName().replace("-parent", "").replace('-', '.'));
-        String publishedName = "micronaut-" + project.getName();
+        String publishedName = MicronautPlugin.moduleNameOf(project.getName());
         String group = String.valueOf(project.getGroup());
         Optional<VersionCatalog> versionCatalog = findVersionCatalog(project, bomExtension);
         final VersionCatalogConverter modelConverter = new VersionCatalogConverter(
@@ -250,14 +249,15 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                     forEachProject(bomExtension, project, includedProjects, skippedProjects, p -> {
                         String propertyName = "micronaut." + mainProjectId + ".version";
                         String projectGroup = String.valueOf(p.getGroup());
+                        String moduleName = MicronautPlugin.moduleNameOf(p.getName());
                         Optional<Node> pomDep = forEachNode(node, DEPENDENCY_PATH)
-                                .filter(n -> childOf(n, "artifactId").text().equals("micronaut-" + p.getName()) &&
+                                .filter(n -> childOf(n, "artifactId").text().equals(moduleName) &&
                                         childOf(n, "groupId").text().equals(projectGroup))
                                 .findFirst();
                         if (pomDep.isPresent()) {
                             childOf(pomDep.get(), "version").setValue("${" + propertyName + "}");
                         } else {
-                            System.err.println("[WARNING] Didn't find dependency " + projectGroup + ":micronaut-" + p.getName() + " in BOM file");
+                            System.err.println("[WARNING] Didn't find dependency " + projectGroup + ":" + moduleName + " in BOM file");
                         }
                     });
                 });
@@ -324,7 +324,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         });
         forEachProject(bomExtension, project, new HashSet<>(), new HashSet<>(), p -> {
             String moduleGroup = String.valueOf(p.getGroup());
-            String moduleName = "micronaut-" + p.getName();
+            String moduleName = MicronautPlugin.moduleNameOf(p.getName());
             String moduleVersion = assertVersion(p);
 
             api.getDependencyConstraints().add(
@@ -333,7 +333,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
                             .create(moduleGroup + ":" + moduleName + ":" + moduleVersion)
             );
 
-            String mainModuleName = "micronaut-" + mainProjectId.replace('.', '-');
+            String mainModuleName = MicronautPlugin.moduleNameOf(mainProjectId.replace('.', '-'));
             modelConverter.getExtraVersions().put(mainModuleName, moduleVersion);
             modelConverter.getExtraLibraries().put(moduleName, VersionCatalogConverter.library(moduleGroup, moduleName, mainModuleName));
         });
@@ -408,7 +408,7 @@ public abstract class MicronautBomPlugin implements Plugin<Project> {
         if (bomExtension.getIncludeBomInCatalog().get()) {
             CatalogPluginExtension catalog = project.getExtensions().getByType(CatalogPluginExtension.class);
             catalog.versionCatalog(vc -> {
-                String mainModuleName = "micronaut-" + mainProjectId;
+                String mainModuleName = MicronautPlugin.moduleNameOf(mainProjectId);
                 String versionName = mainModuleName.replace('-', '.');
                 vc.library(publishedName, group, publishedName).versionRef(versionName);
                 vc.version(versionName, String.valueOf(project.getVersion()));

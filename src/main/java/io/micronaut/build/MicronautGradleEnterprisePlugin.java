@@ -19,6 +19,7 @@ import com.gradle.CommonCustomUserDataGradlePlugin;
 import com.gradle.enterprise.gradleplugin.GradleEnterpriseExtension;
 import com.gradle.enterprise.gradleplugin.GradleEnterprisePlugin;
 import com.gradle.scan.plugin.BuildScanExtension;
+import io.micronaut.build.utils.ProviderUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
@@ -32,7 +33,7 @@ import org.nosphere.gradle.github.ActionsPlugin;
 import java.lang.reflect.InvocationTargetException;
 
 import static io.micronaut.build.BuildEnvironment.PREDICTIVE_TEST_SELECTION_ENV_VAR;
-import static io.micronaut.build.ProviderUtils.envOrSystemProperty;
+import static io.micronaut.build.utils.ProviderUtils.envOrSystemProperty;
 
 public class MicronautGradleEnterprisePlugin implements Plugin<Settings> {
     private static final String[] SAFE_TO_LOG_ENV_VARIABLES = new String[] {

@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.build;
+package io.micronaut.build.utils;
 
 import org.gradle.api.provider.ProviderFactory;
 
-class ProviderUtils {
-    static boolean guessCI(ProviderFactory providers) {
+public class ProviderUtils {
+    public static boolean guessCI(ProviderFactory providers) {
         return providers
                 .environmentVariable("CI")
                 .flatMap(s -> // Not all workflows may have the enterprise key set
@@ -30,7 +30,7 @@ class ProviderUtils {
                 .get();
     }
 
-    static String envOrSystemProperty(ProviderFactory providers, String envName, String propertyName, String defaultValue) {
+    public static String envOrSystemProperty(ProviderFactory providers, String envName, String propertyName, String defaultValue) {
         return providers.environmentVariable(envName)
                 .orElse(providers.gradleProperty(propertyName))
                 .getOrElse(defaultValue);

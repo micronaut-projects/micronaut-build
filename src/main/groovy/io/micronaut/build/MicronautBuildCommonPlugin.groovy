@@ -16,7 +16,7 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.groovy.lang.groovydoc.tasks.GroovydocTask
 
 import static io.micronaut.build.BomSupport.coreBomArtifactId
-import static io.micronaut.build.util.VersionHandling.versionProviderOrDefault
+import static io.micronaut.build.utils.VersionHandling.versionProviderOrDefault
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
