@@ -21,10 +21,12 @@ import org.gradle.api.Project;
 import org.gradle.api.initialization.ProjectDescriptor;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+import org.slf4j.Logger;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,8 +38,21 @@ import java.util.Set;
 import static io.micronaut.build.utils.ProviderUtils.envOrSystemProperty;
 
 @SuppressWarnings("unused")
-public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings>{
+public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> {
+    private static final Logger LOGGER = Logging.getLogger(MicronautSharedSettingsPlugin.class);
+
     public static final String NEXUS_STAGING_PROFILE_ID = "11bd7bc41716aa";
+    private static final String STANDARDIZED_PROJECT_NAMES_WARNING = "=========================================================\n" +
+                                                                     "Standardized project names are disabled.\n" +
+                                                                     "Consider enabling them with\n" +
+                                                                     "    micronautBuild.useStandardizedProjectNames=true\n" +
+                                                                     "in settings.gradle.\n\n" +
+                                                                     "Then you will need to replace project dependencies from\n" +
+                                                                     "   project(':foo')\n" +
+                                                                     "to\n" +
+                                                                     "   project(':micronaut-foo')\n" +
+                                                                     "in your build scripts\n" +
+                                                                     "=========================================================";
 
     @Override
     public void apply(Settings settings) {
@@ -63,6 +78,8 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings>{
             if (Boolean.TRUE.equals(useStandardProjectNames)) {
                 Set<ProjectDescriptor> visited = new HashSet<>();
                 configureProjectName(settings.getRootProject(), visited);
+            } else {
+                LOGGER.warn(STANDARDIZED_PROJECT_NAMES_WARNING);
             }
         });
     }
