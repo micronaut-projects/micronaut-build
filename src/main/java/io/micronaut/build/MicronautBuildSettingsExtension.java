@@ -42,6 +42,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static io.micronaut.build.BomSupport.coreBomArtifactId;
+import static io.micronaut.build.MicronautPlugin.BOM_PROJECT_SUFFIX;
+import static io.micronaut.build.MicronautPlugin.MICRONAUT_PROJECT_PREFIX;
 
 public abstract class MicronautBuildSettingsExtension {
     private static final Logger LOGGER = LoggerFactory.getLogger(MicronautBuildSettingsExtension.class);
@@ -49,6 +51,17 @@ public abstract class MicronautBuildSettingsExtension {
     abstract Property<Boolean> getUseLocalCache();
 
     abstract Property<Boolean> getUseRemoteCache();
+
+    /**
+     * Configures use of "standard" project names. When set to "true",
+     * project names will be automatically configured to start with "micronaut-",
+     * except for test suites.
+     * This makes it cleaner for publications, since the project name will match
+     * the publication artifact id, making it easier to use composite builds.
+     * Defaults to false.
+     * @return the standardized project names property
+     */
+    abstract Property<Boolean> getUseStandardizedProjectNames();
 
     @Inject
     protected abstract ProviderFactory getProviders();
@@ -64,6 +77,7 @@ public abstract class MicronautBuildSettingsExtension {
         this.settings = settings;
         getUseLocalCache().convention(booleanProvider(providers, "localCache", true));
         getUseRemoteCache().convention(booleanProvider(providers, "remoteCache", true));
+        getUseStandardizedProjectNames().convention(false);
         this.versionCatalogTomlModel = loadVersionCatalogTomlModel();
         this.micronautVersion = determineMicronautVersion();
         this.micronautTestVersion = determineMicronautTestVersion();
@@ -171,10 +185,10 @@ public abstract class MicronautBuildSettingsExtension {
             }
             if (parts.size() == 3) {
                 String name = "mn";
-                if (artifactId.startsWith("micronaut-")) {
-                    artifactId = artifactId.substring("micronaut-".length());
+                if (artifactId.startsWith(MICRONAUT_PROJECT_PREFIX)) {
+                    artifactId = artifactId.substring(MICRONAUT_PROJECT_PREFIX.length());
                 }
-                if (artifactId.endsWith("-bom")) {
+                if (artifactId.endsWith(BOM_PROJECT_SUFFIX)) {
                     artifactId = artifactId.substring(0, artifactId.length() - 4);
                 }
                 name += Arrays.stream(artifactId.split("-"))
@@ -228,10 +242,10 @@ public abstract class MicronautBuildSettingsExtension {
             }
             if (parts.size() == 3) {
                 String name = "mn";
-                if (artifactId.startsWith("micronaut-")) {
-                    artifactId = artifactId.substring("micronaut-".length());
+                if (artifactId.startsWith(MICRONAUT_PROJECT_PREFIX)) {
+                    artifactId = artifactId.substring(MICRONAUT_PROJECT_PREFIX.length());
                 }
-                if (artifactId.endsWith("-bom")) {
+                if (artifactId.endsWith(BOM_PROJECT_SUFFIX)) {
                     artifactId = artifactId.substring(0, artifactId.length() - 4);
                 }
                 name += Arrays.stream(artifactId.split("-"))

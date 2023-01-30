@@ -17,7 +17,7 @@ package io.micronaut.build.graalvm;
 
 import io.micronaut.build.MicronautBuildExtension;
 import io.micronaut.build.MicronautBuildExtensionPlugin;
-import org.gradle.api.Plugin;
+import io.micronaut.build.MicronautPlugin;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaPluginExtension;
@@ -25,7 +25,7 @@ import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
 
-public class NativeImageSupportPlugin implements Plugin<Project> {
+public class NativeImageSupportPlugin implements MicronautPlugin<Project> {
 
     public static final String NATIVE_IMAGE_PROPERTIES_EXTENSION_NAME = "nativeImageProperties";
     public static final String GENERATE_NATIVE_IMAGE_PROPERTIES_TASK_NAME = "generateNativeImageProperties";
@@ -45,7 +45,7 @@ public class NativeImageSupportPlugin implements Plugin<Project> {
             task.getInitializeAtBuildtime().convention(nativeImageExtension.getInitializeAtBuildtime());
             task.getFeatures().convention(nativeImageExtension.getFeatures());
             task.getGroupId().convention(project.getProviders().provider(() -> String.valueOf(project.getGroup())));
-            task.getArtifactId().convention(project.getProviders().provider(() -> "micronaut-" + project.getName()));
+            task.getArtifactId().convention(project.getProviders().provider(() -> MicronautPlugin.moduleNameOf(project.getName())));
         });
         pluginManager.withPlugin("java", unused -> {
             SourceSetContainer sourceSets = project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets();
