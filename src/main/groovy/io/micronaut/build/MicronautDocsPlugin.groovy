@@ -193,8 +193,8 @@ class MicronautDocsPlugin implements Plugin<Project> {
                     try {
                         byte[] jsonArr = GithubApiUtils.fetchTagsFromGitHub(logger, ghslug)
                         return new String(jsonArr, "UTF-8")
-                    } catch(IOException e) {
-                        logger.error("IOException fetching github tags for " + ghslug)
+                    } catch(Exception e) {
+                        logger.error("Exception fetching github tags for " + ghslug)
                         return "[]"
                     }
                 }
