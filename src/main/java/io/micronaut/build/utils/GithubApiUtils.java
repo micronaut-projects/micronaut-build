@@ -80,6 +80,9 @@ public final class GithubApiUtils {
         URL url = new URL(githubUrl);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
+        if (System.getenv("CI") != null) {
+            con.setRequestProperty("User-Agent", "Micronaut-Framework-Ci");
+        }
         con.setRequestProperty("Accept", "application/vnd.github.v3+json");
         if (System.getenv(GH_TOKEN_PUBLIC_REPOS_READONLY) != null || System.getenv(GH_USERNAME) != null) {
             con.setRequestProperty("Authorization", BasicAuthUtils.basicAuth(System.getenv(GH_USERNAME), System.getenv(GH_TOKEN_PUBLIC_REPOS_READONLY)));
