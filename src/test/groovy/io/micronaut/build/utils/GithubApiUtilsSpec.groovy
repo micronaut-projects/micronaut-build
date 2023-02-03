@@ -1,5 +1,6 @@
 package io.micronaut.build.utils
 
+import org.gradle.api.GradleException
 import spock.lang.Specification
 
 class GithubApiUtilsSpec extends Specification {
@@ -20,6 +21,20 @@ class GithubApiUtilsSpec extends Specification {
         then:
         noExceptionThrown()
         releases.contains("3.")
+    }
+
+    void "reports error"() {
+        given:
+        def logger = Mock(org.gradle.api.logging.Logger)
+        when:
+        GithubApiUtils.fetchReleasesFromGitHub(logger, "micronaut-projects/nope")
+
+        then:
+        GradleException ex = thrown()
+        1 * logger.error(_) >> {
+            String message = it[0]
+            assert message.startsWith("Failed to read from Github API. Response code: 404")
+        }
     }
 
 }
