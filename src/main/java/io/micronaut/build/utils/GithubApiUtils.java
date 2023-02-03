@@ -16,16 +16,17 @@
 package io.micronaut.build.utils;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.logging.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import org.gradle.api.logging.Logger;
 
 public final class GithubApiUtils {
     private static final String GH_TOKEN_PUBLIC_REPOS_READONLY = "GH_TOKEN_PUBLIC_REPOS_READONLY";
@@ -37,7 +38,7 @@ public final class GithubApiUtils {
     public static byte[] fetchReleasesFromGitHub(Logger logger, String slug) {
         String url = "https://api.github.com/repos/" + normalizeSlug(slug) + "/releases";
         try {
-            return fetchFromGithub(connectionForGithubUrl(logger, url));
+            return fetchFromGithub(logger, connectionForGithubUrl(logger, url));
         } catch (IOException ex) {
             throw new GradleException("Failed to read releases from " + url, ex);
         }
@@ -46,15 +47,28 @@ public final class GithubApiUtils {
     public static byte[] fetchTagsFromGitHub(Logger logger, String slug) {
         String url = "https://api.github.com/repos/" + normalizeSlug(slug) + "/tags";
         try {
-            return fetchFromGithub(connectionForGithubUrl(logger, url));
+            return fetchFromGithub(logger, connectionForGithubUrl(logger, url));
         } catch (IOException ex) {
             throw new GradleException("Failed to read tags from " + url, ex);
         }
     }
 
-    private static byte[] fetchFromGithub(HttpURLConnection con) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (ReadableByteChannel rbc = Channels.newChannel(con.getInputStream()); WritableByteChannel wbc=Channels.newChannel(out)){
+    private static byte[] fetchFromGithub(Logger logger, HttpURLConnection con) throws IOException {
+        try (InputStream in = con.getInputStream()){
+            return readFromStream(in).toByteArray();
+        } catch (IOException ex) {
+            ByteArrayOutputStream errorOut = readFromStream(con.getErrorStream());
+            logger.error("Failed to read from Github API. Response code: " + con.getResponseCode() +
+                         "\nResponse message: " + con.getResponseMessage() +
+                         "\nError body: " + errorOut +
+                         "\nResponse headers: " + con.getHeaderFields());
+            throw ex;
+        }
+    }
+
+    private static ByteArrayOutputStream readFromStream(InputStream in) throws IOException {
+        ByteArrayOutputStream errorOut = new ByteArrayOutputStream();
+        try (ReadableByteChannel rbc = Channels.newChannel(in); WritableByteChannel wbc=Channels.newChannel(errorOut)){
             ByteBuffer buffer = ByteBuffer.allocateDirect(16 * 1024);
             while (rbc.read(buffer) != -1) {
                 buffer.flip();
@@ -65,8 +79,8 @@ public final class GithubApiUtils {
             while (buffer.hasRemaining()) {
                 wbc.write(buffer);
             }
-            return out.toByteArray();
         }
+        return errorOut;
     }
 
     /**
