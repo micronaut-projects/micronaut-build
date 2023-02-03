@@ -57,6 +57,7 @@ public abstract class FindBaselineTask extends DefaultTask {
             return base * CACHE_IN_SECONDS;
         });
     }
+
     @Internal
     protected Provider<byte[]> getJson() {
         return getGithubSlug().map(slug -> GithubApiUtils.fetchReleasesFromGitHub(getLogger(), slug));
@@ -64,8 +65,6 @@ public abstract class FindBaselineTask extends DefaultTask {
 
     @Inject
     protected abstract ProviderFactory getProviders();
-
-
 
     @OutputFile
     public abstract RegularFileProperty getPreviousVersion();
