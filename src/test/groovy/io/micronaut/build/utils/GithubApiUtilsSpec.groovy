@@ -1,13 +1,14 @@
 package io.micronaut.build.utils
 
 import org.gradle.api.GradleException
+import org.gradle.api.logging.Logger
 import spock.lang.Specification
 
 class GithubApiUtilsSpec extends Specification {
 
     void "it is possible to fetch tags"() {
         when:
-        String tags = new String(GithubApiUtils.fetchTagsFromGitHub(null, "micronaut-projects/micronaut-security"), "UTF-8")
+        String tags = new String(GithubApiUtils.fetchTagsFromGitHub(Stub(Logger), "micronaut-projects/micronaut-security"), "UTF-8")
 
         then:
         noExceptionThrown()
@@ -16,7 +17,7 @@ class GithubApiUtilsSpec extends Specification {
 
     void "it is possible to fetch releases"() {
         when:
-        String releases = new String(GithubApiUtils.fetchReleasesFromGitHub(null, "micronaut-projects/micronaut-security"), "UTF-8")
+        String releases = new String(GithubApiUtils.fetchReleasesFromGitHub(Stub(Logger), "micronaut-projects/micronaut-security"), "UTF-8")
 
         then:
         noExceptionThrown()
@@ -25,7 +26,7 @@ class GithubApiUtilsSpec extends Specification {
 
     void "reports error"() {
         given:
-        def logger = Mock(org.gradle.api.logging.Logger)
+        def logger = Mock(Logger)
         when:
         GithubApiUtils.fetchReleasesFromGitHub(logger, "micronaut-projects/nope")
 
