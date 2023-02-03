@@ -15,16 +15,17 @@
  */
 package io.micronaut.build.docs;
 
-import io.micronaut.build.JsonFetcher;
 import io.micronaut.docs.GitHubTagsParser;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -33,17 +34,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.URL;
 
 @CacheableTask
 public abstract class CreateReleasesDropdownTask extends DefaultTask {
+    private static final int CACHE_IN_SECONDS = 3600;
     private static final Logger LOG = LoggerFactory.getLogger(CreateReleasesDropdownTask.class);
     private static final String MICRONAUT_GITHUB_ORGANIZATION = "micronaut-projects";
     private static final String MICRONAUT_CORE_REPOSITORY = "micronaut-core";
@@ -63,6 +61,15 @@ public abstract class CreateReleasesDropdownTask extends DefaultTask {
     public abstract RegularFileProperty getOutputIndex();
 
     @Input
+    protected Provider<Long> getTimestamp() {
+        return getProviders().provider(() -> {
+            long seconds = System.currentTimeMillis() / 1000;
+            long base = seconds / CACHE_IN_SECONDS;
+            return base * CACHE_IN_SECONDS;
+        });
+    }
+
+    @Internal
     public abstract Property<String> getVersionsJson();
 
     @Inject
