@@ -20,6 +20,7 @@ import org.gradle.api.logging.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -53,8 +54,21 @@ public final class GithubApiUtils {
     }
 
     private static byte[] fetchFromGithub(Logger logger, HttpURLConnection con) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (ReadableByteChannel rbc = Channels.newChannel(con.getInputStream()); WritableByteChannel wbc=Channels.newChannel(out)){
+        try (InputStream in = con.getInputStream()){
+            return readFromStream(in).toByteArray();
+        } catch (IOException ex) {
+            ByteArrayOutputStream errorOut = readFromStream(con.getErrorStream());
+            logger.error("Failed to read from Github API. Response code: " + con.getResponseCode() +
+                         "\nResponse message: " + con.getResponseMessage() +
+                         "\nError body: " + errorOut +
+                         "\nResponse headers: " + con.getHeaderFields());
+            throw ex;
+        }
+    }
+
+    private static ByteArrayOutputStream readFromStream(InputStream in) throws IOException {
+        ByteArrayOutputStream errorOut = new ByteArrayOutputStream();
+        try (ReadableByteChannel rbc = Channels.newChannel(in); WritableByteChannel wbc=Channels.newChannel(errorOut)){
             ByteBuffer buffer = ByteBuffer.allocateDirect(16 * 1024);
             while (rbc.read(buffer) != -1) {
                 buffer.flip();
@@ -65,14 +79,8 @@ public final class GithubApiUtils {
             while (buffer.hasRemaining()) {
                 wbc.write(buffer);
             }
-            return out.toByteArray();
-        } catch (IOException ex) {
-            logger.error("Failed to read from Github API. Response code: " + con.getResponseCode() +
-                         "\nResponse message: " + con.getResponseMessage() +
-                         "\nResponse body: " + out +
-                         "\nResponse headers: " + con.getHeaderFields());
-            throw ex;
         }
+        return errorOut;
     }
 
     /**
