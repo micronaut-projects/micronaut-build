@@ -16,7 +16,7 @@
 package io.micronaut.build.compat;
 
 import groovy.json.JsonSlurper;
-import io.micronaut.build.utils.GithubApiUtils;
+import io.micronaut.build.utils.GitHubApiService;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -59,8 +59,11 @@ public abstract class FindBaselineTask extends DefaultTask {
 
     @Internal
     protected Provider<byte[]> getJson() {
-        return getGithubSlug().map(slug -> GithubApiUtils.fetchReleasesFromGitHub(getLogger(), slug));
+        return getGithubSlug().map(slug -> getGitHubApi().get().fetchReleasesFromGitHub(slug));
     }
+
+    @Internal
+    abstract Property<GitHubApiService> getGitHubApi();
 
     @Inject
     protected abstract ProviderFactory getProviders();
