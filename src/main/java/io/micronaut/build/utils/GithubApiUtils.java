@@ -35,21 +35,20 @@ public final class GithubApiUtils {
     private GithubApiUtils() {
     }
 
-    public static byte[] fetchReleasesFromGitHub(Logger logger, String slug) {
-        String url = "https://api.github.com/repos/" + normalizeSlug(slug) + "/releases";
-        try {
-            return fetchFromGithub(logger, connectionForGithubUrl(logger, url));
-        } catch (IOException ex) {
-            throw new GradleException("Failed to read releases from " + url, ex);
-        }
+    static byte[] fetchReleasesFromGitHub(Logger logger, String slug) {
+        return fetchFromGithub(logger, slug, "releases");
     }
 
-    public static byte[] fetchTagsFromGitHub(Logger logger, String slug) {
-        String url = "https://api.github.com/repos/" + normalizeSlug(slug) + "/tags";
+    static byte[] fetchTagsFromGitHub(Logger logger, String slug) {
+        return fetchFromGithub(logger, slug, "tags");
+    }
+
+    private static byte[] fetchFromGithub(Logger logger, String slug, String what) {
+        String url = "https://api.github.com/repos/" + normalizeSlug(slug) + "/" + what;
         try {
             return fetchFromGithub(logger, connectionForGithubUrl(logger, url));
         } catch (IOException ex) {
-            throw new GradleException("Failed to read tags from " + url, ex);
+            throw new GradleException("Failed to read " + what + " from " + url, ex);
         }
     }
 

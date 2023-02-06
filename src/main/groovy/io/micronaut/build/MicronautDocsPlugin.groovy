@@ -8,7 +8,7 @@ import io.micronaut.build.docs.PublishGuideTask
 import io.micronaut.build.docs.ValidateAsciidocOutputTask
 import io.micronaut.build.docs.props.MergeConfigurationReferenceTask
 import io.micronaut.build.docs.props.PublishConfigurationReferenceTask
-import io.micronaut.build.utils.GithubApiUtils
+import io.micronaut.build.utils.GitHubApiService
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.FileTreeElement
@@ -21,7 +21,7 @@ import org.gradle.api.tasks.javadoc.Javadoc
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
-class MicronautDocsPlugin implements Plugin<Project> {
+abstract class MicronautDocsPlugin implements Plugin<Project> {
 
     static final String DOCUMENTATION_GROUP = 'mndocs'
     public static final String CONFIGURATION_REFERENCE_HTML = 'configurationreference.html'
@@ -182,16 +182,18 @@ class MicronautDocsPlugin implements Plugin<Project> {
                 from(assembleDocs)
             }
 
+            def githubApi = GitHubApiService.registerOn(project)
+
             def createReleasesDropdown = tasks.register("createReleasesDropdown", CreateReleasesDropdownTask) { task ->
                 task.group(DOCUMENTATION_GROUP)
                 slug = githubSlug as String
                 version = projectVersion
                 sourceIndex = publishGuide.flatMap { it.targetDir.file("guide/index.html") }
                 outputIndex = layout.buildDir.file("working/05-dropdown/index.html")
-                versionsJson = providers.provider {
+                versionsJson = githubApi.map { api ->
                     String ghslug = slug.get()
                     try {
-                        byte[] jsonArr = GithubApiUtils.fetchTagsFromGitHub(logger, ghslug)
+                        byte[] jsonArr = api.fetchTagsFromGitHub(ghslug)
                         return new String(jsonArr, "UTF-8")
                     } catch(Exception e) {
                         logger.error("Exception fetching github tags for " + ghslug)
