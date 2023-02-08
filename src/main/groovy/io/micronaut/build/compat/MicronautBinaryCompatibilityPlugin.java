@@ -19,6 +19,7 @@ import io.micronaut.build.MicronautBuildExtension;
 import io.micronaut.build.MicronautBuildExtensionPlugin;
 import io.micronaut.build.MicronautPublishingPlugin;
 import io.micronaut.build.pom.MicronautBomExtension;
+import io.micronaut.build.utils.GitHubApiService;
 import me.champeau.gradle.japicmp.JapicmpTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -128,6 +129,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
     private TaskProvider<FindBaselineTask> registerFindBaselineTask(Project project, BinaryCompatibibilityExtension binaryCompatibility, TaskContainer tasks, ProviderFactory providers) {
         return tasks.register("findBaseline", FindBaselineTask.class, task -> {
             task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
+            task.getGitHubApi().set(GitHubApiService.registerOn(project));
             task.getGithubSlug().convention(providers.gradleProperty("githubSlug"));
             task.getCurrentVersion().convention(providers.provider(() -> project.getVersion().toString()));
             task.getPreviousVersion().convention(project.getLayout().getBuildDirectory().file("baseline.txt"));
