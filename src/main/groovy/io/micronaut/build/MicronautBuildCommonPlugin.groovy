@@ -202,6 +202,8 @@ You can do this directly in the project, or, better, in a convention plugin if i
                 module {
                     outputDir file('build/classes/java/main')
                     testOutputDir file('build/classes/groovy/test')
+                    downloadJavadoc = providers.gradleProperty("idea.download.javadoc").map(Boolean::parseBoolean).getOrElse(false)
+                    downloadSources = providers.gradleProperty("idea.download.sources").map(Boolean::parseBoolean).getOrElse(false)
                 }
             }
         }
