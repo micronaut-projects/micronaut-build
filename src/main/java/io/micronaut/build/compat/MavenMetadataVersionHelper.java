@@ -1,0 +1,76 @@
+/*
+ * Copyright 2003-2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.micronaut.build.compat;
+
+import org.gradle.api.GradleException;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+public abstract class MavenMetadataVersionHelper {
+    private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+\\.\\d+\\.\\d+)([.-]\\w+)?$");
+
+    private MavenMetadataVersionHelper() {
+
+    }
+
+    public static List<VersionModel> findReleasesFrom(byte[] mavenMetadata) {
+        List<String> allVersions = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new StringReader(new String(mavenMetadata, StandardCharsets.UTF_8)))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("<version>")) {
+                    String version = line.substring(line.indexOf("<version>") + 9, line.indexOf("</version>"));
+                    allVersions.add(version);
+                }
+            }
+            return allVersions.stream()
+                    .map(version -> {
+                        Matcher m = VERSION_PATTERN.matcher(version);
+                        if (m.find()) {
+                            if (m.group(2) != null) {
+                                // discard non release versions like M2, RC1, etc
+                                return null;
+                            }
+                            return m.group(1);
+                        }
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .map(VersionModel::of)
+                    .sorted()
+                    .collect(Collectors.toList());
+
+        } catch (IOException e) {
+            throw new GradleException("Error parsing maven-metadata.xml", e);
+        }
+    }
+
+    public static Optional<VersionModel> findPreviousReleaseFor(VersionModel version, List<VersionModel> releases) {
+        return releases.stream()
+                .filter(v -> v.compareTo(version) < 0)
+                .reduce((a, b) -> b);
+    }
+}

@@ -32,14 +32,7 @@ import java.util.Map;
 public abstract class GitHubApiService implements BuildService<BuildServiceParameters.None> {
     private static final Logger LOGGER = Logging.getLogger(GitHubApiService.class);
 
-    private final Map<String, byte[]> releases = new HashMap<>();
     private final Map<String, byte[]> tags = new HashMap<>();
-
-    public byte[] fetchReleasesFromGitHub(String slug) {
-        synchronized (releases) {
-            return releases.computeIfAbsent(slug, s -> GithubApiUtils.fetchReleasesFromGitHub(LOGGER, slug));
-        }
-    }
 
     public byte[] fetchTagsFromGitHub(String slug) {
         synchronized (tags) {

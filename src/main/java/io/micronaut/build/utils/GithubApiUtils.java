@@ -35,10 +35,6 @@ public final class GithubApiUtils {
     private GithubApiUtils() {
     }
 
-    static byte[] fetchReleasesFromGitHub(Logger logger, String slug) {
-        return fetchFromGithub(logger, slug, "releases");
-    }
-
     static byte[] fetchTagsFromGitHub(Logger logger, String slug) {
         return fetchFromGithub(logger, slug, "tags");
     }
