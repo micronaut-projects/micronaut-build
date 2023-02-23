@@ -1,0 +1,302 @@
+[
+  {
+    "name": "v3.9.2",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.9.2",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.9.2",
+    "commit": {
+      "sha": "d8af301f12489cce7c0b2d1c9f02522611353b90",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/d8af301f12489cce7c0b2d1c9f02522611353b90"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My45LjI="
+  },
+  {
+    "name": "v3.9.1",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.9.1",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.9.1",
+    "commit": {
+      "sha": "30852a7991e15bda2e0f44a359d7bea460c12b71",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/30852a7991e15bda2e0f44a359d7bea460c12b71"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My45LjE="
+  },
+  {
+    "name": "v3.9.0",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.9.0",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.9.0",
+    "commit": {
+      "sha": "d6f78a62f013dc7c0b8340c84c57cb13bf7e2248",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/d6f78a62f013dc7c0b8340c84c57cb13bf7e2248"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My45LjA="
+  },
+  {
+    "name": "v3.8.3",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.8.3",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.8.3",
+    "commit": {
+      "sha": "971349f6f4ade847d0c0886cff907cd8f328062b",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/971349f6f4ade847d0c0886cff907cd8f328062b"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My44LjM="
+  },
+  {
+    "name": "v3.8.2",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.8.2",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.8.2",
+    "commit": {
+      "sha": "ea51c3e3ec6a5f820b68d8e30fda64defea92931",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/ea51c3e3ec6a5f820b68d8e30fda64defea92931"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My44LjI="
+  },
+  {
+    "name": "v3.8.1",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.8.1",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.8.1",
+    "commit": {
+      "sha": "f90047201308edf2b76dd94b029998718c840007",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/f90047201308edf2b76dd94b029998718c840007"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My44LjE="
+  },
+  {
+    "name": "v3.8.0",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.8.0",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.8.0",
+    "commit": {
+      "sha": "bd036bd94b38d721e48bf30d0cb453d4799a75f9",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/bd036bd94b38d721e48bf30d0cb453d4799a75f9"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My44LjA="
+  },
+  {
+    "name": "v3.7.3",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.7.3",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.7.3",
+    "commit": {
+      "sha": "938d06019ddc7459338c6c9767a36da93286d21e",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/938d06019ddc7459338c6c9767a36da93286d21e"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My43LjM="
+  },
+  {
+    "name": "v3.7.2",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.7.2",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.7.2",
+    "commit": {
+      "sha": "788ad5047f3b5104d1d341256fcc44d159a4b3a8",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/788ad5047f3b5104d1d341256fcc44d159a4b3a8"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My43LjI="
+  },
+  {
+    "name": "v3.7.1",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.7.1",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.7.1",
+    "commit": {
+      "sha": "450c695b16ae029609f786a51fe8f1ca1f7c174d",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/450c695b16ae029609f786a51fe8f1ca1f7c174d"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My43LjE="
+  },
+  {
+    "name": "v3.7.0",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.7.0",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.7.0",
+    "commit": {
+      "sha": "44b4c260d26a25fc96f1aa7baf4bf0e0d6c44e89",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/44b4c260d26a25fc96f1aa7baf4bf0e0d6c44e89"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My43LjA="
+  },
+  {
+    "name": "v3.6.5",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.6.5",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.6.5",
+    "commit": {
+      "sha": "5e4a4f1440e77b27bb91f25a2ae4916c293cf661",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/5e4a4f1440e77b27bb91f25a2ae4916c293cf661"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My42LjU="
+  },
+  {
+    "name": "v3.6.4",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.6.4",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.6.4",
+    "commit": {
+      "sha": "4650329704e9359ddd5cca567d150b7ce0ff4d9d",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/4650329704e9359ddd5cca567d150b7ce0ff4d9d"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My42LjQ="
+  },
+  {
+    "name": "v3.6.3",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.6.3",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.6.3",
+    "commit": {
+      "sha": "80dd97aa7d11502c3e109b7a6d0df81b0c08a558",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/80dd97aa7d11502c3e109b7a6d0df81b0c08a558"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My42LjM="
+  },
+  {
+    "name": "v3.6.2",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.6.2",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.6.2",
+    "commit": {
+      "sha": "06a0dbbf5debac648d69d83bdbc2033c30753fa7",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/06a0dbbf5debac648d69d83bdbc2033c30753fa7"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My42LjI="
+  },
+  {
+    "name": "v3.6.1",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.6.1",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.6.1",
+    "commit": {
+      "sha": "a21bd78364ac67204df0685bbf0b1ea686038c95",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/a21bd78364ac67204df0685bbf0b1ea686038c95"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My42LjE="
+  },
+  {
+    "name": "v3.6.0",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.6.0",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.6.0",
+    "commit": {
+      "sha": "2fb6b9be8521cbaac46c9065609af34fe489b6c9",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/2fb6b9be8521cbaac46c9065609af34fe489b6c9"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My42LjA="
+  },
+  {
+    "name": "v3.5.2",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.5.2",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.5.2",
+    "commit": {
+      "sha": "a7fda9436b3bbd532b72ab0f424b4d56915bb09c",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/a7fda9436b3bbd532b72ab0f424b4d56915bb09c"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My41LjI="
+  },
+  {
+    "name": "v3.5.1",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.5.1",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.5.1",
+    "commit": {
+      "sha": "8236bb42959910c329ee74b8dbc5d97e64ae4a5d",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/8236bb42959910c329ee74b8dbc5d97e64ae4a5d"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My41LjE="
+  },
+  {
+    "name": "v3.5.0",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.5.0",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.5.0",
+    "commit": {
+      "sha": "2301f38015b598f788bf1d6f10fdec5edf3aa400",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/2301f38015b598f788bf1d6f10fdec5edf3aa400"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My41LjA="
+  },
+  {
+    "name": "v3.4.1",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.4.1",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.4.1",
+    "commit": {
+      "sha": "00bf0b43e4494b01fa5f093f4090337a30e55154",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/00bf0b43e4494b01fa5f093f4090337a30e55154"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My40LjE="
+  },
+  {
+    "name": "v3.4.0",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.4.0",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.4.0",
+    "commit": {
+      "sha": "13a0ef86d18031e1b6cad426dff30759d2674da6",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/13a0ef86d18031e1b6cad426dff30759d2674da6"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My40LjA="
+  },
+  {
+    "name": "v3.3.0",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.3.0",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.3.0",
+    "commit": {
+      "sha": "cf77c7c5101dc19ff52cc13967e2aa56898bf60b",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/cf77c7c5101dc19ff52cc13967e2aa56898bf60b"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My4zLjA="
+  },
+  {
+    "name": "v3.2.3",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.2.3",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.2.3",
+    "commit": {
+      "sha": "8866a327f4c249f5cd105e41773a8f973a593d10",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/8866a327f4c249f5cd105e41773a8f973a593d10"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My4yLjM="
+  },
+  {
+    "name": "v3.2.2",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.2.2",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.2.2",
+    "commit": {
+      "sha": "68d44b1e6a4111212ac2c59a9a68ab42ad3f6074",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/68d44b1e6a4111212ac2c59a9a68ab42ad3f6074"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My4yLjI="
+  },
+  {
+    "name": "v3.2.1",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.2.1",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.2.1",
+    "commit": {
+      "sha": "3a08ca8352bf741cb328ca9fb720abb8ba9d93ba",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/3a08ca8352bf741cb328ca9fb720abb8ba9d93ba"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My4yLjE="
+  },
+  {
+    "name": "v3.2.0",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.2.0",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.2.0",
+    "commit": {
+      "sha": "e67fe82d54f94d989a828226f3fd01150dc7f049",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/e67fe82d54f94d989a828226f3fd01150dc7f049"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My4yLjA="
+  },
+  {
+    "name": "v3.1.1",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.1.1",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.1.1",
+    "commit": {
+      "sha": "71d087ae2a1e5a4908474c85541ccac365a454a8",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/71d087ae2a1e5a4908474c85541ccac365a454a8"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My4xLjE="
+  },
+  {
+    "name": "v3.1.0",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.1.0",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.1.0",
+    "commit": {
+      "sha": "9d91f2162a221c135c4701d0114b183693034db3",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/9d91f2162a221c135c4701d0114b183693034db3"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My4xLjA="
+  },
+  {
+    "name": "v3.0.2",
+    "zipball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/zipball/refs/tags/v3.0.2",
+    "tarball_url": "https://api.github.com/repos/micronaut-projects/micronaut-security/tarball/refs/tags/v3.0.2",
+    "commit": {
+      "sha": "da870c6bd62113cd6a6e224cf131041241f72410",
+      "url": "https://api.github.com/repos/micronaut-projects/micronaut-security/commits/da870c6bd62113cd6a6e224cf131041241f72410"
+    },
+    "node_id": "MDM6UmVmMTgxOTAwMDk2OnJlZnMvdGFncy92My4wLjI="
+  }
+]
