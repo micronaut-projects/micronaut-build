@@ -2,10 +2,13 @@ package io.micronaut.build;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.plugins.quality.CheckstyleExtension;
 import org.gradle.api.plugins.quality.CheckstylePlugin;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.testing.jacoco.plugins.JacocoPlugin;
-import org.sonarqube.gradle.SonarQubeExtension;
+import org.sonarqube.gradle.SonarExtension;
+import org.sonarqube.gradle.SonarTask;
 
 import java.io.File;
 
@@ -37,22 +40,22 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
             }
 
             p.getTasks().named("checkstyleTest").configure(task -> task.setEnabled(false));
-            p.getTasks().named("checkstyleMain").configure(task -> {
+            TaskProvider<Task> checkstyleMain = p.getTasks().named("checkstyleMain");
+            checkstyleMain.configure(task -> {
                 p.getPluginManager().withPlugin("com.diffplug.spotless", unused ->
                         task.dependsOn("spotlessCheck")
                 );
-                project.getRootProject().getPluginManager().withPlugin("org.sonarqube", sq -> {
-                    project.getRootProject().getTasks().named("sonarqube").configure(t -> t.dependsOn(task));
-                });
             });
-
+            project.getRootProject().getPluginManager().withPlugin("org.sonarqube", sq -> {
+                project.getRootProject().getTasks().withType(SonarTask.class).configureEach(t -> t.dependsOn(checkstyleMain));
+            });
         });
     }
 
     private void configureSonar(final Project project) {
         if (System.getenv("SONAR_TOKEN") != null) {
             project.getRootProject().getPluginManager().withPlugin("org.sonarqube", p -> {
-                final SonarQubeExtension sonarQubeExtension = project.getExtensions().findByType(SonarQubeExtension.class);
+                SonarExtension sonarQubeExtension = project.getExtensions().findByType(SonarExtension.class);
                 if (sonarQubeExtension != null) {
                     project.getPluginManager().withPlugin("checkstyle", unused -> {
                         // Because sonar doesn't support the lazy APIs, we can't use
