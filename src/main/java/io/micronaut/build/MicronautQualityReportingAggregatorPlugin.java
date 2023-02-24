@@ -40,7 +40,8 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                         p.property("sonar.projectKey", githubSlug.replaceAll("/", "_"));
                         p.property("sonar.organization", "micronaut-projects");
                         p.property("sonar.host.url", "https://sonarcloud.io");
-                        p.property("sonar.java.source", "8");
+                        MicronautBuildExtension micronautBuildExtension = rootProject.getExtensions().getByType(MicronautBuildExtension.class);
+                        p.property("sonar.java.source", micronautBuildExtension.getJavaVersion().map(String::valueOf).get());
                         p.property("sonar.verbose", "true");
                         // Jacoco integration
                         final String jacocoReportPath = rootProject.getBuildDir().toPath()
