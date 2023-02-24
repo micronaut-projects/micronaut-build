@@ -50,7 +50,6 @@ class GithubApiUtilsSpec extends Specification {
     void "it is possible to fetch tags"() {
         when:
         String tags = new String(GithubApiUtils.fetchTagsFromGitHub(Stub(Logger), "micronaut-projects/micronaut-security"), "UTF-8")
-        println tags
         then:
         noExceptionThrown()
         tags.contains("v")
@@ -59,7 +58,6 @@ class GithubApiUtilsSpec extends Specification {
     void "it is possible to fetch releases"() {
         when:
         String releases = new String(GithubApiUtils.fetchReleasesFromGitHub(Stub(Logger), "micronaut-projects/micronaut-security"), "UTF-8")
-        println releases
         then:
         noExceptionThrown()
         releases.contains("3.")
