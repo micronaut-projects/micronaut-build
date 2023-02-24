@@ -1,9 +1,9 @@
 package io.micronaut.docs.internal;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import org.apache.commons.lang.StringEscapeUtils;
 
 public class StringEscapeCategory {
     private StringEscapeCategory() {
@@ -30,6 +30,6 @@ public class StringEscapeCategory {
     }
 
     public static String encodeAsHtml(String str) {
-        return StringEscapeUtils.escapeHtml(str);
+        return StringEscapeUtils.escapeHtml4(str);
     }
 }
