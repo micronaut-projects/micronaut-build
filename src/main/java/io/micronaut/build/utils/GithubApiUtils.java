@@ -32,6 +32,9 @@ public final class GithubApiUtils {
     private static final String GH_TOKEN_PUBLIC_REPOS_READONLY = "GH_TOKEN_PUBLIC_REPOS_READONLY";
     private static final String GH_USERNAME = "GH_USERNAME";
 
+    public static final String GITHUB_API_BASE_URL_SYSTEM_PROPERTY = "github.api.base.url";
+    public static final String GITHUB_BASE_API_URL = "https://api.github.com";
+
     private GithubApiUtils() {
     }
 
@@ -44,7 +47,7 @@ public final class GithubApiUtils {
     }
 
     private static byte[] fetchFromGithub(Logger logger, String slug, String what) {
-        String url = "https://api.github.com/repos/" + normalizeSlug(slug) + "/" + what;
+        String url = System.getProperty(GITHUB_API_BASE_URL_SYSTEM_PROPERTY, GITHUB_BASE_API_URL) + "/repos/" + normalizeSlug(slug) + "/" + what;
         try {
             return fetchFromGithub(logger, connectionForGithubUrl(logger, url));
         } catch (IOException ex) {

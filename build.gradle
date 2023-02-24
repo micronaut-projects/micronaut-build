@@ -75,6 +75,9 @@ dependencies {
 
     testImplementation("com.typesafe:config:1.4.2")
 
+    testImplementation("org.mock-server:mockserver-netty:5.14.0")
+    testImplementation("org.mock-server:mockserver-client-java:5.14.0")
+
     functionalTestImplementation("org.mock-server:mockserver-netty:5.14.0")
     functionalTestImplementation("org.mock-server:mockserver-client-java:5.14.0")
 
