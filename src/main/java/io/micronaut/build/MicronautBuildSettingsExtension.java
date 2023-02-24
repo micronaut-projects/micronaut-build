@@ -19,7 +19,7 @@ import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
 import io.micronaut.build.catalogs.internal.RichVersion;
 import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
 import io.micronaut.build.catalogs.internal.VersionModel;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.resolve.DependencyResolutionManagement;

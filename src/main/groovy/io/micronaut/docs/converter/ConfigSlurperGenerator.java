@@ -15,7 +15,7 @@
  */
 package io.micronaut.docs.converter;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
