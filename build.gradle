@@ -52,7 +52,7 @@ dependencies {
     implementation "io.github.groovylang.groovydoc:io.github.groovylang.groovydoc.gradle.plugin:1.0.1"
     // TODO: upgrade to new asciidoctor
     implementation 'org.asciidoctor:asciidoctorj:2.5.7'
-    implementation "com.diffplug.spotless:spotless-plugin-gradle:6.12.0"
+    implementation "com.diffplug.spotless:spotless-plugin-gradle:6.15.0"
     implementation "com.adarshr:gradle-test-logger-plugin:3.2.0"
     implementation "io.github.gradle-nexus:publish-plugin:1.1.0"
     implementation "se.patrikerdes:gradle-use-latest-versions-plugin:0.2.18"
