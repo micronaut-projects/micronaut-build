@@ -32,25 +32,23 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
     private void configureSonar(final Project rootProject) {
         if (System.getenv("SONAR_TOKEN") != null) {
             rootProject.getPluginManager().apply(SonarQubePlugin.class);
-            final SonarExtension sonarQubeExtension = rootProject.getExtensions().findByType(SonarExtension.class);
+            SonarExtension sonarQubeExtension = rootProject.getExtensions().findByType(SonarExtension.class);
             if (sonarQubeExtension != null) {
                 sonarQubeExtension.properties(p -> {
-                    final String githubSlug = (String) rootProject.findProperty("githubSlug");
+                    String githubSlug = rootProject.getProviders().gradleProperty("githubSlug").getOrNull();
                     if (githubSlug != null) {
                         p.property("sonar.projectKey", githubSlug.replaceAll("/", "_"));
                         p.property("sonar.organization", "micronaut-projects");
                         p.property("sonar.host.url", "https://sonarcloud.io");
                         p.property("sonar.java.source", "8");
                         p.property("sonar.verbose", "true");
-
                         // Jacoco integration
                         final String jacocoReportPath = rootProject.getBuildDir().toPath()
-                            .resolve("reports/jacoco/" + COVERAGE_REPORT_TASK_NAME + "/" + COVERAGE_REPORT_TASK_NAME + ".xml")
-                            .toFile().getAbsolutePath();
+                                .resolve("reports/jacoco/" + COVERAGE_REPORT_TASK_NAME + "/" + COVERAGE_REPORT_TASK_NAME + ".xml")
+                                .toFile().getAbsolutePath();
                         p.property("sonar.coverage.jacoco.xmlReportPaths", jacocoReportPath);
                     }
                 });
-
                 rootProject.getTasks().withType(SonarTask.class).configureEach(t -> t.dependsOn(COVERAGE_REPORT_TASK_NAME));
             } else {
                 rootProject.getLogger().warn("Could not find the sonarqube extension");
