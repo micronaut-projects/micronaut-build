@@ -9,9 +9,9 @@ import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.reporting.ReportingExtension;
 import org.gradle.testing.jacoco.plugins.JacocoCoverageReport;
 import org.gradle.testing.jacoco.plugins.JacocoReportAggregationPlugin;
-import org.sonarqube.gradle.SonarQubeExtension;
+import org.sonarqube.gradle.SonarExtension;
 import org.sonarqube.gradle.SonarQubePlugin;
-import org.sonarqube.gradle.SonarQubeTask;
+import org.sonarqube.gradle.SonarTask;
 
 @SuppressWarnings("UnstableApiUsage")
 public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project> {
@@ -32,7 +32,7 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
     private void configureSonar(final Project rootProject) {
         if (System.getenv("SONAR_TOKEN") != null) {
             rootProject.getPluginManager().apply(SonarQubePlugin.class);
-            final SonarQubeExtension sonarQubeExtension = rootProject.getExtensions().findByType(SonarQubeExtension.class);
+            final SonarExtension sonarQubeExtension = rootProject.getExtensions().findByType(SonarExtension.class);
             if (sonarQubeExtension != null) {
                 sonarQubeExtension.properties(p -> {
                     final String githubSlug = (String) rootProject.findProperty("githubSlug");
@@ -51,7 +51,7 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                     }
                 });
 
-                rootProject.getTasks().withType(SonarQubeTask.class).configureEach(t -> t.dependsOn(COVERAGE_REPORT_TASK_NAME));
+                rootProject.getTasks().withType(SonarTask.class).configureEach(t -> t.dependsOn(COVERAGE_REPORT_TASK_NAME));
             } else {
                 rootProject.getLogger().warn("Could not find the sonarqube extension");
             }

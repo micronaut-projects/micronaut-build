@@ -5,7 +5,7 @@ import org.gradle.api.Project;
 import org.gradle.api.plugins.quality.CheckstyleExtension;
 import org.gradle.api.plugins.quality.CheckstylePlugin;
 import org.gradle.testing.jacoco.plugins.JacocoPlugin;
-import org.sonarqube.gradle.SonarQubeExtension;
+import org.sonarqube.gradle.SonarExtension;
 
 import java.io.File;
 
@@ -52,7 +52,7 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
     private void configureSonar(final Project project) {
         if (System.getenv("SONAR_TOKEN") != null) {
             project.getRootProject().getPluginManager().withPlugin("org.sonarqube", p -> {
-                final SonarQubeExtension sonarQubeExtension = project.getExtensions().findByType(SonarQubeExtension.class);
+                final SonarExtension sonarQubeExtension = project.getExtensions().findByType(SonarExtension.class);
                 if (sonarQubeExtension != null) {
                     project.getPluginManager().withPlugin("checkstyle", unused -> {
                         // Because sonar doesn't support the lazy APIs, we can't use
