@@ -126,10 +126,18 @@ You can do this directly in the project, or, better, in a convention plugin if i
             }
         }
 
+        def useVendorAsInput = project.providers.environmentVariable("MICRONAUT_TEST_USE_VENDOR")
+                .map(Boolean::parseBoolean).getOrElse(false)
         project.tasks.withType(Test).configureEach {
             jvmArgs '-Duser.country=US'
             jvmArgs '-Duser.language=en'
             useJUnitPlatform()
+            if (useVendorAsInput) {
+                // This will have to be changed once we switch to toolchain support, since it will not be relevant anymore
+                def vendor = project.providers.systemProperty("java.vendor").getOrElse("unknown")
+                println("Configuring test task ${it.path} to execute specifically for vendor: $vendor")
+                inputs.property("java.vendor", vendor)
+            }
             retry {
                 if (micronautBuildExtension.environment.isGithubAction().getOrElse(false)) {
                     maxRetries.set(2)
