@@ -5,14 +5,19 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.plugins.quality.CheckstyleExtension;
 import org.gradle.api.plugins.quality.CheckstylePlugin;
+import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.tasks.testing.Test;
 import org.gradle.testing.jacoco.plugins.JacocoPlugin;
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension;
 import org.sonarqube.gradle.SonarExtension;
 import org.sonarqube.gradle.SonarTask;
 
 import java.io.File;
 
 public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> {
+
+    public static final String MICRONAUT_JACOCO_PROPERTY = "micronaut.jacoco.enabled";
 
     @Override
     public void apply(final Project project) {
@@ -21,7 +26,7 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
 
         configureCheckstyle(project, micronautBuild);
         configureSonar(project);
-        configureJacoco(project);
+        configureJacoco(project, micronautBuild);
     }
 
     private void configureCheckstyle(final Project project, final MicronautBuildExtension micronautBuildExtension) {
@@ -77,7 +82,30 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
     }
 
 
-    private void configureJacoco(final Project project) {
+    private void configureJacoco(final Project project, MicronautBuildExtension micronautBuild) {
         project.getPluginManager().withPlugin("java", p -> project.getPluginManager().apply(JacocoPlugin.class));
+        project.afterEvaluate(unused -> {
+            // AfterEvaluate because the jacoco task extension is not registered
+            // when our configureEach is called
+            project.getTasks().withType(Test.class).configureEach(t -> {
+                JacocoTaskExtension jacocoTaskExtension = t.getExtensions().findByType(JacocoTaskExtension.class);
+                if (jacocoTaskExtension != null) {
+                    ProviderFactory providers = project.getProviders();
+                    jacocoTaskExtension.setEnabled(
+                            micronautBuild.getEnvironment()
+                                    .isGithubAction()
+                                    .flatMap(isCi -> {
+                                        if (Boolean.TRUE.equals(isCi)) {
+                                            return providers.provider(() -> true);
+                                        }
+                                        return providers.gradleProperty(MICRONAUT_JACOCO_PROPERTY)
+                                                .orElse(providers.systemProperty(MICRONAUT_JACOCO_PROPERTY))
+                                                .map(Boolean::parseBoolean);
+                                    })
+                                    .getOrElse(false)
+                    );
+                }
+            });
+        });
     }
 }
