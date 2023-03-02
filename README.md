@@ -19,7 +19,6 @@ Then, apply the individual plugins as desired
 ## Available plugins
 
 * `io.micronaut.build.internal.common`.
-    * Defines `jcenter()` as a project repository.
     * Configures the version to the `projectVersion` property (usually defined in `gradle.properties`).
     * Configures Java / Groovy compilation options.
     * Configures dependencies, enforcing the Micronaut BOM defined in `micronautVersion` property, as well as the version
