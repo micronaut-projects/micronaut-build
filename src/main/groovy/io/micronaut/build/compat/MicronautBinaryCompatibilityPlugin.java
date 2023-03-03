@@ -25,6 +25,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.catalog.internal.TomlFileGenerator;
 import org.gradle.api.provider.Provider;
@@ -37,6 +38,8 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static io.micronaut.build.MicronautPlugin.moduleNameOf;
 
 /**
  * A plugin which sets up binary compatibility reports for Micronaut
@@ -54,13 +57,18 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
         project.getPlugins().withType(MicronautPublishingPlugin.class, unused -> {
             TaskContainer tasks = project.getTasks();
             ProviderFactory providers = project.getProviders();
+            // We use the root project configurations here because of this issue:
+            // https://discuss.gradle.org/t/is-the-default-configuration-leaking-into-independent-configurations/2088/6
+            // but we'll have to find a better solution which doesn't reach into other project's state
+            ConfigurationContainer rootProjectConfigurations = project.getRootProject().getConfigurations();
             project.getPluginManager().withPlugin("java-library", alsoUnused -> {
                 TaskProvider<FindBaselineTask> baselineTask = registerFindBaselineTask(project, binaryCompatibility, tasks, providers);
                 Provider<String> baseline = createBaselineProvider(binaryCompatibility, providers, baselineTask);
-                Configuration oldClasspath = project.getConfigurations().detachedConfiguration();
-                Configuration oldJar = project.getConfigurations().detachedConfiguration();
-                oldClasspath.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version)));
-                oldJar.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version + "@jar")));
+                String groupAndArtifact = project.getGroup() + ":" + moduleNameOf(project.getName());
+                Configuration oldClasspath = rootProjectConfigurations.detachedConfiguration();
+                Configuration oldJar = rootProjectConfigurations.detachedConfiguration();
+                oldClasspath.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(groupAndArtifact + ":" + version)));
+                oldJar.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(groupAndArtifact + ":" + version + "@jar")));
                 TaskProvider<JapicmpTask> japicmpTask = tasks.register("japiCmp", JapicmpTask.class, task -> {
                     task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
                     task.dependsOn(baselineTask);
@@ -102,8 +110,8 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
             project.getPluginManager().withPlugin("io.micronaut.build.internal.bom", alsoUnused -> {
                 TaskProvider<FindBaselineTask> baselineTask = registerFindBaselineTask(project, binaryCompatibility, tasks, providers);
                 Provider<String> baseline = createBaselineProvider(binaryCompatibility, providers, baselineTask);
-                Configuration baselineConfig = project.getConfigurations().detachedConfiguration();
-                baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version + "@toml")));
+                Configuration baselineConfig = rootProjectConfigurations.detachedConfiguration();
+                baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":" + moduleNameOf(project.getName()) + ":" + version + "@toml")));
                 TaskProvider<VersionCatalogCompatibilityCheck> compatibilityCheckTaskProvider = tasks.register("checkVersionCatalogCompatibility", VersionCatalogCompatibilityCheck.class, task -> {
                     task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
                     task.getBaseline().fileProvider(baselineTask.map(b -> baselineConfig.getSingleFile()));
