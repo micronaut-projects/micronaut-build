@@ -43,6 +43,9 @@ import java.util.List;
  * modules.
  */
 public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
+
+    public static final String ARTIFACT_ID_PREFIX_MICRONAUT = "micronaut-";
+
     @Override
     public void apply(Project project) {
         project.getPlugins().apply(MicronautBuildExtensionPlugin.class);
@@ -59,8 +62,8 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 Provider<String> baseline = createBaselineProvider(binaryCompatibility, providers, baselineTask);
                 Configuration oldClasspath = project.getConfigurations().detachedConfiguration();
                 Configuration oldJar = project.getConfigurations().detachedConfiguration();
-                oldClasspath.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version)));
-                oldJar.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version + "@jar")));
+                oldClasspath.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":" + artifactIdForProjectName(project.getName()) + ":" + version)));
+                oldJar.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + artifactIdForProjectName(project.getName()) + ":" + version + "@jar")));
                 TaskProvider<JapicmpTask> japicmpTask = tasks.register("japiCmp", JapicmpTask.class, task -> {
                     task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
                     task.dependsOn(baselineTask);
@@ -103,7 +106,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 TaskProvider<FindBaselineTask> baselineTask = registerFindBaselineTask(project, binaryCompatibility, tasks, providers);
                 Provider<String> baseline = createBaselineProvider(binaryCompatibility, providers, baselineTask);
                 Configuration baselineConfig = project.getConfigurations().detachedConfiguration();
-                baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":micronaut-" + project.getName() + ":" + version + "@toml")));
+                baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":" + artifactIdForProjectName(project.getName()) + ":" + version + "@toml")));
                 TaskProvider<VersionCatalogCompatibilityCheck> compatibilityCheckTaskProvider = tasks.register("checkVersionCatalogCompatibility", VersionCatalogCompatibilityCheck.class, task -> {
                     task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
                     task.getBaseline().fileProvider(baselineTask.map(b -> baselineConfig.getSingleFile()));
@@ -117,6 +120,17 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
 
             });
         });
+    }
+
+    /**
+     *
+     * @param projectName Project Name
+     * @return If the project name does not start with @{@value ARTIFACT_ID_PREFIX_MICRONAUT}, it prefixes with it, otherwise returns the project name
+     */
+    private static String artifactIdForProjectName(String projectName) {
+        return projectName.startsWith(ARTIFACT_ID_PREFIX_MICRONAUT) ?
+                projectName :
+                ARTIFACT_ID_PREFIX_MICRONAUT + projectName;
     }
 
     private Provider<String> createBaselineProvider(BinaryCompatibibilityExtension binaryCompatibility, ProviderFactory providers, TaskProvider<FindBaselineTask> baselineTask) {
