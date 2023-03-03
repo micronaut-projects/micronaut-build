@@ -48,9 +48,9 @@ import static io.micronaut.build.MicronautPlugin.MICRONAUT_PROJECT_PREFIX;
 public abstract class MicronautBuildSettingsExtension {
     private static final Logger LOGGER = LoggerFactory.getLogger(MicronautBuildSettingsExtension.class);
 
-    abstract Property<Boolean> getUseLocalCache();
+    public abstract Property<Boolean> getUseLocalCache();
 
-    abstract Property<Boolean> getUseRemoteCache();
+    public abstract Property<Boolean> getUseRemoteCache();
 
     /**
      * Configures use of "standard" project names. When set to "true",
@@ -61,7 +61,7 @@ public abstract class MicronautBuildSettingsExtension {
      * Defaults to false.
      * @return the standardized project names property
      */
-    abstract Property<Boolean> getUseStandardizedProjectNames();
+    public abstract Property<Boolean> getUseStandardizedProjectNames();
 
     @Inject
     protected abstract ProviderFactory getProviders();
