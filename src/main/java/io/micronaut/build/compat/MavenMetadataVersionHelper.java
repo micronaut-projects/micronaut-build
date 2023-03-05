@@ -33,6 +33,7 @@ public abstract class MavenMetadataVersionHelper {
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+\\.\\d+\\.\\d+)([.-]\\w+)?$");
     private static final String VERSION_OPEN_TAG = "<version>";
     private static final String VERSION_CLOSE_TAG = "</version>";
+    
     private MavenMetadataVersionHelper() {
 
     }
