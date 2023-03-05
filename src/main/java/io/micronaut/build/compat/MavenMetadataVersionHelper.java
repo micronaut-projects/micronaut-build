@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
 
 public abstract class MavenMetadataVersionHelper {
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+\\.\\d+\\.\\d+)([.-]\\w+)?$");
-
+    private static final String VERSION_OPEN_TAG = "<version>";
+    private static final String VERSION_CLOSE_TAG = "</version>";
     private MavenMetadataVersionHelper() {
 
     }
@@ -41,8 +42,8 @@ public abstract class MavenMetadataVersionHelper {
         try (BufferedReader reader = new BufferedReader(new StringReader(new String(mavenMetadata, StandardCharsets.UTF_8)))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.contains("<version>")) {
-                    String version = line.substring(line.indexOf("<version>") + 9, line.indexOf("</version>"));
+                if (line.contains(VERSION_OPEN_TAG)) {
+                    String version = line.substring(line.indexOf(VERSION_OPEN_TAG) + VERSION_OPEN_TAG.length(), line.indexOf(VERSION_CLOSE_TAG));
                     allVersions.add(version);
                 }
             }
