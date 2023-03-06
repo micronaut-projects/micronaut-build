@@ -19,6 +19,7 @@ import com.gradle.CommonCustomUserDataGradlePlugin;
 import com.gradle.enterprise.gradleplugin.GradleEnterpriseExtension;
 import com.gradle.enterprise.gradleplugin.GradleEnterprisePlugin;
 import com.gradle.scan.plugin.BuildScanExtension;
+import org.gradle.api.JavaVersion;
 import io.micronaut.build.utils.ProviderUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.initialization.Settings;
@@ -61,6 +62,7 @@ public class MicronautGradleEnterprisePlugin implements Plugin<Settings> {
         boolean isCI = ProviderUtils.guessCI(providers);
         configureBuildScansPublishing(ge, isCI, publishScanOnDemand);
         settings.getGradle().projectsLoaded(MicronautGradleEnterprisePlugin::applyGitHubActionsPlugin);
+        tagWithJavaDetails(ge, providers);
         if (providers.gradleProperty("org.gradle.caching").map(Boolean::parseBoolean).orElse(true).get()) {
             settings.getGradle().settingsEvaluated(lateSettings -> {
                 BuildCacheConfiguration buildCache = settings.getBuildCache();
@@ -99,6 +101,14 @@ public class MicronautGradleEnterprisePlugin implements Plugin<Settings> {
             }
             captureSafeEnvironmentVariables(ge);
         }
+    }
+
+    private void tagWithJavaDetails(GradleEnterpriseExtension ge, ProviderFactory providers) {
+        Provider<String> vendor = providers.systemProperty("java.vendor");
+        if (vendor.isPresent()) {
+            ge.getBuildScan().tag("vendor:" + vendor.get().toLowerCase().replaceAll("\\W+", "_"));
+        }
+        ge.getBuildScan().tag("jdk:" + JavaVersion.current().getMajorVersion());
     }
 
     private void captureSafeEnvironmentVariables(GradleEnterpriseExtension ge) {
