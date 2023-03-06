@@ -30,8 +30,10 @@ import org.slf4j.Logger;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -77,24 +79,30 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
             Boolean useStandardProjectNames = buildSettings.getUseStandardizedProjectNames().get();
             if (Boolean.TRUE.equals(useStandardProjectNames)) {
                 Set<ProjectDescriptor> visited = new HashSet<>();
-                configureProjectName(settings.getRootProject(), visited);
+                configureProjectName(settings.getRootProject(), visited, buildSettings);
             } else {
                 LOGGER.warn(STANDARDIZED_PROJECT_NAMES_WARNING);
             }
         });
     }
 
-    private void configureProjectName(ProjectDescriptor project, Set<ProjectDescriptor> visited) {
+    private void configureProjectName(ProjectDescriptor project, Set<ProjectDescriptor> visited, MicronautBuildSettingsExtension extension) {
         if (visited.add(project)) {
-            if (!(":".equals(project.getPath()))) {
+            String path = project.getPath();
+            if (!(":".equals(path))) {
                 String name = project.getName();
-                if (!name.startsWith(MICRONAUT_PROJECT_PREFIX) && !name.startsWith(TEST_SUITE_PROJECT_PREFIX)) {
+                List<String> ignoredNamePrefixes = extension.getNonStandardProjectNamePrefixes().getOrElse(Collections.emptyList());
+                List<String> ignoredPathPrefixes = extension.getNonStandardProjectPathPrefixes().getOrElse(Collections.emptyList());
+                boolean nameIsNotIgnored = ignoredNamePrefixes.stream().noneMatch(name::startsWith);
+                boolean pathIsNotIgnored = ignoredPathPrefixes.stream().noneMatch(path::startsWith);
+                LOGGER.debug("[Automatic project renaming] Project name: {}, path: {}, nameIsNotIgnored: {}, pathIsNotIgnored: {}", name, path, nameIsNotIgnored, pathIsNotIgnored);
+                if (nameIsNotIgnored && pathIsNotIgnored) {
                     name = MICRONAUT_PROJECT_PREFIX + name;
                     project.setName(name);
                 }
             }
             for (ProjectDescriptor child : project.getChildren()) {
-                configureProjectName(child, visited);
+                configureProjectName(child, visited, extension);
             }
         }
     }

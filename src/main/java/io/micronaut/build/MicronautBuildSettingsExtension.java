@@ -24,6 +24,7 @@ import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.resolve.DependencyResolutionManagement;
 import org.gradle.api.initialization.resolve.RepositoriesMode;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 import static io.micronaut.build.BomSupport.coreBomArtifactId;
 import static io.micronaut.build.MicronautPlugin.BOM_PROJECT_SUFFIX;
 import static io.micronaut.build.MicronautPlugin.MICRONAUT_PROJECT_PREFIX;
+import static io.micronaut.build.MicronautPlugin.TEST_SUITE_PROJECT_PREFIX;
 
 public abstract class MicronautBuildSettingsExtension {
     private static final Logger LOGGER = LoggerFactory.getLogger(MicronautBuildSettingsExtension.class);
@@ -63,6 +66,20 @@ public abstract class MicronautBuildSettingsExtension {
      */
     public abstract Property<Boolean> getUseStandardizedProjectNames();
 
+    /**
+     * Configures a list of project path prefixes which correspond to projects which do
+     * not use the "standard" project naming convention (e.g `examples:`).
+     * @return the list of non-standard project path prefixes
+     */
+    public abstract ListProperty<String> getNonStandardProjectPathPrefixes();
+
+    /**
+     * Configures a list of project name prefixes which correspond to projects which do
+     * not use the "standard" project naming convention (e.g `test-suite-`).
+     * @return the list of non-standard project path prefixes
+     */
+    public abstract ListProperty<String> getNonStandardProjectNamePrefixes();
+
     @Inject
     protected abstract ProviderFactory getProviders();
 
@@ -78,6 +95,8 @@ public abstract class MicronautBuildSettingsExtension {
         getUseLocalCache().convention(booleanProvider(providers, "localCache", true));
         getUseRemoteCache().convention(booleanProvider(providers, "remoteCache", true));
         getUseStandardizedProjectNames().convention(false);
+        getNonStandardProjectPathPrefixes().set(Collections.singletonList(":examples:"));
+        getNonStandardProjectNamePrefixes().set(Arrays.asList(MICRONAUT_PROJECT_PREFIX, TEST_SUITE_PROJECT_PREFIX));
         this.versionCatalogTomlModel = loadVersionCatalogTomlModel();
         this.micronautVersion = determineMicronautVersion();
         this.micronautTestVersion = determineMicronautTestVersion();
