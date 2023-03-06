@@ -91,7 +91,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
     private void configureJavaPlugin(Project project, MicronautBuildExtension micronautBuildExtension) {
         project.apply plugin: "groovy"
         project.apply plugin: "java-library"
-        project.pluginManager.apply('org.gradle.test-retry')
 
         project.afterEvaluate {
             JavaPluginConvention convention = project.convention.getPlugin(JavaPluginConvention)
