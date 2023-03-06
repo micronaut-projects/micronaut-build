@@ -19,7 +19,7 @@ import io.micronaut.build.MicronautBuildExtension;
 import io.micronaut.build.MicronautBuildExtensionPlugin;
 import io.micronaut.build.MicronautPublishingPlugin;
 import io.micronaut.build.pom.MicronautBomExtension;
-import io.micronaut.build.utils.GitHubApiService;
+import io.micronaut.build.utils.ExternalURLService;
 import me.champeau.gradle.japicmp.JapicmpTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -127,10 +127,14 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
     }
 
     private TaskProvider<FindBaselineTask> registerFindBaselineTask(Project project, BinaryCompatibibilityExtension binaryCompatibility, TaskContainer tasks, ProviderFactory providers) {
+        Provider<ExternalURLService> downloader = ExternalURLService.registerOn(project);
         return tasks.register("findBaseline", FindBaselineTask.class, task -> {
             task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
-            task.getGitHubApi().set(GitHubApiService.registerOn(project));
-            task.getGithubSlug().convention(providers.gradleProperty("githubSlug"));
+            task.usesService(downloader);
+            task.getDownloader().set(downloader);
+            task.getBaseRepository().convention("https://repo.maven.org/maven2");
+            task.getGroupId().convention(providers.provider(() -> project.getGroup().toString()));
+            task.getArtifactId().convention(providers.provider(() -> artifactIdOf(project)));
             task.getCurrentVersion().convention(providers.provider(() -> project.getVersion().toString()));
             task.getPreviousVersion().convention(project.getLayout().getBuildDirectory().file("baseline.txt"));
         });
@@ -143,5 +147,13 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
             return baseline;
         }
         return "+";
+    }
+
+    private static String artifactIdOf(Project project) {
+        String name = project.getName();
+        if (name.startsWith("micronaut-")) {
+            return name;
+        }
+        return "micronaut-" + name;
     }
 }
