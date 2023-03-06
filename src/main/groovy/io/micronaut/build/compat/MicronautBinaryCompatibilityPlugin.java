@@ -132,7 +132,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
             task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
             task.usesService(downloader);
             task.getDownloader().set(downloader);
-            task.getBaseRepository().convention("https://repo.maven.org/maven2");
+            task.getBaseRepository().convention("https://repo1.maven.org/maven2");
             task.getGroupId().convention(providers.provider(() -> project.getGroup().toString()));
             task.getArtifactId().convention(providers.provider(() -> artifactIdOf(project)));
             task.getCurrentVersion().convention(providers.provider(() -> project.getVersion().toString()));
