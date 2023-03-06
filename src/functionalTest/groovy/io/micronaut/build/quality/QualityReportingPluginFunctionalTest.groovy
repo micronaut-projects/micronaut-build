@@ -7,6 +7,7 @@ class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
     void "it can run aggregate coverage reports"() {
         given:
         withSample("test-micronaut-module")
+        file("gradle.properties") << "micronaut.jacoco.enabled=true"
 
         when:
         run 'testCodeCoverageReport'
