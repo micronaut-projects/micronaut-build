@@ -34,7 +34,7 @@ class FindBaselineTaskTest extends Specification {
         mockServer.stop()
     }
 
-    def "parses releases from GitHub"() {
+    def "parses releases from Maven Central"() {
         def project = ProjectBuilder.builder().build()
         def downloader = ExternalURLService.registerOn(project)
         def task = project.tasks.register("findBaseline", FindBaselineTask) { task ->
