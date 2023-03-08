@@ -23,9 +23,9 @@ import io.micronaut.build.catalogs.internal.Library;
 import io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin;
 import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.pom.PomChecker;
+import io.micronaut.build.pom.PomCheckerUtils;
 import io.micronaut.build.pom.VersionCatalogConverter;
 import org.gradle.api.Action;
-import org.gradle.api.GradleException;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -35,8 +35,6 @@ import org.gradle.api.artifacts.DependencyConstraint;
 import org.gradle.api.artifacts.VersionCatalog;
 import org.gradle.api.artifacts.VersionCatalogsExtension;
 import org.gradle.api.artifacts.VersionConstraint;
-import org.gradle.api.artifacts.repositories.ArtifactRepository;
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.component.AdhocComponentWithVariants;
@@ -182,14 +180,6 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         }
     }
 
-    private static String assertVersion(Project p) {
-        String version = String.valueOf(p.getVersion());
-        if (version.isEmpty() || "unspecified".equals(version)) {
-            throw new GradleException("Version of " + p.getPath() + " is undefined!");
-        }
-        return version;
-    }
-
     private void configureBOM(Project project, MicronautBomExtension bomExtension) {
         PublishingExtension publishing = project.getExtensions().getByType(PublishingExtension.class);
         JavaPlatformExtension javaPlatformExtension = project.getExtensions().getByType(JavaPlatformExtension.class);
@@ -198,7 +188,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         TaskContainer tasks = project.getTasks();
         project.afterEvaluate(unused -> configureLate(project, bomExtension, publishing, tasks));
 
-        registerCheckBomTask(project, publishing, tasks, bomExtension);
+        registerCheckBomTask(project, publishing, bomExtension);
 
     }
 
@@ -272,7 +262,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                 forEachProject(bomExtension, project, includedProjects, skippedProjects, p -> {
                     project.evaluationDependsOn(p.getPath());
                     String propertyName = "micronaut." + mainProjectId + ".version";
-                    pom.getProperties().put(propertyName, assertVersion(p));
+                    pom.getProperties().put(propertyName, PomCheckerUtils.assertVersion(p));
                 });
 
                 tasks.withType(GenerateMavenPom.class).configureEach(pomTask -> {
@@ -325,7 +315,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         forEachProject(bomExtension, project, new HashSet<>(), new HashSet<>(), p -> {
             String moduleGroup = String.valueOf(p.getGroup());
             String moduleName = MicronautPlugin.moduleNameOf(p.getName());
-            String moduleVersion = assertVersion(p);
+            String moduleVersion = PomCheckerUtils.assertVersion(p);
 
             api.getDependencyConstraints().add(
                     project.getDependencies()
@@ -370,30 +360,12 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         }
     }
 
-    private void registerCheckBomTask(Project project, PublishingExtension publishing, TaskContainer tasks, MicronautBomExtension bomExtension) {
-        TaskProvider<PomChecker> checkBom = tasks.register("checkBom", PomChecker.class, task -> {
-            String repoUrl = "https://repo.maven.apache.org/maven2/";
-            ArtifactRepository repo = publishing.getRepositories().findByName("Build");
-            if (repo instanceof MavenArtifactRepository) {
-                repoUrl = ((MavenArtifactRepository) repo).getUrl().toString();
-            }
-            task.getRepositories().add(repoUrl);
-            project.getRepositories().forEach(r -> {
-                if (r instanceof MavenArtifactRepository) {
-                    task.getRepositories().add(((MavenArtifactRepository) r).getUrl().toString());
-                }
-            });
-            task.getPomFile().fileProvider(tasks.named("generatePomFileForMavenPublication", GenerateMavenPom.class).map(GenerateMavenPom::getDestination));
-            String version = assertVersion(project);
+    private void registerCheckBomTask(Project project, PublishingExtension publishing, MicronautBomExtension bomExtension) {
+        TaskProvider<PomChecker> checkBom = PomCheckerUtils.registerPomChecker("checkBom", project, publishing, task -> {
             task.getSuppressions().convention(bomExtension.getSuppressions());
-            task.getPomCoordinates().set(project.getGroup() + ":micronaut-" + project.getName() + ":" + version);
-            task.getReportDirectory().set(project.getLayout().getBuildDirectory().dir("reports/boms"));
-            task.getPomsDirectory().set(project.getLayout().getBuildDirectory().dir("poms"));
-            task.getFailOnSnapshots().set(!version.endsWith("-SNAPSHOT"));
-            task.getFailOnError().set(true);
         });
-
-        tasks.named("check", task -> task.dependsOn(checkBom));
+        // Add a convenience task to so that we can run `checkPom` and it will run `checkBom` as well
+        project.getTasks().register("checkPom", task -> task.dependsOn(checkBom));
     }
 
     private static Optional<VersionCatalog> findVersionCatalog(Project project, MicronautBomExtension bomExtension) {

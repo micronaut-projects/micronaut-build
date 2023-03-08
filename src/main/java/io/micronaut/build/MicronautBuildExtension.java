@@ -2,9 +2,12 @@ package io.micronaut.build;
 
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
+import io.micronaut.build.pom.BomSuppressions;
+import org.gradle.api.Action;
 import org.gradle.api.artifacts.ResolutionStrategy;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Nested;
 
 import javax.inject.Inject;
 
@@ -93,6 +96,16 @@ public abstract class MicronautBuildExtension {
    * Whether to enable the Micronaut BOM for dependency management
    */
   public abstract Property<Boolean> getEnableBom();
+
+  /**
+   * Errors which should be suppressed when validating POMs.
+   */
+  @Nested
+  public abstract BomSuppressions getBomSuppressions();
+
+  void bomSuppressions(Action<? super BomSuppressions> spec) {
+    spec.execute(getBomSuppressions());
+  }
 
   public void resolutionStrategy(@DelegatesTo(ResolutionStrategy.class) Closure<?> closure) {
     this.resolutionStrategy = closure;

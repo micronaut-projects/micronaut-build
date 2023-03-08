@@ -18,7 +18,7 @@ package io.micronaut.build;
 import org.gradle.api.Plugin;
 
 public interface MicronautPlugin<T> extends Plugin<T> {
-
+    String PRE_RELEASE_CHECK_TASK_NAME = "preReleaseCheck";
     String TEST_SUITE_PROJECT_PREFIX = "test-suite";
     String MICRONAUT_PROJECT_PREFIX = "micronaut-";
     String BOM_PROJECT_SUFFIX = "-bom";

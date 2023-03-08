@@ -155,6 +155,13 @@ abstract class AbstractFunctionalTest extends Specification {
     }
 
     private class TaskExecutionGraph {
+        void failed(String... tasks) {
+            tasks.each { task ->
+                contains(task)
+                assert result.task(task).outcome == TaskOutcome.FAILED
+            }
+        }
+
         void succeeded(String... tasks) {
             tasks.each { task ->
                 contains(task)

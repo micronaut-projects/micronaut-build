@@ -64,11 +64,11 @@ abstract class PomChecker extends DefaultTask {
         group = VERIFICATION_GROUP
         getFailOnError().convention(true)
         getFailOnSnapshots().convention(getPomCoordinates().map(v -> !v.endsWith("-SNAPSHOT")))
-        String group = project.getProperties().get("projectGroup")
-        if (!group) {
-            group = project.getProperties().get("projectGroupId")
-        }
-        getProjectGroup().convention(group)
+        getProjectGroup().convention(
+                project.providers.gradleProperty("projectGroup")
+                        .orElse(project.providers.gradleProperty("projectGroupId")
+                                .orElse(project.provider { String.valueOf(project.group) }))
+        )
     }
 
     @TaskAction
@@ -78,7 +78,7 @@ abstract class PomChecker extends DefaultTask {
         ErrorCollector errorCollector = new ErrorCollector(silencedDeps)
         def coordinates = pomCoordinates.get().split(':')
         if (coordinates.length != 3) {
-            throw new GradleException("Incorrect BOM coordinates '${pomCoordinates.get()}': should be of the form group:artifact:version ")
+            throw new GradleException("Incorrect POM coordinates '${pomCoordinates.get()}': should be of the form group:artifact:version ")
         }
         def queue = new ArrayDeque<List<Object>>()
         queue.add([coordinates[0], coordinates[1], coordinates[2], pomFile.get().asFile, pomCoordinates.get()] as List<Object>)
@@ -109,7 +109,7 @@ abstract class PomChecker extends DefaultTask {
             reports.each {
                 String projectGroupId = projectGroup.getOrElse("io.micronaut")
                 def validation = PomFileAdapter.parseFromFile(it)
-                String bomPrefix = "BOM ${validation.pomFile.groupId}:${validation.pomFile.artifactId}:${validation.pomFile.version} (via ${validation.dependencyPath})"
+                String bomPrefix = "POM ${validation.pomFile.groupId}:${validation.pomFile.artifactId}:${validation.pomFile.version} (via ${validation.dependencyPath})"
                 assertThatImportingBomIsAllowed(validation, errorCollector)
                 if (validation.pomFile.bom) {
                     addTransitiveBomsToQueue(validation, queue)
@@ -138,13 +138,13 @@ abstract class PomChecker extends DefaultTask {
                     }
                 }
                 validation.invalidDependencies.each {
-                    if (!it.startsWith(projectGroupId) || !it.endsWith("-SNAPSHOT")) {
+                    if (!it.startsWith(projectGroupId) && !it.endsWith("-SNAPSHOT")) {
                         errorCollector.error(it, "$bomPrefix declares a non-resolvable dependency: $it".toString())
                     }
                 }
                 if (failOnSnapshots.get()) {
                     validation.pomFile.dependencies.findAll {
-                        it.version.endsWith("-SNAPSHOT")
+                        !it.groupId.equals(projectGroupId) && it.version.endsWith("-SNAPSHOT")
                     }.each {
                         String dependency = "${it.groupId}:${it.artifactId}:${it.version}"
                         errorCollector.error(dependency, "$bomPrefix declares a SNAPSHOT dependency on ${dependency}".toString())
@@ -155,7 +155,7 @@ abstract class PomChecker extends DefaultTask {
 
         File reportFile = writeReport(errorCollector.errors)
         if (failOnError.get() && errorCollector.errors) {
-            throw new GradleException("BOM verification failed. See report in ${reportFile}")
+            throw new GradleException("POM verification failed. See report in ${reportFile}")
         }
     }
 

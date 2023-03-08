@@ -15,6 +15,7 @@ import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.plugins.signing.Sign
 
+import static io.micronaut.build.MicronautPlugin.PRE_RELEASE_CHECK_TASK_NAME
 import static io.micronaut.build.MicronautPlugin.moduleNameOf
 
 /**
@@ -24,6 +25,7 @@ class MicronautPublishingPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+        configurePreReleaseCheck(project)
         def p = project.findProperty("micronautPublish")
         // add option to skip publishing
         if (p == null) {
@@ -282,4 +284,9 @@ class MicronautPublishingPlugin implements Plugin<Project> {
         }
     }
 
+    private void configurePreReleaseCheck(Project project) {
+        project.tasks.register(PRE_RELEASE_CHECK_TASK_NAME) {
+            it.description = "Performs pre-release checks"
+        }
+    }
 }
