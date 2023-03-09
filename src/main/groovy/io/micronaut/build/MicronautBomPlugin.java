@@ -15,7 +15,6 @@
  */
 package io.micronaut.build;
 
-import groovy.lang.Closure;
 import groovy.namespace.QName;
 import groovy.util.Node;
 import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
@@ -184,7 +183,6 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         PublishingExtension publishing = project.getExtensions().getByType(PublishingExtension.class);
         JavaPlatformExtension javaPlatformExtension = project.getExtensions().getByType(JavaPlatformExtension.class);
         javaPlatformExtension.allowDependencies();
-        publishing.getPublications().create("maven", MavenPublication.class);
         TaskContainer tasks = project.getTasks();
         project.afterEvaluate(unused -> configureLate(project, bomExtension, publishing, tasks));
 
@@ -214,10 +212,6 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                 pom.setPackaging("pom");
                 pom.withXml(xml -> {
                     Node node = xml.asNode();
-                    Optional<Node> packagingNode = Optional.ofNullable(childOf(node, "packaging"));
-                    if (project.hasProperty("pomInfo")) {
-                        packagingNode.ifPresent(packaging -> packaging.plus((Closure) project.findProperty("pomInfo")));
-                    }
                     modelConverter.getModel().getLibrariesTable().forEach(library -> {
                         String alias = Optional.ofNullable(library.getVersion().getReference()).map(a -> a.replace('-', '.')).orElse("");
                         String libraryAlias = Optional.ofNullable(library.getAlias()).map(a -> a.replace('-', '.')).orElse("");
