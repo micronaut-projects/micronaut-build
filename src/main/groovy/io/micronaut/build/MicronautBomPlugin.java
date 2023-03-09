@@ -37,13 +37,16 @@ import org.gradle.api.artifacts.VersionConstraint;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.component.AdhocComponentWithVariants;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.initialization.dsl.VersionCatalogBuilder;
 import org.gradle.api.plugins.JavaPlatformExtension;
 import org.gradle.api.plugins.JavaPlatformPlugin;
 import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.plugins.catalog.CatalogPluginExtension;
 import org.gradle.api.plugins.catalog.VersionCatalogPlugin;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.PublishingExtension;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.maven.tasks.GenerateMavenPom;
@@ -301,10 +304,17 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                                 .orElseThrow(() -> new RuntimeException("Unexpected missing alias in catalog: " + alias))));
             }
         }));
+        // the following properties are captures _outside_ of the lambda
+        // to avoid it referencing `bomExtension` or `catalogs`
+        FileCollection catalogFiles = catalogs.getIncoming()
+                .artifactView(spec -> spec.lenient(true))
+                .getFiles();
+        Property<Boolean> inlineNestedCatalogs = bomExtension.getInlineNestedCatalogs();
+        SetProperty<String> excludedInlinedAliases = bomExtension.getExcludedInlinedAliases();
         modelConverter.afterBuildingModel(builderState -> {
             api.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
-            maybeInlineNestedCatalogs(bomExtension, catalogs, builderState);
+            maybeInlineNestedCatalogs(catalogFiles, builderState, inlineNestedCatalogs, excludedInlinedAliases);
         });
         forEachProject(bomExtension, project, new HashSet<>(), new HashSet<>(), p -> {
             String moduleGroup = String.valueOf(p.getGroup());
@@ -323,15 +333,15 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         });
     }
 
-    private void maybeInlineNestedCatalogs(MicronautBomExtension bomExtension, Configuration catalogs, VersionCatalogConverter.BuilderState builderState) {
-        if (bomExtension.getInlineNestedCatalogs().get()) {
+    private void maybeInlineNestedCatalogs(FileCollection catalogs,
+                                           VersionCatalogConverter.BuilderState builderState,
+                                           Property<Boolean> inlineNestedCatalogs,
+                                           SetProperty<String> excludedInlinedAliases) {
+        if (inlineNestedCatalogs.get()) {
             VersionCatalogBuilder builder = builderState.getBuilder();
             Set<String> knownAliases = builderState.getKnownAliases();
-            Set<String> excludeFromInlining = bomExtension.getExcludedInlinedAliases().get();
-            catalogs.getIncoming()
-                    .artifactView(spec -> spec.lenient(true))
-                    .getFiles()
-                    .forEach(catalogFile -> {
+            Set<String> excludeFromInlining = excludedInlinedAliases.get();
+            catalogs.forEach(catalogFile -> {
                         try (FileInputStream fis = new FileInputStream(catalogFile)) {
                             LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
                             parser.parse(fis);
