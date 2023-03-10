@@ -188,21 +188,21 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
 
             def createReleasesDropdown = tasks.register("createReleasesDropdown", CreateReleasesDropdownTask) { task ->
                 task.group(DOCUMENTATION_GROUP)
+                task.usesService(githubApi)
                 slug = githubSlug as String
                 version = projectVersion
                 sourceIndex = publishGuide.flatMap { it.targetDir.file("guide/index.html") }
                 outputIndex = layout.buildDir.file("working/05-dropdown/index.html")
-                versionsJson = githubApi.map { api ->
-                    String ghslug = slug.get()
+                versionsJson = githubApi.zip(slug) { api, ghSlug ->
                     try {
                         byte[] jsonArr = api.fetchTagsFromGitHub(ghslug)
                         return new String(jsonArr, "UTF-8")
-                    } catch(Exception e) {
-                        logger.error("Exception fetching github tags for " + ghslug)
+                    } catch (Exception e) {
+                        task.logger.error("Exception fetching github tags for $ghSlug")
                         return "[]"
                     }
                 }
-                outputs.doNotCacheIf("error while fetching releases list") { versionsJson.get() == "[]" }
+                outputs.doNotCacheIf("error while fetching releases list") { CreateReleasesDropdownTask t -> t.versionsJson.get() == "[]" }
             }
 
             def assembleFinalDocs = tasks.register("assembleFinalDocs", Copy) {
