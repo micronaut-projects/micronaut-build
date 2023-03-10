@@ -85,8 +85,13 @@ public abstract class PomCheckerUtils {
 
     public static String assertVersion(Project p) {
         String version = String.valueOf(p.getVersion());
+        String path = p.getPath();
+        return assertVersion(version, path);
+    }
+
+    public static String assertVersion(String version, String projectPath) {
         if (version.isEmpty() || "unspecified".equals(version)) {
-            throw new GradleException("Version of " + p.getPath() + " is undefined!");
+            throw new GradleException("Version of " + projectPath + " is undefined!");
         }
         return version;
     }

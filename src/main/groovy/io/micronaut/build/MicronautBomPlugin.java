@@ -19,6 +19,7 @@ import groovy.namespace.QName;
 import groovy.util.Node;
 import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
 import io.micronaut.build.catalogs.internal.Library;
+import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
 import io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin;
 import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.pom.PomChecker;
@@ -56,6 +57,7 @@ import org.gradle.api.tasks.TaskProvider;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -63,7 +65,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -160,11 +161,13 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         return baseName + ".version";
     }
 
-    private static void forEachProject(MicronautBomExtension ext,
-                                       Project project,
-                                       Set<String> includedProjects,
-                                       Set<String> skippedProjects,
-                                       Consumer<? super Project> consumer) {
+    private static List<ProjectDescriptor> computeProjectDescriptors(
+            MicronautBomExtension ext,
+            Project project,
+            Set<String> includedProjects,
+            Set<String> skippedProjects
+    ) {
+        List<ProjectDescriptor> result = new ArrayList<>();
         boolean inferProjectsToInclude = ext.getInferProjectsToInclude().getOrElse(true);
         Set<String> excludedProjects = ext.getExtraExcludedProjects().get();
         Spec<? super Project> excludeSpec = ext.getExcludeProject().get();
@@ -175,11 +178,12 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             project.evaluationDependsOn(p.getPath());
             if (!inferProjectsToInclude || p.getPlugins().hasPlugin(MicronautPublishingPlugin.class)) {
                 includedProjects.add(p.getPath());
-                consumer.accept(p);
+                result.add(ProjectDescriptor.fromProject(p));
             } else {
                 skippedProjects.add(p.getPath());
             }
         }
+        return Collections.unmodifiableList(result);
     }
 
     private void configureBOM(Project project, MicronautBomExtension bomExtension) {
@@ -206,16 +210,20 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         if (bomExtension.getPublishCatalog().get()) {
             configureVersionCatalog(project, bomExtension, publishedName, group, mainProjectId);
         }
+        Provider<VersionCatalogTomlModel> modelProvider = project.provider(modelConverter::getModel);
+        Set<String> includedProjects = new HashSet<>();
+        Set<String> skippedProjects = new HashSet<>();
+        Provider<List<ProjectDescriptor>> projectDescriptors = project.provider(() ->
+                computeProjectDescriptors(bomExtension, project, includedProjects, skippedProjects)
+        );
         publishing.getPublications().named("maven", MavenPublication.class, pub -> {
             pub.setArtifactId(publishedName);
             pub.from(project.getComponents().getByName("javaPlatform"));
             pub.pom(pom -> {
-                Set<String> includedProjects = new HashSet<>();
-                Set<String> skippedProjects = new HashSet<>();
                 pom.setPackaging("pom");
                 pom.withXml(xml -> {
                     Node node = xml.asNode();
-                    modelConverter.getModel().getLibrariesTable().forEach(library -> {
+                    modelProvider.get().getLibrariesTable().forEach(library -> {
                         String alias = Optional.ofNullable(library.getVersion().getReference()).map(a -> a.replace('-', '.')).orElse("");
                         String libraryAlias = Optional.ofNullable(library.getAlias()).map(a -> a.replace('-', '.')).orElse("");
                         if (libraryAlias.startsWith("managed.") || libraryAlias.startsWith("boms.")) {
@@ -233,10 +241,10 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                         }
                     });
                     // Add individual module versions as properties
-                    forEachProject(bomExtension, project, includedProjects, skippedProjects, p -> {
+                    projectDescriptors.get().forEach(p -> {
                         String propertyName = "micronaut." + mainProjectId + ".version";
-                        String projectGroup = String.valueOf(p.getGroup());
-                        String moduleName = MicronautPlugin.moduleNameOf(p.getName());
+                        String projectGroup = p.getGroupId();
+                        String moduleName = p.getArtifactId();
                         Optional<Node> pomDep = forEachNode(node, DEPENDENCY_PATH)
                                 .filter(n -> childOf(n, "artifactId").text().equals(moduleName) &&
                                         childOf(n, "groupId").text().equals(projectGroup))
@@ -256,10 +264,10 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                         });
                     }
                 }));
-                forEachProject(bomExtension, project, includedProjects, skippedProjects, p -> {
+                projectDescriptors.get().forEach(p -> {
                     project.evaluationDependsOn(p.getPath());
                     String propertyName = "micronaut." + mainProjectId + ".version";
-                    pom.getProperties().put(propertyName, PomCheckerUtils.assertVersion(p));
+                    pom.getProperties().put(propertyName, PomCheckerUtils.assertVersion(p.getVersion(), p.getPath()));
                 });
 
                 tasks.withType(GenerateMavenPom.class).configureEach(pomTask -> {
@@ -316,10 +324,10 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             maybeInlineNestedCatalogs(catalogFiles, builderState, inlineNestedCatalogs, excludedInlinedAliases);
         });
-        forEachProject(bomExtension, project, new HashSet<>(), new HashSet<>(), p -> {
-            String moduleGroup = String.valueOf(p.getGroup());
-            String moduleName = MicronautPlugin.moduleNameOf(p.getName());
-            String moduleVersion = PomCheckerUtils.assertVersion(p);
+        projectDescriptors.get().forEach(p -> {
+            String moduleGroup = p.getGroupId();
+            String moduleName = p.getArtifactId();
+            String moduleVersion = PomCheckerUtils.assertVersion(p.getVersion(), p.getPath());
 
             api.getDependencyConstraints().add(
                     project.getDependencies()
@@ -407,4 +415,42 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         }
     }
 
+    static class ProjectDescriptor {
+        private final String path;
+        private final String groupId;
+        private final String artifactId;
+        private final String version;
+
+        static ProjectDescriptor fromProject(Project project) {
+            return new ProjectDescriptor(
+                    project.getPath(),
+                    String.valueOf(project.getGroup()),
+                    MicronautPlugin.moduleNameOf(project.getName()),
+                    String.valueOf(project.getVersion())
+            );
+        }
+
+        private ProjectDescriptor(String path, String groupId, String artifactId, String version) {
+            this.path = path;
+            this.groupId = groupId;
+            this.artifactId = artifactId;
+            this.version = version;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public String getGroupId() {
+            return groupId;
+        }
+
+        public String getArtifactId() {
+            return artifactId;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+    }
 }
