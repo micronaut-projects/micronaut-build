@@ -6,12 +6,29 @@ import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.resolve.RepositoriesMode;
 import org.gradle.api.internal.GradleInternal;
 
-public class MicronautDependencyResolutionConfigurationPlugin implements MicronautPlugin<Project>{
+import java.util.concurrent.TimeUnit;
+
+public class MicronautDependencyResolutionConfigurationPlugin implements MicronautPlugin<Project> {
 
     @Override
     public void apply(Project project) {
         addMavenCentral(project);
         configureDependencySubstitutions(project);
+        configureDependencyCaching(project);
+    }
+
+    private static void configureDependencyCaching(Project project) {
+        project.getPlugins().withType(MicronautBuildExtensionPlugin.class, unused -> {
+                    MicronautBuildExtension micronautBuildExtension = project.getExtensions().findByType(MicronautBuildExtension.class);
+                    // Disable caching of snapshots and dynamic versions when running on GitHub Actions
+                    if (Boolean.TRUE.equals(micronautBuildExtension.getEnvironment().isGithubAction().get())) {
+                        project.getConfigurations().all(conf -> conf.resolutionStrategy(rs -> {
+                            rs.cacheChangingModulesFor(0, TimeUnit.MINUTES);
+                            rs.cacheDynamicVersionsFor(0, TimeUnit.MINUTES);
+                        }));
+                    }
+                }
+        );
     }
 
     private void addMavenCentral(Project project) {
