@@ -1,5 +1,6 @@
 package io.micronaut.build
 
+import com.diffplug.gradle.spotless.SpotlessTask
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -243,6 +244,10 @@ You can do this directly in the project, or, better, in a convention plugin if i
                     target 'src/main/**/package-info.java', 'src/main/**/module-info.java'
                     licenseHeaderFile rootProject.file('config/spotless.license.java'), '\\/\\*\\*'
                 }
+            }
+
+            tasks.withType(SpotlessTask).configureEach {
+                notCompatibleWithConfigurationCache("https://github.com/diffplug/spotless/issues/987")
             }
         }
     }

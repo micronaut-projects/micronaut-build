@@ -90,9 +90,11 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                 resourceClasspathJarName = "grails-doc-files.jar"
             }
 
+            def processConfigPropsOutputDir = layout.buildDirectory.dir("working/01-includes/configurationProperties")
+
             def processConfigPropsTask = tasks.register('processConfigProps', Copy) {
                 from(incomingIndividualConfigProps)
-                into(layout.buildDirectory.dir("working/01-includes/configurationProperties"))
+                into(processConfigPropsOutputDir)
             }
 
             def publishGuide = tasks.register('publishGuide', PublishGuideTask) {
@@ -101,7 +103,7 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
 
                 def kafkaVersion = rootProject.hasProperty('kafkaVersion') ? rootProject.properties['kafkaVersion'] : 'N/A'
 
-                inputs.files(processConfigPropsTask)
+                inputs.files(processConfigPropsTask.map(Copy::getDestinationDir))
                 inputs.property("Project description", projectDesc)
                 inputs.property("Kafka version", kafkaVersion)
 
@@ -122,7 +124,7 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                         'micronautapi': 'https://docs.micronaut.io/latest/api/io/micronaut/',
                         'sourceDir': rootProject.projectDir.absolutePath,
                         'sourcedir': rootProject.projectDir.absolutePath,
-                        'includedir': "${processConfigPropsTask.get().destinationDir.parentFile}/",
+                        'includedir': "${processConfigPropsOutputDir.get().asFile.parentFile}/",
                         'javaee': 'https://docs.oracle.com/javaee/8/api/',
                         'javase': 'https://docs.oracle.com/javase/8/docs/api/',
                         'groovyapi': 'http://docs.groovy-lang.org/latest/html/gapi/',
