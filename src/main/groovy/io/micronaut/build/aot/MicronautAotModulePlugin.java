@@ -48,13 +48,19 @@ public class MicronautAotModulePlugin implements Plugin<Project> {
         deps.addProvider(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME, aotExtension.getVersion().map(version -> {
             String aot = aotModule("core", version);
             ExternalModuleDependency dependency = (ExternalModuleDependency) deps.create(aot);
-            dependency.capabilities(capabilities -> capabilities.requireCapability("io.micronaut.aot:aot-core-test-fixtures"));
+            dependency.capabilities(capabilities -> capabilities.requireCapability(aotTestFixtures("core", version)));
             return dependency;
         }));
     }
 
     private static String aotModule(String name, String version) {
         return "io.micronaut.aot:micronaut-aot-" + name + ":" + version;
+    }
+
+    private static String aotTestFixtures(String name, String version) {
+        int major = Integer.parseInt(version.split("\\.")[0]);
+        String prefix = major < 2 ? "" : "micronaut-";
+        return "io.micronaut.aot:" + prefix + "aot-" + name + "-test-fixtures:" + version;
     }
 
     private static String coreModule(String name, String version) {
