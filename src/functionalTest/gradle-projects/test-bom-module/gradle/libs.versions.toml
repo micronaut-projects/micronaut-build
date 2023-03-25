@@ -1,5 +1,5 @@
 [versions]
-asm = "9.2"
+asm = "9.5"
 
 managed-dekorate = "1.0.3"
 managed-micronaut-aws = "3.1.1"
