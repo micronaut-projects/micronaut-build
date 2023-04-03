@@ -1,6 +1,7 @@
 package io.micronaut.build;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ResolutionStrategy;
 import org.gradle.api.artifacts.component.ComponentSelector;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.resolve.RepositoriesMode;
@@ -14,7 +15,12 @@ public class MicronautDependencyResolutionConfigurationPlugin implements Microna
     public void apply(Project project) {
         addMavenCentral(project);
         configureDependencySubstitutions(project);
+        configureResolutionStrategy(project);
         configureDependencyCaching(project);
+    }
+
+    private static void configureResolutionStrategy(Project project) {
+        project.getConfigurations().all(conf -> conf.resolutionStrategy(ResolutionStrategy::preferProjectModules));
     }
 
     private static void configureDependencyCaching(Project project) {
@@ -41,7 +47,7 @@ public class MicronautDependencyResolutionConfigurationPlugin implements Microna
 
     }
 
-    public void configureDependencySubstitutions(Project project) {
+    public static void configureDependencySubstitutions(Project project) {
         project.getGradle().settingsEvaluated(settings -> {
             MicronautBuildSettingsExtension buildSettingsExtension = settings.getExtensions().getByType(MicronautBuildSettingsExtension.class);
             project.getGradle().projectsEvaluated(unused -> project.getConfigurations().all(conf -> conf.getResolutionStrategy().dependencySubstitution(ds ->
