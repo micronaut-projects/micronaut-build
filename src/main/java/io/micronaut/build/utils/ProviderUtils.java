@@ -33,6 +33,7 @@ public class ProviderUtils {
     public static String envOrSystemProperty(ProviderFactory providers, String envName, String propertyName, String defaultValue) {
         return providers.environmentVariable(envName)
                 .orElse(providers.gradleProperty(propertyName))
+                .orElse(providers.systemProperty(propertyName))
                 .getOrElse(defaultValue);
     }
 }
