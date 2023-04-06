@@ -43,20 +43,12 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
         ProviderFactory providers = project.getProviders();
         TaskContainer tasks = project.getTasks();
         ExtensionContainer extensions = project.getExtensions();
-        plugins.apply(MicronautBuildExtensionPlugin.class);
-        configurePreReleaseCheck(project);
-        Object p = project.findProperty("micronautPublish");
-        // add option to skip publishing
-        if (p == null) {
-            if (project.getName().contains("doc") || project.getName().contains("example")) {
-                return;
-            }
-        } else {
-            boolean doPublish = Boolean.valueOf(p.toString()) == Boolean.TRUE;
-            if (!doPublish) {
-                return;
-            }
+        if (isPublishingDisabledFor(project)) {
+            return;
         }
+        plugins.apply(MicronautBuildExtensionPlugin.class);
+        MicronautBuildExtension micronautBuild = project.getExtensions().getByType(MicronautBuildExtension.class);
+        configurePreReleaseCheck(project);
         plugins.apply(MavenPublishPlugin.class);
         String ossUser = ProviderUtils.envOrSystemProperty(providers, "SONATYPE_USERNAME", "sonatypeOssUsername", "");
         String ossPass = ProviderUtils.envOrSystemProperty(providers, "SONATYPE_PASSWORD", "sonatypeOssPassword", "");
@@ -65,7 +57,6 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
             JavaPluginExtension javaPluginExtension = project.getExtensions().findByType(JavaPluginExtension.class);
             javaPluginExtension.withSourcesJar();
             javaPluginExtension.withJavadocJar();
-            MicronautBuildExtension micronautBuild = project.getExtensions().getByType(MicronautBuildExtension.class);
             micronautBuild.getEnvironment().duringMigration(() -> tasks.withType(Javadoc.class).configureEach(task -> {
                 // temporary workaround for broken docs in many modules
                 task.setFailOnError(false);
@@ -188,6 +179,24 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
             }
 
         }
+    }
+
+    private static boolean isPublishingDisabledFor(Project project) {
+        Object p = project.findProperty("micronautPublish");
+        // add option to skip publishing
+        if (p == null) {
+            if (project.getName().contains("doc") || project.getName().contains("example")) {
+                project.getLogger().info("Publishing is disabled for project {}", project.getName());
+                return true;
+            }
+        } else {
+            boolean doPublish = Boolean.valueOf(p.toString()) == Boolean.TRUE;
+            if (!doPublish) {
+                project.getLogger().info("Publishing is explicitly disabled for project {}", project.getName());
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean shouldSign(Project project) {

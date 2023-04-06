@@ -25,8 +25,10 @@ class MicronautBaseModulePlugin implements Plugin<Project> {
         project.pluginManager.apply(MicronautBinaryCompatibilityPlugin)
         configureJUnit(project)
         assertSettingsPluginApplied(project)
-        PomCheckerUtils.registerPomChecker("checkPom", project, project.extensions.findByType(PublishingExtension)) {
-            it.suppressions.convention(project.extensions.getByType(MicronautBuildExtension).bomSuppressions)
+        project.pluginManager.withPlugin("maven-publish") {
+            PomCheckerUtils.registerPomChecker("checkPom", project, project.extensions.findByType(PublishingExtension)) {
+                it.suppressions.convention(project.extensions.getByType(MicronautBuildExtension).bomSuppressions)
+            }
         }
     }
 
