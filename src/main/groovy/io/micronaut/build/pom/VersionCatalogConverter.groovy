@@ -22,6 +22,8 @@ import java.util.function.Consumer
  */
 @Canonical
 class VersionCatalogConverter {
+    public static final String MAIN_ALIASES_SOURCE = "BOM build file or main version catalog"
+
     final File catalogFile
     final CatalogPluginExtension catalogExtension
     final Map<String, String> extraVersions = [:]
@@ -53,7 +55,9 @@ class VersionCatalogConverter {
     void populateModel() {
         catalogExtension.versionCatalog {builder ->
             Set<String> knownAliases = []
+            Set<String> knwonVersionAliases = []
             extraVersions.forEach { alias, version ->
+                knwonVersionAliases.add(alias)
                 builder.version(alias, version)
             }
             extraLibraries.forEach { alias, library ->
@@ -63,7 +67,9 @@ class VersionCatalogConverter {
             }
             model.versionsTable.each { version ->
                 if (version.reference.startsWith('managed-')) {
-                    builder.version(version.reference.substring(8), version.version.require)
+                    def alias = version.reference.substring(8)
+                    knownAliases.add(alias)
+                    builder.version(alias, version.version.require)
                 }
             }
             model.librariesTable.each { library ->
@@ -79,7 +85,14 @@ class VersionCatalogConverter {
                 }
             }
             afterBuildingModel.each {
-                it.accept(new BuilderState(builder, knownAliases))
+                BuilderState builderState = new BuilderState(builder)
+                knownAliases.each {
+                    builderState.knownAliases.get(it).addSource(MAIN_ALIASES_SOURCE)
+                }
+                knwonVersionAliases.each {
+                    builderState.knownVersionAliases.get(it).addSource(MAIN_ALIASES_SOURCE);
+                }
+                it.accept(builderState)
             }
         }
     }
@@ -98,6 +111,32 @@ class VersionCatalogConverter {
     @Canonical
     static class BuilderState {
         final VersionCatalogBuilder builder
-        final Set<String> knownAliases
+        final Map<String, AliasRecord> knownAliases = [:].withDefault { String alias ->
+            new AliasRecord(alias)
+        }
+        final Map<String, AliasRecord> knownVersionAliases = [:].withDefault { String alias ->
+            new AliasRecord(alias)
+        }
+    }
+
+    static class AliasRecord {
+        final String alias
+        private final Set<String> sources = []
+
+        AliasRecord(String alias) {
+            this.alias = alias
+        }
+
+        void addSource(String source) {
+            sources << source
+        }
+
+        Set<String> getSources() {
+            Collections.unmodifiableSet(sources)
+        }
+
+        String toString() {
+            alias
+        }
     }
 }
