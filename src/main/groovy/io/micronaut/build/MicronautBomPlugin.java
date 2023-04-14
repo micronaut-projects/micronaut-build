@@ -20,6 +20,7 @@ import groovy.util.Node;
 import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
 import io.micronaut.build.catalogs.internal.Library;
 import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
+import io.micronaut.build.catalogs.internal.VersionModel;
 import io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin;
 import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.pom.PomChecker;
@@ -63,6 +64,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -347,22 +349,57 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                                            SetProperty<String> excludedInlinedAliases) {
         if (inlineNestedCatalogs.get()) {
             VersionCatalogBuilder builder = builderState.getBuilder();
-            Set<String> knownAliases = builderState.getKnownAliases();
+            Map<String, VersionCatalogConverter.AliasRecord> knownAliases = builderState.getKnownAliases();
+            Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases = builderState.getKnownVersionAliases();
             Set<String> excludeFromInlining = excludedInlinedAliases.get();
             catalogs.forEach(catalogFile -> {
                         try (FileInputStream fis = new FileInputStream(catalogFile)) {
                             LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
                             parser.parse(fis);
                             Set<Library> librariesTable = parser.getModel().getLibrariesTable();
+                            Set<VersionModel> versionsTable = parser.getModel().getVersionsTable();
                             librariesTable.forEach(library -> {
                                 String alias = library.getAlias();
                                 if (!excludeFromInlining.contains(alias)) {
-                                    if (knownAliases.add(alias)) {
-                                        builder.library(alias, library.getGroup(), library.getName())
-                                                .withoutVersion();
+                                    String source = catalogFile.getName();
+                                    if (!knownAliases.containsKey(alias)) {
+                                        String reference = library.getVersion().getReference();
+                                        String version = null;
+                                        if (reference != null) {
+                                            version = reference;
+                                            if (!knownVersionAliases.containsKey(reference)) {
+                                                builder.version(reference, versionsTable.stream().filter(m -> reference.equals(m.getReference())).findFirst().get().getVersion().getRequire());
+                                            } else {
+                                                Set<String> sources = knownVersionAliases.get(reference).getSources();
+                                                if (!sources.equals(Collections.singleton(source))) {
+                                                    System.err.println("[Warning] While inlining " + source + ", version alias '" + alias + "' is already defined in the catalog by " + sources + " so it won't be imported");
+                                                }
+                                            }
+                                            knownVersionAliases.get(reference).addSource(source);
+                                        }
+                                        VersionCatalogBuilder.LibraryAliasBuilder libraryBuilder = builder.library(alias, library.getGroup(), library.getName());
+                                        if (version != null ) {
+                                            libraryBuilder.versionRef(reference);
+                                        } else {
+                                            libraryBuilder.withoutVersion();
+                                        }
                                     } else {
-                                        System.err.println("[Warning] While inlining " + catalogFile.getName() + ", alias '" + alias + "' is already defined in the catalog so it won't be imported");
+                                        VersionCatalogConverter.AliasRecord record = knownAliases.get(alias);
+                                        // There is one case where we don't want to warn: the main BOM file will have
+                                        // managed version for all Micronaut BOM files, but the version catalogs of these
+                                        // imported files will also have an alias with the same name
+                                        boolean warn = true;
+                                        if (source.startsWith("micronaut-") && source.contains("-bom")) {
+                                            String shortName = source.substring(0, source.indexOf("-bom"));
+                                            if (alias.equals(shortName) && record.getSources().equals(Collections.singleton(VersionCatalogConverter.MAIN_ALIASES_SOURCE))) {
+                                                warn = false;
+                                            }
+                                        }
+                                        if (warn) {
+                                            System.err.println("[Warning] While inlining " + source + ", alias '" + alias + "' is already defined in the catalog by " + record.getSources() + " so it won't be imported");
+                                        }
                                     }
+                                    knownAliases.get(alias).addSource(source);
                                 }
                             });
                         } catch (IOException e) {
