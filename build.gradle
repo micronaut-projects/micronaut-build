@@ -49,7 +49,6 @@ dependencies {
     implementation libs.commons.lang3
     implementation libs.snakeyaml
     implementation libs.grails.gdoc
-    implementation libs.groovydoc.plugin
     implementation libs.asciidoctorj
     implementation libs.spotless.plugin
     implementation libs.testlogger.plugin

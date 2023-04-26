@@ -13,7 +13,7 @@ import org.gradle.api.tasks.diagnostics.DependencyReportTask
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.groovy.lang.groovydoc.tasks.GroovydocTask
+import org.gradle.api.tasks.javadoc.Groovydoc
 
 import static io.micronaut.build.BomSupport.coreBomArtifactId
 import static io.micronaut.build.utils.VersionHandling.versionProviderOrDefault
@@ -97,7 +97,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             })
         }
 
-        project.tasks.withType(GroovydocTask).configureEach {
+        project.tasks.withType(Groovydoc).configureEach {
             classpath += project.configurations.documentation
         }
     }
