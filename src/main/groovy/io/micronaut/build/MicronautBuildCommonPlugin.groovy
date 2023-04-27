@@ -11,7 +11,7 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.diagnostics.DependencyReportTask
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
-import org.groovy.lang.groovydoc.tasks.GroovydocTask
+import org.gradle.api.tasks.javadoc.Groovydoc
 
 import static io.micronaut.build.util.VersionHandling.versionOrDefault
 /**
@@ -83,7 +83,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         }
 
 
-        project.tasks.withType(GroovydocTask).configureEach {
+        project.tasks.withType(Groovydoc).configureEach {
             classpath += project.configurations.documentation
         }
     }
