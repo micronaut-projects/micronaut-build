@@ -47,6 +47,12 @@ public class MicronautGradleEnterprisePlugin implements Plugin<Settings> {
         pluginManager.apply(MicronautBuildSettingsPlugin.class);
         pluginManager.apply(GradleEnterprisePlugin.class);
         pluginManager.apply(CommonCustomUserDataGradlePlugin.class);
+        Provider<String> projectGroup = settings.getProviders().gradleProperty("projectGroup");
+        if (projectGroup.isPresent() && !projectGroup.get().startsWith("io.micronaut")) {
+            // Do not apply the Gradle Enterprise plugin if the project doesn't belong to
+            // our own group
+            return;
+        }
         GradleEnterpriseExtension ge = settings.getExtensions().getByType(GradleEnterpriseExtension.class);
         MicronautBuildSettingsExtension micronautBuildSettingsExtension = settings.getExtensions().getByType(MicronautBuildSettingsExtension.class);
         configureGradleEnterprise(settings, ge, micronautBuildSettingsExtension);
