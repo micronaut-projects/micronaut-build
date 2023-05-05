@@ -18,6 +18,7 @@ import org.gradle.api.tasks.javadoc.Groovydoc
 
 import static io.micronaut.build.BomSupport.coreBomArtifactId
 import static io.micronaut.build.utils.VersionHandling.versionProviderOrDefault
+
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
@@ -76,15 +77,15 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             project.configurations.testAnnotationProcessor.dependencies.addAllLater(injectGroovyIfProcessingEnabled)
 
             dependencies.addProvider("documentation", groovyGroupProvider.zip(groovyVersionProvider) { groovyGroup, groovyVersion ->
-               "$groovyGroup:groovy-templates:$groovyVersion"
+                "$groovyGroup:groovy-templates:$groovyVersion"
             })
             dependencies.addProvider("documentation", groovyGroupProvider.zip(groovyVersionProvider) { groovyGroup, groovyVersion ->
-               "$groovyGroup:groovy-dateutil:$groovyVersion"
+                "$groovyGroup:groovy-dateutil:$groovyVersion"
             })
             dependencies.addProvider("testCompileOnly", micronautVersionProvider.map { micronautVersion ->
                 "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
             })
-            dependencies.addProvider("testImplementation",groovyGroupProvider.zip(groovyVersionProvider) { groovyGroup, groovyVersion ->
+            dependencies.addProvider("testImplementation", groovyGroupProvider.zip(groovyVersionProvider) { groovyGroup, groovyVersion ->
                 "$groovyGroup:groovy-test:$groovyVersion"
             })
             dependencies.addProvider("testImplementation", byteBuddyVersionProvider.map {
@@ -148,6 +149,9 @@ You can do this directly in the project, or, better, in a convention plugin if i
             }
             predictiveSelection {
                 enabled = micronautBuildExtension.environment.isTestSelectionEnabled()
+            }
+            distribution {
+                enabled = false
             }
         }
 
