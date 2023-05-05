@@ -52,15 +52,19 @@ public class BuildEnvironment {
         // an environment variable is explicitly configured and set to true
         // or a system property is explicitly configured and set to true
         // or it's a local build
-        return providers.environmentVariable(PREDICTIVE_TEST_SELECTION_ENV_VAR)
-                .orElse(providers.systemProperty(PREDICTIVE_TEST_SELECTION_SYSPROP))
-                .map(it -> {
-                    if (it.trim().length() > 0) {
-                        return Boolean.parseBoolean(it);
-                    }
-                    return false;
-                })
-                .orElse(isNotGithubAction());
+        Provider<String> projectGroup = providers.gradleProperty("projectGroup");
+        if (projectGroup.isPresent() && projectGroup.get().startsWith("io.micronaut")) {
+            return providers.environmentVariable(PREDICTIVE_TEST_SELECTION_ENV_VAR)
+                    .orElse(providers.systemProperty(PREDICTIVE_TEST_SELECTION_SYSPROP))
+                    .map(it -> {
+                        if (it.trim().length() > 0) {
+                            return Boolean.parseBoolean(it);
+                        }
+                        return false;
+                    })
+                    .orElse(isNotGithubAction());
+        }
+        return providers.provider(() -> false);
     }
 
     public void duringMigration(Runnable action) {
