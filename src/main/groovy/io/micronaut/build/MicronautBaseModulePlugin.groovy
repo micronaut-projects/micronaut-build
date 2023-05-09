@@ -39,6 +39,9 @@ class MicronautBaseModulePlugin implements Plugin<Project> {
     }
 
     static void assertSettingsPluginApplied(Project project) {
+        if (project.name == "gradle-kotlin-dsl-accessors") {
+            return
+        }
         project.gradle.sharedServices.registerIfAbsent(InternalStateCheckingService.NAME, InternalStateCheckingService) { BuildServiceSpec<InternalStateCheckingService.Params> spec ->
             spec.parameters.registeredByProjectPlugin.set(true)
         }.get()
