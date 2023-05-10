@@ -68,7 +68,6 @@ class VersionCatalogConverter {
             model.versionsTable.each { version ->
                 if (version.reference.startsWith('managed-')) {
                     def alias = version.reference.substring(8)
-                    knownAliases.add(alias)
                     builder.version(alias, version.version.require)
                 }
             }
