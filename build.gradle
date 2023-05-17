@@ -170,8 +170,8 @@ gradlePlugin {
 java {
     withJavadocJar()
     withSourcesJar()
-    sourceCompatibility = 8
-    targetCompatibility = 8
+    sourceCompatibility = 17
+    targetCompatibility = 17
 }
 
 def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''

@@ -45,7 +45,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         }
         def byteBuddyVersionProvider = versionProviderOrDefault(project, 'bytebuddy', '1.12.18')
         def objenesisVersionProvider = versionProviderOrDefault(project, 'objenesis', '3.1')
-        def logbackVersionProvider = versionProviderOrDefault(project, 'logback', '1.2.3')
+        def logbackVersionProvider = versionProviderOrDefault(project, 'logback', List.of("mnLogging", "libs"), '')
 
         project.configurations {
             documentation
