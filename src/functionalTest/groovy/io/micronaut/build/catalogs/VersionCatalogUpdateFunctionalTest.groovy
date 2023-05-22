@@ -54,9 +54,6 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
                 }        
             }
         """
-        settingsFile << """
-            enableFeaturePreview("VERSION_CATALOGS")
-        """
     }
 
     def cleanup() {
