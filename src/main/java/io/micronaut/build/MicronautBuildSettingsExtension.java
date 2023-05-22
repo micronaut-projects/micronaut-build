@@ -87,6 +87,7 @@ public abstract class MicronautBuildSettingsExtension {
     private final Settings settings;
     private final String micronautVersion;
     private final String micronautTestVersion;
+    private final String micronautLoggingVersion;
     private final VersionCatalogTomlModel versionCatalogTomlModel;
 
     @Inject
@@ -100,6 +101,7 @@ public abstract class MicronautBuildSettingsExtension {
         this.versionCatalogTomlModel = loadVersionCatalogTomlModel();
         this.micronautVersion = determineMicronautVersion();
         this.micronautTestVersion = determineMicronautTestVersion();
+        this.micronautLoggingVersion = determineMicronautLoggingVersion();
     }
 
     private VersionCatalogTomlModel loadVersionCatalogTomlModel() {
@@ -129,6 +131,10 @@ public abstract class MicronautBuildSettingsExtension {
 
     private String determineMicronautTestVersion() {
         return determineMicronautVersion("micronaut-test");
+    }
+
+    private String determineMicronautLoggingVersion() {
+        return determineMicronautVersion("micronaut-logging");
     }
 
     private String determineMicronautVersion(String moduleNameKebabCase) {
@@ -172,6 +178,18 @@ public abstract class MicronautBuildSettingsExtension {
                         mgmt.getVersionCatalogs().create("mnTest", catalog -> catalog.from("io.micronaut.test:micronaut-test-bom:" + micronautTestVersion));
                     } else {
                         LOGGER.warn("Version catalog 'mnTest' can be automatically imported. You can remove it from settings.gradle(.kts) file.");
+                    }
+                });
+            });
+        }
+        if (micronautLoggingVersion != null) {
+            settings.getGradle().settingsEvaluated(unused -> {
+                settings.dependencyResolutionManagement(mgmt -> {
+                    configureRepositories(mgmt);
+                    if (mgmt.getVersionCatalogs().findByName("mnLogging") == null) {
+                        mgmt.getVersionCatalogs().create("mnLogging", catalog -> catalog.from("io.micronaut.logging:micronaut-logging-bom:" + micronautLoggingVersion));
+                    } else {
+                        LOGGER.warn("Version catalog 'mnLogging' can be automatically imported. You can remove it from settings.gradle(.kts) file.");
                     }
                 });
             });

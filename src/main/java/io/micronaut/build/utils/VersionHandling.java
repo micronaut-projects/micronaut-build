@@ -20,11 +20,17 @@ import org.gradle.api.artifacts.VersionCatalogsExtension;
 import org.gradle.api.artifacts.VersionConstraint;
 import org.gradle.api.provider.Provider;
 
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class VersionHandling {
+    private static final List<String> DEFAULT_CATALOGS = Collections.singletonList("libs");
+
     /**
      * Returns a version defined in the catalog. If not found,
      * looks for a property (typically declared in gradle.properties).
@@ -32,12 +38,24 @@ public class VersionHandling {
     private static String versionOrDefault(
             Project project,
             String alias,
+            List<String> catalogNames,
             String defaultVersion) {
         VersionCatalogsExtension catalogs = project.getExtensions().findByType(VersionCatalogsExtension.class);
         if (catalogs == null) {
             return projectProperty(project, alias, defaultVersion);
         }
-        return catalogs.find("libs")
+        Optional<String> version = Optional.empty();
+        Deque<String> deque = new ArrayDeque<>(catalogNames);
+        String catalogName;
+        while ((catalogName = deque.poll()) != null) {
+            String currentCatalog = catalogName;
+            version = version.or(() -> findVersionInCatalog(currentCatalog, alias, catalogs));
+        }
+        return version.orElseGet(() -> projectProperty(project, alias, defaultVersion));
+    }
+
+    private static Optional<String> findVersionInCatalog(String catalogName, String alias, VersionCatalogsExtension catalogs) {
+        return catalogs.find(catalogName)
                 .flatMap(catalog -> {
                     Optional<VersionConstraint> version = catalog.findVersion(alias);
                     if (version.isPresent()) {
@@ -45,8 +63,7 @@ public class VersionHandling {
                     }
                     return catalog.findVersion("managed." + alias);
                 })
-                .map(VersionConstraint::getRequiredVersion)
-                .orElseGet(() -> projectProperty(project, alias, defaultVersion));
+                .map(VersionConstraint::getRequiredVersion);
     }
 
     /**
@@ -57,7 +74,19 @@ public class VersionHandling {
             Project project,
             String alias,
             String defaultVersion) {
-        return project.provider(() -> versionOrDefault(project, alias, defaultVersion));
+        return project.provider(() -> versionOrDefault(project, alias, DEFAULT_CATALOGS, defaultVersion));
+    }
+
+    /**
+     * Returns a version provider defined in the catalog. If not found,
+     * looks for a property (typically declared in gradle.properties).
+     */
+    public static Provider<String> versionProviderOrDefault(
+            Project project,
+            String alias,
+            List<String> catalogNames,
+            String defaultVersion) {
+        return project.provider(() -> versionOrDefault(project, alias, catalogNames, defaultVersion));
     }
 
     private static String propertyNameFor(String alias) {

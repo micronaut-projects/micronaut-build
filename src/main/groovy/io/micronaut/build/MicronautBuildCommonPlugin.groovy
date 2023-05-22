@@ -43,9 +43,9 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     'org.codehaus.groovy' :
                     'org.apache.groovy'
         }
-        def byteBuddyVersionProvider = versionProviderOrDefault(project, 'bytebuddy', '1.12.18')
-        def objenesisVersionProvider = versionProviderOrDefault(project, 'objenesis', '3.1')
-        def logbackVersionProvider = versionProviderOrDefault(project, 'logback', '1.2.3')
+        def byteBuddyVersionProvider = versionProviderOrDefault(project, 'bytebuddy', List.of("libs", "mnTest"), '')
+        def objenesisVersionProvider = versionProviderOrDefault(project, 'objenesis', List.of("libs", "mnTest"),'')
+        def logbackVersionProvider = versionProviderOrDefault(project, 'logback', List.of("libs", "mnLogging"), '')
 
         project.configurations {
             documentation
@@ -89,19 +89,26 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 "$groovyGroup:groovy-test:$groovyVersion"
             })
             dependencies.addProvider("testImplementation", byteBuddyVersionProvider.map {
-                "net.bytebuddy:byte-buddy:$it"
+                optionalDependency("net.bytebuddy:byte-buddy", it)
             })
             dependencies.addProvider("testImplementation", objenesisVersionProvider.map {
-                "org.objenesis:objenesis:$it"
+                optionalDependency("org.objenesis:objenesis", it)
             })
             dependencies.addProvider("testRuntimeOnly", logbackVersionProvider.map {
-                "ch.qos.logback:logback-classic:$it"
+                optionalDependency("ch.qos.logback:logback-classic", it)
             })
         }
 
         project.tasks.withType(Groovydoc).configureEach {
             classpath += project.configurations.documentation
         }
+    }
+
+    private static String optionalDependency(String groupArtifact, String version) {
+        if (version == null || version.empty) {
+            return null
+        }
+        "${groupArtifact}:$version"
     }
 
     @SuppressWarnings('GrDeprecatedAPIUsage')
