@@ -1,3 +1,5 @@
+import io.micronaut.internal.VersionsWriterTask
+
 plugins {
     id 'groovy-gradle-plugin'
     id 'groovy'
@@ -100,6 +102,14 @@ tasks.named('jar', Jar) {
     from docFilesJar
 }
 
+def generateVersions = tasks.register("generateVersions", VersionsWriterTask) {
+    versions.put("bytebuddy", libs.versions.bytebuddy)
+    versions.put("objenesis", libs.versions.objenesis)
+    className = "io.micronaut.build.utils.DefaultVersions"
+    outputDirectory = layout.buildDirectory.dir("generated/versions")
+}
+
+sourceSets.main.java.srcDir(generateVersions)
 
 gradlePlugin {
     // Define the plugins
