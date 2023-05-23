@@ -1,6 +1,7 @@
 package io.micronaut.build
 
 import com.diffplug.gradle.spotless.SpotlessTask
+import io.micronaut.build.utils.DefaultVersions
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -43,8 +44,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     'org.codehaus.groovy' :
                     'org.apache.groovy'
         }
-        def byteBuddyVersionProvider = versionProviderOrDefault(project, 'bytebuddy', List.of("libs", "mnTest"), '')
-        def objenesisVersionProvider = versionProviderOrDefault(project, 'objenesis', List.of("libs", "mnTest"),'')
+        def byteBuddyVersionProvider = versionProviderOrDefault(project, 'bytebuddy', List.of("libs", "mnTest"), DefaultVersions.BYTEBUDDY_VERSION)
+        def objenesisVersionProvider = versionProviderOrDefault(project, 'objenesis', List.of("libs", "mnTest"), DefaultVersions.OBJENESIS_VERSION)
         def logbackVersionProvider = versionProviderOrDefault(project, 'logback', List.of("libs", "mnLogging"), '')
 
         project.configurations {
