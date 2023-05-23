@@ -255,8 +255,12 @@ afterEvaluate {
         pub.pom pomInfo
     }
 
-    tasks.withType(Sign) {
+    tasks.withType(Sign).configureEach {
         onlyIf { !project.version.endsWith("-SNAPSHOT") }
+    }
+
+    tasks.withType(PublishToMavenRepository).configureEach {
+        mustRunAfter(tasks.withType(Sign))
     }
 }
 
