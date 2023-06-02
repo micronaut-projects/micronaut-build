@@ -46,6 +46,10 @@ public abstract class PomCheckerUtils {
             ArtifactRepository repo = publishing.getRepositories().findByName("Build");
             if (repo instanceof MavenArtifactRepository) {
                 repoUrl = ((MavenArtifactRepository) repo).getUrl().toString();
+                try {
+                    // try to relativize to allow cache relocatability
+                    repoUrl = project.relativePath(repoUrl);
+                } catch(IllegalArgumentException ignored) {}
             }
             task.getRepositories().add(repoUrl);
             project.getRepositories().forEach(r -> {
