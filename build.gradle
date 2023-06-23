@@ -60,9 +60,6 @@ dependencies {
     implementation "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.4.0.2513"
     implementation('com.lowagie:itext:2.0.8')
     implementation 'org.jsoup:jsoup:1.15.3'
-    implementation('org.xhtmlrenderer:core-renderer:8.0') {
-        exclude group: 'bouncycastle', module:'bcprov-jdk14'
-    }
 
     implementation 'com.gradle:gradle-enterprise-gradle-plugin:3.13'
     implementation 'org.nosphere.gradle.github:gradle-github-actions-plugin:1.3.2'
