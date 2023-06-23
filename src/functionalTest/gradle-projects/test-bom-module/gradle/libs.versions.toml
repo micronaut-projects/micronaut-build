@@ -1,7 +1,7 @@
 [versions]
 asm = "9.5"
 
-managed-dekorate = "1.0.3"
+managed-dekorate = "3.7.0"
 managed-micronaut-aws = "3.1.1"
 
 [libraries]
