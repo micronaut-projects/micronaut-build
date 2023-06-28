@@ -64,7 +64,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
             project.getPluginManager().withPlugin("java-library", alsoUnused -> {
                 TaskProvider<FindBaselineTask> baselineTask = registerFindBaselineTask(project, binaryCompatibility, tasks, providers);
                 Provider<String> baseline = createBaselineProvider(binaryCompatibility, providers, baselineTask);
-                String groupAndArtifact = project.getGroup() + ":" + moduleNameOf(project.getName());
+                String groupAndArtifact = findGroupOf(project) + ":" + moduleNameOf(project.getName());
                 Configuration oldClasspath = rootProjectConfigurations.detachedConfiguration();
                 Configuration oldJar = rootProjectConfigurations.detachedConfiguration();
                 oldClasspath.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(groupAndArtifact + ":" + version)));
@@ -111,7 +111,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 TaskProvider<FindBaselineTask> baselineTask = registerFindBaselineTask(project, binaryCompatibility, tasks, providers);
                 Provider<String> baseline = createBaselineProvider(binaryCompatibility, providers, baselineTask);
                 Configuration baselineConfig = rootProjectConfigurations.detachedConfiguration();
-                baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(project.getGroup() + ":" + moduleNameOf(project.getName()) + ":" + version + "@toml")));
+                baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(findGroupOf(project) + ":" + moduleNameOf(project.getName()) + ":" + version + "@toml")));
                 TaskProvider<VersionCatalogCompatibilityCheck> compatibilityCheckTaskProvider = tasks.register("checkVersionCatalogCompatibility", VersionCatalogCompatibilityCheck.class, task -> {
                     task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
                     if (binaryCompatibility.getBaselineVersion().isPresent()) {
@@ -131,6 +131,11 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
         });
     }
 
+    private static String findGroupOf(Project project) {
+        ProviderFactory providers = project.getProviders();
+        return providers.gradleProperty("projectGroupId").orElse(providers.gradleProperty("projectGroup")).getOrElse(project.getGroup().toString());
+    }
+
     private Provider<String> createBaselineProvider(BinaryCompatibibilityExtension binaryCompatibility, ProviderFactory providers, TaskProvider<FindBaselineTask> baselineTask) {
         return binaryCompatibility.getBaselineVersion().orElse(
                 providers.fileContents(baselineTask.flatMap(FindBaselineTask::getPreviousVersion))
@@ -141,7 +146,10 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
     private TaskProvider<FindBaselineTask> registerFindBaselineTask(Project project, BinaryCompatibibilityExtension binaryCompatibility, TaskContainer tasks, ProviderFactory providers) {
         Provider<ExternalURLService> downloader = ExternalURLService.registerOn(project);
         return tasks.register("findBaseline", FindBaselineTask.class, task -> {
-            task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
+            task.onlyIf(t ->
+                binaryCompatibility.getEnabled().getOrElse(true) &&
+                !binaryCompatibility.getBaselineVersion().isPresent()
+            );
             task.usesService(downloader);
             task.getDownloader().set(downloader);
             task.getBaseRepository().convention("https://repo1.maven.org/maven2");
