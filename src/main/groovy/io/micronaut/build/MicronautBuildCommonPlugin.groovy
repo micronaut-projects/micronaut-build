@@ -173,8 +173,8 @@ You can do this directly in the project, or, better, in a convention plugin if i
                 options.encoding = "UTF-8"
                 options.compilerArgs.add('-parameters')
                 if (micronautBuildExtension.enableProcessing.get()) {
-                    options.compilerArgs.add("-Amicronaut.processing.group=$project.group")
-                    options.compilerArgs.add("-Amicronaut.processing.module=micronaut-$project.name")
+                    options.compilerArgs.add("-Amicronaut.processing.group=$project.group".toString())
+                    options.compilerArgs.add("-Amicronaut.processing.module=micronaut-$project.name".toString())
                 }
                 compileOptions.applyTo(options)
             }
