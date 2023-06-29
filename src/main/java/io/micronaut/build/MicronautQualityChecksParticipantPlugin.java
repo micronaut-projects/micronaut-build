@@ -7,6 +7,7 @@ import org.gradle.api.plugins.quality.CheckstyleExtension;
 import org.gradle.api.plugins.quality.CheckstylePlugin;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.testing.jacoco.plugins.JacocoPlugin;
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension;
@@ -14,6 +15,8 @@ import org.sonarqube.gradle.SonarExtension;
 import org.sonarqube.gradle.SonarTask;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> {
 
@@ -51,8 +54,19 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
                         task.dependsOn("spotlessCheck")
                 );
             });
+            project.getTasks().withType(JavaCompile.class).configureEach(compileTask -> {
+                var options = compileTask.getOptions();
+                // workaround for ClassCastException in Sonar
+                List<String> optionsAsString = new ArrayList<>();
+                for (Object compilerArg : options.getCompilerArgs()) {
+                    optionsAsString.add(compilerArg.toString());
+                }
+                options.setCompilerArgs(optionsAsString);
+            });
             project.getRootProject().getPluginManager().withPlugin("org.sonarqube", sq -> {
-                project.getRootProject().getTasks().withType(SonarTask.class).configureEach(t -> t.dependsOn(checkstyleMain));
+                project.getRootProject().getTasks().withType(SonarTask.class).configureEach(t -> {
+                    t.dependsOn(checkstyleMain);
+                });
             });
         });
     }
