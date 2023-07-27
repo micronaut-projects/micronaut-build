@@ -36,9 +36,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -62,6 +64,7 @@ public abstract class MicronautBuildSettingsExtension {
      * This makes it cleaner for publications, since the project name will match
      * the publication artifact id, making it easier to use composite builds.
      * Defaults to false.
+     *
      * @return the standardized project names property
      */
     public abstract Property<Boolean> getUseStandardizedProjectNames();
@@ -69,6 +72,7 @@ public abstract class MicronautBuildSettingsExtension {
     /**
      * Configures a list of project path prefixes which correspond to projects which do
      * not use the "standard" project naming convention (e.g `examples:`).
+     *
      * @return the list of non-standard project path prefixes
      */
     public abstract ListProperty<String> getNonStandardProjectPathPrefixes();
@@ -76,6 +80,7 @@ public abstract class MicronautBuildSettingsExtension {
     /**
      * Configures a list of project name prefixes which correspond to projects which do
      * not use the "standard" project naming convention (e.g `test-suite-`).
+     *
      * @return the list of non-standard project path prefixes
      */
     public abstract ListProperty<String> getNonStandardProjectNamePrefixes();
@@ -102,6 +107,35 @@ public abstract class MicronautBuildSettingsExtension {
         this.micronautVersion = determineMicronautVersion();
         this.micronautTestVersion = determineMicronautTestVersion();
         this.micronautLoggingVersion = determineMicronautLoggingVersion();
+        settings.getDependencyResolutionManagement().getVersionCatalogs().configureEach(catalog -> {
+            var prefix = "override." + catalog.getName() + ".";
+            var provider = providers.gradlePropertiesPrefixedBy(prefix);
+            if (provider.isPresent()) {
+                for (Map.Entry<String, String> entry : provider.get().entrySet()) {
+                    var key = entry.getKey().substring(prefix.length());
+                    var version = entry.getValue();
+                    catalog.version(key, version);
+                    LOGGER.info("Overriding {} version to {}", key, version);
+                }
+            }
+            var overrideFile = providers.gradleProperty("override.file." + catalog.getName());
+            if (overrideFile.isPresent()) {
+                try {
+                    List<String> overrides = Files.readAllLines(Path.of(overrideFile.get()));
+                    for (String override : overrides) {
+                        var entry = override.split("=");
+                        if (entry.length == 2) {
+                            var key = entry[0].trim();
+                            var version = entry[1].trim();
+                            catalog.version(key, version);
+                            LOGGER.info("Overriding {} version to {}", key, version);
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
     }
 
     private VersionCatalogTomlModel loadVersionCatalogTomlModel() {
