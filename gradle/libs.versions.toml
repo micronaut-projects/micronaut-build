@@ -1,5 +1,5 @@
 [versions]
-asciidoctorj = "2.5.8"
+asciidoctorj = "2.5.10"
 commons-lang3 = "3.13.0"
 japicmp-plugin = "0.4.1"
 gradle-custom-userdata-plugin = "1.11.1"
