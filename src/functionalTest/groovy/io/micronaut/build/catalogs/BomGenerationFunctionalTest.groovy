@@ -23,46 +23,47 @@ class BomGenerationFunctionalTest extends AbstractFunctionalTest {
 format.version = "1.1"
 
 [versions]
-dekorate = "1.0.3"
-micronaut-aws = "3.1.1"
-micronaut-aws-alexa = "3.1.1"
-micronaut-aws-alexa-httpserver = "3.1.1"
-micronaut-aws-bom = "3.1.1"
-micronaut-aws-common = "3.1.1"
-micronaut-aws-distributed-configuration = "3.1.1"
-micronaut-aws-parameter-store = "3.1.1"
-micronaut-aws-sdk-v1 = "3.1.1"
-micronaut-aws-sdk-v2 = "3.1.1"
-micronaut-aws-secretsmanager = "3.1.1"
-micronaut-aws-service-discovery = "3.1.1"
-micronaut-function-aws = "3.1.1"
-micronaut-function-aws-alexa = "3.1.1"
-micronaut-function-aws-api-proxy = "3.1.1"
-micronaut-function-aws-api-proxy-test = "3.1.1"
-micronaut-function-aws-custom-runtime = "3.1.1"
-micronaut-function-aws-test = "3.1.1"
-micronaut-function-client-aws = "3.1.1"
+alexa-ask-sdk = "2.71.0"
+aws-java-sdk-v1 = "1.12.505"
+aws-java-sdk-v2 = "2.20.102"
+aws-lambda = "1.2.2"
+aws-lambda-events = "3.11.2"
+aws-lambda-java-serialization = "1.1.2"
+dekorate = "3.7.0"
+micronaut-aws = "4.0.1"
 micronaut-test-bom-module = "1.2.3"
 
 [libraries]
+alexa-ask-sdk = {group = "com.amazon.alexa", name = "ask-sdk", version.ref = "alexa-ask-sdk" }
+alexa-ask-sdk-core = {group = "com.amazon.alexa", name = "ask-sdk-core", version.ref = "alexa-ask-sdk" }
+alexa-ask-sdk-lambda = {group = "com.amazon.alexa", name = "ask-sdk-lambda-support", version.ref = "alexa-ask-sdk" }
+aws-java-sdk-core = {group = "com.amazonaws", name = "aws-java-sdk-core", version.ref = "aws-java-sdk-v1" }
+aws-lambda-core = {group = "com.amazonaws", name = "aws-lambda-java-core", version.ref = "aws-lambda" }
+aws-lambda-events = {group = "com.amazonaws", name = "aws-lambda-java-events", version.ref = "aws-lambda-events" }
+aws-lambda-java-serialization = {group = "com.amazonaws", name = "aws-lambda-java-serialization", version.ref = "aws-lambda-java-serialization" }
+awssdk-secretsmanager = {group = "software.amazon.awssdk", name = "secretsmanager", version.ref = "aws-java-sdk-v2" }
 dekorate = {group = "io.dekorate", name = "dekorate-project", version.ref = "dekorate" }
-micronaut-aws-alexa = {group = "io.micronaut.aws", name = "micronaut-aws-alexa", version.ref = "micronaut-aws-alexa" }
-micronaut-aws-alexa-httpserver = {group = "io.micronaut.aws", name = "micronaut-aws-alexa-httpserver", version.ref = "micronaut-aws-alexa-httpserver" }
-micronaut-aws-bom = {group = "io.micronaut.aws", name = "micronaut-aws-bom", version.ref = "micronaut-aws-bom" }
-micronaut-aws-common = {group = "io.micronaut.aws", name = "micronaut-aws-common", version.ref = "micronaut-aws-common" }
-micronaut-aws-distributed-configuration = {group = "io.micronaut.aws", name = "micronaut-aws-distributed-configuration", version.ref = "micronaut-aws-distributed-configuration" }
-micronaut-aws-parameter-store = {group = "io.micronaut.aws", name = "micronaut-aws-parameter-store", version.ref = "micronaut-aws-parameter-store" }
-micronaut-aws-sdk-v1 = {group = "io.micronaut.aws", name = "micronaut-aws-sdk-v1", version.ref = "micronaut-aws-sdk-v1" }
-micronaut-aws-sdk-v2 = {group = "io.micronaut.aws", name = "micronaut-aws-sdk-v2", version.ref = "micronaut-aws-sdk-v2" }
-micronaut-aws-secretsmanager = {group = "io.micronaut.aws", name = "micronaut-aws-secretsmanager", version.ref = "micronaut-aws-secretsmanager" }
-micronaut-aws-service-discovery = {group = "io.micronaut.aws", name = "micronaut-aws-service-discovery", version.ref = "micronaut-aws-service-discovery" }
-micronaut-function-aws = {group = "io.micronaut.aws", name = "micronaut-function-aws", version.ref = "micronaut-function-aws" }
-micronaut-function-aws-alexa = {group = "io.micronaut.aws", name = "micronaut-function-aws-alexa", version.ref = "micronaut-function-aws-alexa" }
-micronaut-function-aws-api-proxy = {group = "io.micronaut.aws", name = "micronaut-function-aws-api-proxy", version.ref = "micronaut-function-aws-api-proxy" }
-micronaut-function-aws-api-proxy-test = {group = "io.micronaut.aws", name = "micronaut-function-aws-api-proxy-test", version.ref = "micronaut-function-aws-api-proxy-test" }
-micronaut-function-aws-custom-runtime = {group = "io.micronaut.aws", name = "micronaut-function-aws-custom-runtime", version.ref = "micronaut-function-aws-custom-runtime" }
-micronaut-function-aws-test = {group = "io.micronaut.aws", name = "micronaut-function-aws-test", version.ref = "micronaut-function-aws-test" }
-micronaut-function-client-aws = {group = "io.micronaut.aws", name = "micronaut-function-client-aws", version.ref = "micronaut-function-client-aws" }
+micronaut-aws-alexa = {group = "io.micronaut.aws", name = "micronaut-aws-alexa", version.ref = "micronaut-aws" }
+micronaut-aws-alexa-httpserver = {group = "io.micronaut.aws", name = "micronaut-aws-alexa-httpserver", version.ref = "micronaut-aws" }
+micronaut-aws-apigateway = {group = "io.micronaut.aws", name = "micronaut-aws-apigateway", version.ref = "micronaut-aws" }
+micronaut-aws-bom = {group = "io.micronaut.aws", name = "micronaut-aws-bom", version.ref = "micronaut-aws" }
+micronaut-aws-cloudwatch-logging = {group = "io.micronaut.aws", name = "micronaut-aws-cloudwatch-logging", version.ref = "micronaut-aws" }
+micronaut-aws-common = {group = "io.micronaut.aws", name = "micronaut-aws-common", version.ref = "micronaut-aws" }
+micronaut-aws-distributed-configuration = {group = "io.micronaut.aws", name = "micronaut-aws-distributed-configuration", version.ref = "micronaut-aws" }
+micronaut-aws-lambda-events-serde = {group = "io.micronaut.aws", name = "micronaut-aws-lambda-events-serde", version.ref = "micronaut-aws" }
+micronaut-aws-parameter-store = {group = "io.micronaut.aws", name = "micronaut-aws-parameter-store", version.ref = "micronaut-aws" }
+micronaut-aws-sdk-v1 = {group = "io.micronaut.aws", name = "micronaut-aws-sdk-v1", version.ref = "micronaut-aws" }
+micronaut-aws-sdk-v2 = {group = "io.micronaut.aws", name = "micronaut-aws-sdk-v2", version.ref = "micronaut-aws" }
+micronaut-aws-secretsmanager = {group = "io.micronaut.aws", name = "micronaut-aws-secretsmanager", version.ref = "micronaut-aws" }
+micronaut-aws-service-discovery = {group = "io.micronaut.aws", name = "micronaut-aws-service-discovery", version.ref = "micronaut-aws" }
+micronaut-aws-ua = {group = "io.micronaut.aws", name = "micronaut-aws-ua", version.ref = "micronaut-aws" }
+micronaut-function-aws = {group = "io.micronaut.aws", name = "micronaut-function-aws", version.ref = "micronaut-aws" }
+micronaut-function-aws-alexa = {group = "io.micronaut.aws", name = "micronaut-function-aws-alexa", version.ref = "micronaut-aws" }
+micronaut-function-aws-api-proxy = {group = "io.micronaut.aws", name = "micronaut-function-aws-api-proxy", version.ref = "micronaut-aws" }
+micronaut-function-aws-api-proxy-test = {group = "io.micronaut.aws", name = "micronaut-function-aws-api-proxy-test", version.ref = "micronaut-aws" }
+micronaut-function-aws-custom-runtime = {group = "io.micronaut.aws", name = "micronaut-function-aws-custom-runtime", version.ref = "micronaut-aws" }
+micronaut-function-aws-test = {group = "io.micronaut.aws", name = "micronaut-function-aws-test", version.ref = "micronaut-aws" }
+micronaut-function-client-aws = {group = "io.micronaut.aws", name = "micronaut-function-client-aws", version.ref = "micronaut-aws" }
 micronaut-test-bom-module = {group = "io.micronaut.dummy", name = "micronaut-test-bom-module", version.ref = "micronaut-test-bom-module" }
 """.trim()
     }
@@ -90,44 +91,46 @@ micronaut-test-bom-module = {group = "io.micronaut.dummy", name = "micronaut-tes
 format.version = "1.1"
 
 [versions]
-dekorate = "1.0.3"
-micronaut-aws = "3.1.1"
-micronaut-aws-alexa = "3.1.1"
-micronaut-aws-alexa-httpserver = "3.1.1"
-micronaut-aws-bom = "3.1.1"
-micronaut-aws-distributed-configuration = "3.1.1"
-micronaut-aws-parameter-store = "3.1.1"
-micronaut-aws-sdk-v1 = "3.1.1"
-micronaut-aws-sdk-v2 = "3.1.1"
-micronaut-aws-secretsmanager = "3.1.1"
-micronaut-aws-service-discovery = "3.1.1"
-micronaut-function-aws = "3.1.1"
-micronaut-function-aws-alexa = "3.1.1"
-micronaut-function-aws-api-proxy = "3.1.1"
-micronaut-function-aws-api-proxy-test = "3.1.1"
-micronaut-function-aws-custom-runtime = "3.1.1"
-micronaut-function-aws-test = "3.1.1"
-micronaut-function-client-aws = "3.1.1"
+alexa-ask-sdk = "2.71.0"
+aws-java-sdk-v1 = "1.12.505"
+aws-java-sdk-v2 = "2.20.102"
+aws-lambda = "1.2.2"
+aws-lambda-events = "3.11.2"
+aws-lambda-java-serialization = "1.1.2"
+dekorate = "3.7.0"
+micronaut-aws = "4.0.1"
 micronaut-test-bom-module = "1.2.3"
 
 [libraries]
+alexa-ask-sdk = {group = "com.amazon.alexa", name = "ask-sdk", version.ref = "alexa-ask-sdk" }
+alexa-ask-sdk-core = {group = "com.amazon.alexa", name = "ask-sdk-core", version.ref = "alexa-ask-sdk" }
+alexa-ask-sdk-lambda = {group = "com.amazon.alexa", name = "ask-sdk-lambda-support", version.ref = "alexa-ask-sdk" }
+aws-java-sdk-core = {group = "com.amazonaws", name = "aws-java-sdk-core", version.ref = "aws-java-sdk-v1" }
+aws-lambda-core = {group = "com.amazonaws", name = "aws-lambda-java-core", version.ref = "aws-lambda" }
+aws-lambda-events = {group = "com.amazonaws", name = "aws-lambda-java-events", version.ref = "aws-lambda-events" }
+aws-lambda-java-serialization = {group = "com.amazonaws", name = "aws-lambda-java-serialization", version.ref = "aws-lambda-java-serialization" }
+awssdk-secretsmanager = {group = "software.amazon.awssdk", name = "secretsmanager", version.ref = "aws-java-sdk-v2" }
 dekorate = {group = "io.dekorate", name = "dekorate-project", version.ref = "dekorate" }
-micronaut-aws-alexa = {group = "io.micronaut.aws", name = "micronaut-aws-alexa", version.ref = "micronaut-aws-alexa" }
-micronaut-aws-alexa-httpserver = {group = "io.micronaut.aws", name = "micronaut-aws-alexa-httpserver", version.ref = "micronaut-aws-alexa-httpserver" }
-micronaut-aws-bom = {group = "io.micronaut.aws", name = "micronaut-aws-bom", version.ref = "micronaut-aws-bom" }
-micronaut-aws-distributed-configuration = {group = "io.micronaut.aws", name = "micronaut-aws-distributed-configuration", version.ref = "micronaut-aws-distributed-configuration" }
-micronaut-aws-parameter-store = {group = "io.micronaut.aws", name = "micronaut-aws-parameter-store", version.ref = "micronaut-aws-parameter-store" }
-micronaut-aws-sdk-v1 = {group = "io.micronaut.aws", name = "micronaut-aws-sdk-v1", version.ref = "micronaut-aws-sdk-v1" }
-micronaut-aws-sdk-v2 = {group = "io.micronaut.aws", name = "micronaut-aws-sdk-v2", version.ref = "micronaut-aws-sdk-v2" }
-micronaut-aws-secretsmanager = {group = "io.micronaut.aws", name = "micronaut-aws-secretsmanager", version.ref = "micronaut-aws-secretsmanager" }
-micronaut-aws-service-discovery = {group = "io.micronaut.aws", name = "micronaut-aws-service-discovery", version.ref = "micronaut-aws-service-discovery" }
-micronaut-function-aws = {group = "io.micronaut.aws", name = "micronaut-function-aws", version.ref = "micronaut-function-aws" }
-micronaut-function-aws-alexa = {group = "io.micronaut.aws", name = "micronaut-function-aws-alexa", version.ref = "micronaut-function-aws-alexa" }
-micronaut-function-aws-api-proxy = {group = "io.micronaut.aws", name = "micronaut-function-aws-api-proxy", version.ref = "micronaut-function-aws-api-proxy" }
-micronaut-function-aws-api-proxy-test = {group = "io.micronaut.aws", name = "micronaut-function-aws-api-proxy-test", version.ref = "micronaut-function-aws-api-proxy-test" }
-micronaut-function-aws-custom-runtime = {group = "io.micronaut.aws", name = "micronaut-function-aws-custom-runtime", version.ref = "micronaut-function-aws-custom-runtime" }
-micronaut-function-aws-test = {group = "io.micronaut.aws", name = "micronaut-function-aws-test", version.ref = "micronaut-function-aws-test" }
-micronaut-function-client-aws = {group = "io.micronaut.aws", name = "micronaut-function-client-aws", version.ref = "micronaut-function-client-aws" }
+micronaut-aws-alexa = {group = "io.micronaut.aws", name = "micronaut-aws-alexa", version.ref = "micronaut-aws" }
+micronaut-aws-alexa-httpserver = {group = "io.micronaut.aws", name = "micronaut-aws-alexa-httpserver", version.ref = "micronaut-aws" }
+micronaut-aws-apigateway = {group = "io.micronaut.aws", name = "micronaut-aws-apigateway", version.ref = "micronaut-aws" }
+micronaut-aws-bom = {group = "io.micronaut.aws", name = "micronaut-aws-bom", version.ref = "micronaut-aws" }
+micronaut-aws-cloudwatch-logging = {group = "io.micronaut.aws", name = "micronaut-aws-cloudwatch-logging", version.ref = "micronaut-aws" }
+micronaut-aws-distributed-configuration = {group = "io.micronaut.aws", name = "micronaut-aws-distributed-configuration", version.ref = "micronaut-aws" }
+micronaut-aws-lambda-events-serde = {group = "io.micronaut.aws", name = "micronaut-aws-lambda-events-serde", version.ref = "micronaut-aws" }
+micronaut-aws-parameter-store = {group = "io.micronaut.aws", name = "micronaut-aws-parameter-store", version.ref = "micronaut-aws" }
+micronaut-aws-sdk-v1 = {group = "io.micronaut.aws", name = "micronaut-aws-sdk-v1", version.ref = "micronaut-aws" }
+micronaut-aws-sdk-v2 = {group = "io.micronaut.aws", name = "micronaut-aws-sdk-v2", version.ref = "micronaut-aws" }
+micronaut-aws-secretsmanager = {group = "io.micronaut.aws", name = "micronaut-aws-secretsmanager", version.ref = "micronaut-aws" }
+micronaut-aws-service-discovery = {group = "io.micronaut.aws", name = "micronaut-aws-service-discovery", version.ref = "micronaut-aws" }
+micronaut-aws-ua = {group = "io.micronaut.aws", name = "micronaut-aws-ua", version.ref = "micronaut-aws" }
+micronaut-function-aws = {group = "io.micronaut.aws", name = "micronaut-function-aws", version.ref = "micronaut-aws" }
+micronaut-function-aws-alexa = {group = "io.micronaut.aws", name = "micronaut-function-aws-alexa", version.ref = "micronaut-aws" }
+micronaut-function-aws-api-proxy = {group = "io.micronaut.aws", name = "micronaut-function-aws-api-proxy", version.ref = "micronaut-aws" }
+micronaut-function-aws-api-proxy-test = {group = "io.micronaut.aws", name = "micronaut-function-aws-api-proxy-test", version.ref = "micronaut-aws" }
+micronaut-function-aws-custom-runtime = {group = "io.micronaut.aws", name = "micronaut-function-aws-custom-runtime", version.ref = "micronaut-aws" }
+micronaut-function-aws-test = {group = "io.micronaut.aws", name = "micronaut-function-aws-test", version.ref = "micronaut-aws" }
+micronaut-function-client-aws = {group = "io.micronaut.aws", name = "micronaut-function-client-aws", version.ref = "micronaut-aws" }
 micronaut-test-bom-module = {group = "io.micronaut.dummy", name = "micronaut-test-bom-module", version.ref = "micronaut-test-bom-module" }
 """.trim()
     }
