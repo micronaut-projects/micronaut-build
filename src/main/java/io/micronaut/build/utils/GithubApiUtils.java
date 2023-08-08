@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 original authors
+ * Copyright 2017-2023 original authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ public final class GithubApiUtils {
 
     private static byte[] fetchFromGithub(Logger logger, String slug, String what) {
         String url = System.getProperty(GITHUB_API_BASE_URL_SYSTEM_PROPERTY, GITHUB_BASE_API_URL) + "/repos/" + normalizeSlug(slug) + "/" + what;
+        logger.lifecycle("Fetching " + what + " from " + url);
         try {
             return fetchFromGithub(logger, connectionForGithubUrl(logger, url));
         } catch (IOException ex) {

@@ -195,10 +195,10 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                 outputIndex = layout.buildDir.file("working/05-dropdown/index.html")
                 versionsJson = githubApi.zip(slug) { api, ghSlug ->
                     try {
-                        byte[] jsonArr = api.fetchTagsFromGitHub(ghslug)
+                        byte[] jsonArr = api.fetchTagsFromGitHub(ghSlug)
                         return new String(jsonArr, "UTF-8")
                     } catch (Exception e) {
-                        task.logger.error("Exception fetching github tags for $ghSlug")
+                        task.logger.error("Exception fetching github tags for $ghSlug", e)
                         return "[]"
                     }
                 }
