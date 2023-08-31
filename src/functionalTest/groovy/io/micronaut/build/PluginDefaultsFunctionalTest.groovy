@@ -15,6 +15,7 @@ class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
         """
 
         when:
+        debug = true
         run 'printJavaVersion'
 
         then:

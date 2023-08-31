@@ -12,14 +12,13 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.compile.GroovyCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.diagnostics.DependencyReportTask
+import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.api.tasks.javadoc.Groovydoc
 
 import static io.micronaut.build.BomSupport.coreBomArtifactId
 import static io.micronaut.build.utils.VersionHandling.versionProviderOrDefault
-
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
