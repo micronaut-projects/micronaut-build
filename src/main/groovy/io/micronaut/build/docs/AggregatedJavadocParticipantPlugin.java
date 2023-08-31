@@ -39,15 +39,15 @@ public class AggregatedJavadocParticipantPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
         project.getPluginManager().withPlugin("java", unused -> {
+            JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
             Configuration internalJavadocElements = createFilteredJavadocSourcesElements(project);
             Configuration javadocElementClasspath = createJavadocElementClasspath(project);
             TaskProvider<PrepareJavadocAggregationTask> prepareTask = project.getTasks().register("prepareJavadocAggregation", PrepareJavadocAggregationTask.class, task -> {
-                Javadoc javadoc = project.getTasks().named("javadoc", Javadoc.class).get();
-                JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+                var javadoc = project.getTasks().named("javadoc", Javadoc.class);
                 SourceSet sourceSet = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
                 task.getSources().from(sourceSet.getAllJava().getSourceDirectories());
-                task.getIncludes().set(javadoc.getIncludes());
-                task.getExcludes().set(javadoc.getExcludes());
+                task.getIncludes().set(javadoc.map(Javadoc::getIncludes));
+                task.getExcludes().set(javadoc.map(Javadoc::getExcludes));
                 task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("aggregation/javadoc"));
             });
             internalJavadocElements.getOutgoing().artifact(prepareTask);
@@ -56,6 +56,7 @@ public class AggregatedJavadocParticipantPlugin implements Plugin<Project> {
 
     private Configuration createJavadocElementClasspath(Project project) {
         ConfigurationContainer configurations = project.getConfigurations();
+        var providers = project.getProviders();
         return configurations.create("internalJavadocClasspathElements", conf -> {
             conf.setCanBeResolved(false);
             conf.setCanBeConsumed(true);
@@ -63,9 +64,9 @@ public class AggregatedJavadocParticipantPlugin implements Plugin<Project> {
             AttributeContainer compileClasspathAttrs = compileClasspath.getAttributes();
             conf.extendsFrom(compileClasspath);
             conf.attributes(attrs -> compileClasspathAttrs.keySet().forEach(key -> {
-                Object attribute = compileClasspathAttrs.getAttribute(key);
                 //noinspection unchecked
-                attrs.attribute((Attribute<Object>)key, attribute);
+                Attribute<Object> o = (Attribute<Object>) key;
+                attrs.attributeProvider(o, providers.provider(() -> compileClasspathAttrs.getAttribute(o)));
                 attrs.attribute(Usage.USAGE_ATTRIBUTE, project.getObjects().named(Usage.class, JavadocAggregationUtils.AGGREGATED_JAVADOC_PARTICIPANT_DEPS));
             }));
         });
