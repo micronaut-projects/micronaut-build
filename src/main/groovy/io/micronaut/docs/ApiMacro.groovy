@@ -83,7 +83,13 @@ class ApiMacro extends InlineMacroProcessor {
         } catch (e) {
             baseUri = getBaseUri(Collections.emptyMap(), getAttributeKey(), lib)
         }
-
+        String module = target.startsWith("java") ? "java.base" : null
+        if (attributes.module) {
+            module = attributes.module
+        }
+        if (module) {
+            baseUri = "${baseUri}/${module}"
+        }
 
         if (attributes.text) {
             shortName = attributes.text
