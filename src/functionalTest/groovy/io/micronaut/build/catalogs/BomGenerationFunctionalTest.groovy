@@ -30,6 +30,7 @@ aws-lambda = "1.2.2"
 aws-lambda-events = "3.11.2"
 aws-lambda-java-serialization = "1.1.2"
 dekorate = "3.7.0"
+junit = "5.9.10"
 micronaut-aws = "4.0.1"
 micronaut-test-bom-module = "1.2.3"
 
@@ -42,6 +43,7 @@ aws-lambda-core = {group = "com.amazonaws", name = "aws-lambda-java-core", versi
 aws-lambda-events = {group = "com.amazonaws", name = "aws-lambda-java-events", version.ref = "aws-lambda-events" }
 aws-lambda-java-serialization = {group = "com.amazonaws", name = "aws-lambda-java-serialization", version.ref = "aws-lambda-java-serialization" }
 awssdk-secretsmanager = {group = "software.amazon.awssdk", name = "secretsmanager", version.ref = "aws-java-sdk-v2" }
+boms-junit = {group = "org.junit", name = "junit-bom", version.ref = "junit" }
 dekorate = {group = "io.dekorate", name = "dekorate-project", version.ref = "dekorate" }
 micronaut-aws-alexa = {group = "io.micronaut.aws", name = "micronaut-aws-alexa", version.ref = "micronaut-aws" }
 micronaut-aws-alexa-httpserver = {group = "io.micronaut.aws", name = "micronaut-aws-alexa-httpserver", version.ref = "micronaut-aws" }
@@ -98,6 +100,7 @@ aws-lambda = "1.2.2"
 aws-lambda-events = "3.11.2"
 aws-lambda-java-serialization = "1.1.2"
 dekorate = "3.7.0"
+junit = "5.9.10"
 micronaut-aws = "4.0.1"
 micronaut-test-bom-module = "1.2.3"
 
@@ -110,6 +113,7 @@ aws-lambda-core = {group = "com.amazonaws", name = "aws-lambda-java-core", versi
 aws-lambda-events = {group = "com.amazonaws", name = "aws-lambda-java-events", version.ref = "aws-lambda-events" }
 aws-lambda-java-serialization = {group = "com.amazonaws", name = "aws-lambda-java-serialization", version.ref = "aws-lambda-java-serialization" }
 awssdk-secretsmanager = {group = "software.amazon.awssdk", name = "secretsmanager", version.ref = "aws-java-sdk-v2" }
+boms-junit = {group = "org.junit", name = "junit-bom", version.ref = "junit" }
 dekorate = {group = "io.dekorate", name = "dekorate-project", version.ref = "dekorate" }
 micronaut-aws-alexa = {group = "io.micronaut.aws", name = "micronaut-aws-alexa", version.ref = "micronaut-aws" }
 micronaut-aws-alexa-httpserver = {group = "io.micronaut.aws", name = "micronaut-aws-alexa-httpserver", version.ref = "micronaut-aws" }

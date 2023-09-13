@@ -53,7 +53,7 @@ class VersionCatalogConverter {
     }
 
     void populateModel() {
-        catalogExtension.versionCatalog {builder ->
+        catalogExtension.versionCatalog { builder ->
             Set<String> knownAliases = []
             Set<String> knwonVersionAliases = []
             extraVersions.forEach { alias, version ->
@@ -66,18 +66,19 @@ class VersionCatalogConverter {
                         .versionRef(library.versionRef)
             }
             model.versionsTable.each { version ->
-                if (version.reference.startsWith('managed-')) {
-                    def alias = version.reference.substring(8)
+                String reference = version.reference
+                if (isManagedAlias(reference)) {
+                    def alias = reference.substring(8)
                     builder.version(alias, version.version.require)
                 }
             }
             model.librariesTable.each { library ->
-                if (library.alias.startsWith("managed-") && library.version.reference) {
-                    if (!library.version.reference.startsWith("managed-")) {
-                        throw new InvalidUserCodeException("Version catalog declares a managed library '${library.alias}' referencing a non managed version '${library.version.reference}'. Make sure to use a managed version.")
+                String libraryAlias = library.alias
+                if ((isManagedAlias(libraryAlias) || isBomAlias(libraryAlias)) && library.version.reference) {
+                    if (!isManagedAlias(library.version.reference)) {
+                        throw new InvalidUserCodeException("Version catalog declares a managed library '${libraryAlias}' referencing a non managed version '${library.version.reference}'. Make sure to use a managed version.")
                     }
-
-                    def alias = library.alias.substring(8)
+                    def alias = isBomAlias(libraryAlias) ? libraryAlias : libraryAlias.substring(libraryAlias.indexOf('-') + 1)
                     knownAliases.add(alias)
                     builder.library(alias, library.group, library.name)
                             .versionRef(library.version.reference.substring(8))
@@ -94,6 +95,14 @@ class VersionCatalogConverter {
                 it.accept(builderState)
             }
         }
+    }
+
+    private static boolean isManagedAlias(String libraryAlias) {
+        libraryAlias.startsWith("managed-")
+    }
+
+    private static boolean isBomAlias(String reference) {
+        reference.startsWith('boms-') && !reference.startsWith("boms-micronaut-")
     }
 
     static Library library(String group, String name, String versionRef) {
