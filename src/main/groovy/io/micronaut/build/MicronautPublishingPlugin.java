@@ -185,7 +185,7 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
         Object p = project.findProperty("micronautPublish");
         // add option to skip publishing
         if (p == null) {
-            if (project.getName().contains("doc") || project.getName().contains("example")) {
+            if ((project.getName().contains("doc") && !project.getName().contains("adoc")) || project.getName().contains("example")) {
                 project.getLogger().info("Publishing is disabled for project {}", project.getName());
                 return true;
             }
