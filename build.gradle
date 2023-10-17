@@ -41,6 +41,7 @@ tasks.register('functionalTest', Test) {
     inputs.dir(file("src/functionalTest/gradle-projects"))
     testClassesDirs = sourceSets.functionalTest.output.classesDirs
     classpath = sourceSets.functionalTest.runtimeClasspath
+    systemProperty "CURRENT_JDK", JavaVersion.current().majorVersion
 }
 
 tasks.named('check') {
