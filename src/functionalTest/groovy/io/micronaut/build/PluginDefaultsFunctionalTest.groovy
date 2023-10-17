@@ -22,6 +22,26 @@ class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
         outputContains "Java version: 17"
     }
 
+    void "test java defaults to current JDK"() {
+        given:
+        withSample("test-micronaut-module")
+
+        file("subproject1/build.gradle") << """
+            tasks.register("printJavaVersion") {
+                doLast {
+                    println "Java version: \${micronautBuild.testJavaVersion.get()}"
+                }
+            }
+        """
+
+        when:
+        debug = true
+        run 'printJavaVersion'
+
+        then:
+        outputContains "Java version: ${System.getProperty('CURRENT_JDK')}"
+    }
+
    void "warns if using #property compatibility"() {
         given:
         withSample("test-micronaut-module")

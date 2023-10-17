@@ -4,10 +4,12 @@ import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import io.micronaut.build.pom.BomSuppressions;
 import org.gradle.api.Action;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.artifacts.ResolutionStrategy;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Nested;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 import javax.inject.Inject;
 
@@ -32,6 +34,7 @@ public abstract class MicronautBuildExtension {
     this.compileOptions = getObjects().newInstance(MicronautCompileOptions.class);
 
     getJavaVersion().convention(DEFAULT_JAVA_VERSION);
+    getTestJavaVersion().convention(JavaLanguageVersion.of(JavaVersion.current().getMajorVersion()));
     getCheckstyleVersion().convention(DEFAULT_CHECKSTYLE_VERSION);
     getDependencyUpdatesPattern().convention(DEFAULT_DEPENDENCY_UPDATES_PATTERN);
     getEnforcedPlatform().convention(false);
@@ -57,6 +60,12 @@ public abstract class MicronautBuildExtension {
    * @return the java version for this project
    */
   public abstract Property<Integer> getJavaVersion();
+
+  /**
+   * The version of Java for running the tests. Defaults to JavaVersion.current().
+   * @return the java version for this project
+   */
+  public abstract Property<JavaLanguageVersion> getTestJavaVersion();
 
   /**
    * The default source compatibility

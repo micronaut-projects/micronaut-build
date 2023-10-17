@@ -16,6 +16,7 @@ import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
 
 import static io.micronaut.build.BomSupport.coreBomArtifactId
 import static io.micronaut.build.utils.VersionHandling.versionProviderOrDefault
@@ -117,6 +118,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         project.apply plugin: "java-library"
 
         def javaPluginExtension = project.extensions.findByType(JavaPluginExtension)
+        JavaToolchainService toolchains = project.getExtensions().getByType(JavaToolchainService.class);
+
         javaPluginExtension.toolchain.languageVersion.convention(micronautBuildExtension.javaVersion.map(JavaLanguageVersion::of))
         project.afterEvaluate {
             if (micronautBuildExtension.sourceCompatibility.isPresent() || micronautBuildExtension.targetCompatibility.isPresent()) {
@@ -160,6 +163,9 @@ You can do this directly in the project, or, better, in a convention plugin if i
             distribution {
                 enabled = false
             }
+            javaLauncher.set(toolchains.launcherFor {
+                languageVersion.set(micronautBuildExtension.testJavaVersion.map {  JavaLanguageVersion.of(it.majorVersion) })
+            })
         }
 
         project.tasks.withType(GroovyCompile).configureEach {
