@@ -164,7 +164,7 @@ You can do this directly in the project, or, better, in a convention plugin if i
                 enabled = false
             }
             javaLauncher.set(toolchains.launcherFor {
-                languageVersion.set(micronautBuildExtension.testJavaVersion.map {  JavaLanguageVersion.of(it.majorVersion) })
+                languageVersion.set(micronautBuildExtension.testJavaVersion.map { JavaLanguageVersion.of(it) })
             })
         }
 

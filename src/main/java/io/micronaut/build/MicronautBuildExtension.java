@@ -34,7 +34,7 @@ public abstract class MicronautBuildExtension {
     this.compileOptions = getObjects().newInstance(MicronautCompileOptions.class);
 
     getJavaVersion().convention(DEFAULT_JAVA_VERSION);
-    getTestJavaVersion().convention(JavaLanguageVersion.of(JavaVersion.current().getMajorVersion()));
+    getTestJavaVersion().convention(Integer.valueOf(JavaVersion.current().getMajorVersion()));
     getCheckstyleVersion().convention(DEFAULT_CHECKSTYLE_VERSION);
     getDependencyUpdatesPattern().convention(DEFAULT_DEPENDENCY_UPDATES_PATTERN);
     getEnforcedPlatform().convention(false);
@@ -65,7 +65,7 @@ public abstract class MicronautBuildExtension {
    * The version of Java for running the tests. Defaults to JavaVersion.current().
    * @return the java version for this project
    */
-  public abstract Property<JavaLanguageVersion> getTestJavaVersion();
+  public abstract Property<Integer> getTestJavaVersion();
 
   /**
    * The default source compatibility
