@@ -50,7 +50,12 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
     public void apply(Project project) {
         project.getPlugins().apply(MicronautBuildExtensionPlugin.class);
         MicronautBuildExtension extension = project.getExtensions().getByType(MicronautBuildExtension.class);
-        BinaryCompatibibilityExtension binaryCompatibility = ((ExtensionAware) extension).getExtensions().create("binaryCompatibility", BinaryCompatibibilityExtension.class);
+        BinaryCompatibibilityExtension binaryCompatibility = ((ExtensionAware) extension).getExtensions().create(
+            BinaryCompatibibilityExtension.class,
+            "binaryCompatibility",
+            AbstractBinaryCompatibilityExtension.class,
+            project.getProviders().provider(() -> String.valueOf(project.getVersion()))
+        );
         binaryCompatibility.getAcceptedRegressionsFile().convention(
                 project.getRootProject().getLayout().getProjectDirectory().file("config/accepted-api-changes.json")
         );

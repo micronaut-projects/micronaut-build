@@ -22,4 +22,5 @@ public interface BinaryCompatibibilityExtension {
     RegularFileProperty getAcceptedRegressionsFile();
     Property<Boolean> getEnabled();
     Property<String> getBaselineVersion();
+    void enabledAfter(String releaseVersion);
 }
