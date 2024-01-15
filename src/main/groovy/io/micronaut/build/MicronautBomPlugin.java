@@ -446,7 +446,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             return Optional.empty();
         }
         VersionCatalogsExtension versionCatalogsExtension = project.getExtensions().findByType(VersionCatalogsExtension.class);
-        return Optional.ofNullable(versionCatalogsExtension).map(e -> e.named("libs"));
+        return Optional.ofNullable(versionCatalogsExtension).flatMap(e -> e.find("libs"));
     }
 
     private void configureVersionCatalog(Project project, MicronautBomExtension bomExtension, String publishedName, String group, String mainProjectId) {
