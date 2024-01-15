@@ -5,6 +5,7 @@ import spock.lang.Issue
 
 class BomGenerationFunctionalTest extends AbstractFunctionalTest {
     def "inlines Micronaut catalogs into the generated catalog"() {
+        debug = true
         given:
         withSample("test-bom-module")
 
@@ -68,6 +69,21 @@ micronaut-function-aws-test = {group = "io.micronaut.aws", name = "micronaut-fun
 micronaut-function-client-aws = {group = "io.micronaut.aws", name = "micronaut-function-client-aws", version.ref = "micronaut-aws" }
 micronaut-test-bom-module = {group = "io.micronaut.dummy", name = "micronaut-test-bom-module", version.ref = "micronaut-test-bom-module" }
 """.trim()
+
+        and:
+        def pomFile = new File(moduleDir, "micronaut-test-bom-module-1.2.3.pom")
+        pomFile.exists()
+        pomFile.text.trim().contains """<properties>
+    <micronaut.aws.version>4.0.1</micronaut.aws.version>
+    <junit.version>5.9.10</junit.version>
+    <dekorate.version>3.7.0</dekorate.version>
+    <aws.lambda.java.serialization.version>1.1.2</aws.lambda.java.serialization.version>
+    <aws.java.sdk.v2.version>2.20.102</aws.java.sdk.v2.version>
+    <alexa.ask.sdk.version>2.71.0</alexa.ask.sdk.version>
+    <aws.lambda.version>1.2.2</aws.lambda.version>
+    <aws.lambda.events.version>3.11.2</aws.lambda.events.version>
+    <aws.java.sdk.v1.version>1.12.505</aws.java.sdk.v1.version>
+  </properties>"""
     }
 
     def "can exclude an alias when inlining Micronaut catalogs into the generated catalog"() {
@@ -137,6 +153,21 @@ micronaut-function-aws-test = {group = "io.micronaut.aws", name = "micronaut-fun
 micronaut-function-client-aws = {group = "io.micronaut.aws", name = "micronaut-function-client-aws", version.ref = "micronaut-aws" }
 micronaut-test-bom-module = {group = "io.micronaut.dummy", name = "micronaut-test-bom-module", version.ref = "micronaut-test-bom-module" }
 """.trim()
+
+        and:
+        def pomFile = new File(moduleDir, "micronaut-test-bom-module-1.2.3.pom")
+        pomFile.exists()
+        pomFile.text.trim().contains """<properties>
+    <micronaut.aws.version>4.0.1</micronaut.aws.version>
+    <junit.version>5.9.10</junit.version>
+    <dekorate.version>3.7.0</dekorate.version>
+    <aws.lambda.java.serialization.version>1.1.2</aws.lambda.java.serialization.version>
+    <aws.java.sdk.v2.version>2.20.102</aws.java.sdk.v2.version>
+    <alexa.ask.sdk.version>2.71.0</alexa.ask.sdk.version>
+    <aws.lambda.version>1.2.2</aws.lambda.version>
+    <aws.lambda.events.version>3.11.2</aws.lambda.events.version>
+    <aws.java.sdk.v1.version>1.12.505</aws.java.sdk.v1.version>
+  </properties>"""
     }
 
     @Issue("https://github.com/micronaut-projects/micronaut-build/issues/284")

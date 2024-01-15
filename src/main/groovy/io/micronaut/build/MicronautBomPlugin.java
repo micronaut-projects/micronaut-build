@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -126,9 +127,9 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             return children.stream().filter(n -> nameOf(n).equals(child));
         } else {
             return children
-                    .stream()
-                    .filter(n -> nameOf(n).equals(child))
-                    .flatMap(n -> forEachNode(n, path.subList(1, path.size())));
+                .stream()
+                .filter(n -> nameOf(n).equals(child))
+                .flatMap(n -> forEachNode(n, path.subList(1, path.size())));
 
         }
     }
@@ -138,8 +139,8 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
     private Node childOf(Node node, String name) {
         List<Node> children = (List<Node>) node.children();
         return children.stream().filter(n -> nameOf(n).equals(name))
-                .findFirst()
-                .orElse(null);
+            .findFirst()
+            .orElse(null);
     }
 
     private static String removePrefix(String str, String prefix) {
@@ -151,9 +152,9 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
 
     private static String toPropertyName(String alias) {
         return Arrays.stream(alias.split("(?=[A-Z])"))
-                .map(s -> s.toLowerCase(Locale.US))
-                .collect(Collectors.joining("-"))
-                .replace('-', '.');
+            .map(s -> s.toLowerCase(Locale.US))
+            .collect(Collectors.joining("-"))
+            .replace('-', '.');
     }
 
     private String bomPropertyName(MicronautBomExtension ext, String alias) {
@@ -164,10 +165,10 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
     }
 
     private static List<ProjectDescriptor> computeProjectDescriptors(
-            MicronautBomExtension ext,
-            Project project,
-            Set<String> includedProjects,
-            Set<String> skippedProjects
+        MicronautBomExtension ext,
+        Project project,
+        Set<String> includedProjects,
+        Set<String> skippedProjects
     ) {
         List<ProjectDescriptor> result = new ArrayList<>();
         boolean inferProjectsToInclude = ext.getInferProjectsToInclude().getOrElse(true);
@@ -205,8 +206,8 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         String group = String.valueOf(project.getGroup());
         Optional<VersionCatalog> versionCatalog = findVersionCatalog(project, bomExtension);
         final VersionCatalogConverter modelConverter = new VersionCatalogConverter(
-                project.getRootProject().file("gradle/libs.versions.toml"),
-                project.getExtensions().findByType(CatalogPluginExtension.class)
+            project.getRootProject().file("gradle/libs.versions.toml"),
+            project.getExtensions().findByType(CatalogPluginExtension.class)
         );
         tasks.named("generateCatalogAsToml", task -> modelConverter.populateModel());
         if (bomExtension.getPublishCatalog().get()) {
@@ -216,8 +217,9 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         Set<String> includedProjects = new HashSet<>();
         Set<String> skippedProjects = new HashSet<>();
         Provider<List<ProjectDescriptor>> projectDescriptors = project.provider(() ->
-                computeProjectDescriptors(bomExtension, project, includedProjects, skippedProjects)
+            computeProjectDescriptors(bomExtension, project, includedProjects, skippedProjects)
         );
+        Map<String, String> inlinedPomProperties = new LinkedHashMap<>();
         publishing.getPublications().named("maven", MavenPublication.class, pub -> {
             pub.setArtifactId(publishedName);
             pub.from(project.getComponents().getByName("javaPlatform"));
@@ -230,10 +232,10 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                         String libraryAlias = Optional.ofNullable(library.getAlias()).map(a -> a.replace('-', '.')).orElse("");
                         if (libraryAlias.startsWith("managed.") || libraryAlias.startsWith("boms.")) {
                             Optional<Node> pomDep = forEachNode(node, DEPENDENCY_PATH)
-                                    .filter(n ->
-                                            childOf(n, "artifactId").text().equals(library.getName()) &&
-                                                    childOf(n, "groupId").text().equals(library.getGroup()))
-                                    .findFirst();
+                                .filter(n ->
+                                    childOf(n, "artifactId").text().equals(library.getName()) &&
+                                    childOf(n, "groupId").text().equals(library.getGroup()))
+                                .findFirst();
                             if (pomDep.isPresent()) {
                                 String bomPropertyName = bomPropertyName(bomExtension, alias);
                                 childOf(pomDep.get(), "version").setValue("${" + bomPropertyName + "}");
@@ -248,15 +250,25 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                         String projectGroup = p.getGroupId();
                         String moduleName = p.getArtifactId();
                         Optional<Node> pomDep = forEachNode(node, DEPENDENCY_PATH)
-                                .filter(n -> childOf(n, "artifactId").text().equals(moduleName) &&
-                                        childOf(n, "groupId").text().equals(projectGroup))
-                                .findFirst();
+                            .filter(n -> childOf(n, "artifactId").text().equals(moduleName) &&
+                                         childOf(n, "groupId").text().equals(projectGroup))
+                            .findFirst();
                         if (pomDep.isPresent()) {
                             childOf(pomDep.get(), "version").setValue("${" + propertyName + "}");
                         } else {
                             System.err.println("[WARNING] Didn't find dependency " + projectGroup + ":" + moduleName + " in BOM file");
                         }
                     });
+                    // Add extra versions as properties
+                    var propertiesNode = childOf(node, "properties");
+                    inlinedPomProperties.forEach((moduleName, version) -> {
+                        String propertyName = bomPropertyName(bomExtension, moduleName);
+                        var existingProperty = childOf(propertiesNode, propertyName);
+                        if (existingProperty == null) {
+                            propertiesNode.appendNode(propertyName, version);
+                        }
+                    });
+
                 });
                 versionCatalog.ifPresent(libsCatalog -> libsCatalog.getVersionAliases().forEach(alias -> {
                     if (alias.startsWith("managed.")) {
@@ -278,13 +290,13 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                         @Override
                         public void execute(Task task) {
                             System.out.println("Projects included into BOM:\n" + includedProjects.stream()
-                                    .map(p -> "    - " + p)
-                                    .collect(Collectors.joining("\n"))
+                                .map(p -> "    - " + p)
+                                .collect(Collectors.joining("\n"))
                             );
                             if (!skippedProjects.isEmpty()) {
                                 System.out.println("Skipped projects which do not apply the publishing plugin:\n" + skippedProjects.stream()
-                                        .map(p -> "    - " + p)
-                                        .collect(Collectors.joining("\n"))
+                                    .map(p -> "    - " + p)
+                                    .collect(Collectors.joining("\n"))
                                 );
                             }
                         }
@@ -303,28 +315,28 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         versionCatalog.ifPresent(libsCatalog -> libsCatalog.getLibraryAliases().forEach(alias -> {
             if (alias.startsWith("boms.")) {
                 Dependency bomDependency = project.getDependencies().platform(libsCatalog.findLibrary(alias)
-                        .map(Provider::get)
-                        .orElseThrow(() -> new RuntimeException("Unexpected missing alias in catalog: " + alias))
+                    .map(Provider::get)
+                    .orElseThrow(() -> new RuntimeException("Unexpected missing alias in catalog: " + alias))
                 );
                 api.getDependencies().add(bomDependency);
                 catalogs.getDependencies().add(bomDependency);
             } else if (alias.startsWith("managed.")) {
                 api.getDependencyConstraints().add(
-                        project.getDependencies().getConstraints().create(libsCatalog.findLibrary(alias).map(Provider::get)
-                                .orElseThrow(() -> new RuntimeException("Unexpected missing alias in catalog: " + alias))));
+                    project.getDependencies().getConstraints().create(libsCatalog.findLibrary(alias).map(Provider::get)
+                        .orElseThrow(() -> new RuntimeException("Unexpected missing alias in catalog: " + alias))));
             }
         }));
         // the following properties are captures _outside_ of the lambda
         // to avoid it referencing `bomExtension` or `catalogs`
         FileCollection catalogFiles = catalogs.getIncoming()
-                .artifactView(spec -> spec.lenient(true))
-                .getFiles();
+            .artifactView(spec -> spec.lenient(true))
+            .getFiles();
         Property<Boolean> inlineNestedCatalogs = bomExtension.getInlineNestedCatalogs();
         SetProperty<String> excludedInlinedAliases = bomExtension.getExcludedInlinedAliases();
         modelConverter.afterBuildingModel(builderState -> {
             api.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
-            maybeInlineNestedCatalogs(catalogFiles, builderState, inlineNestedCatalogs, excludedInlinedAliases);
+            maybeInlineNestedCatalogs(catalogFiles, builderState, inlineNestedCatalogs, excludedInlinedAliases, inlinedPomProperties);
         });
         projectDescriptors.get().forEach(p -> {
             String moduleGroup = p.getGroupId();
@@ -332,9 +344,9 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             String moduleVersion = PomCheckerUtils.assertVersion(p.getVersion(), p.getPath());
 
             api.getDependencyConstraints().add(
-                    project.getDependencies()
-                            .getConstraints()
-                            .create(moduleGroup + ":" + moduleName + ":" + moduleVersion)
+                project.getDependencies()
+                    .getConstraints()
+                    .create(moduleGroup + ":" + moduleName + ":" + moduleVersion)
             );
 
             String mainModuleName = MicronautPlugin.moduleNameOf(mainProjectId.replace('.', '-'));
@@ -346,66 +358,73 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
     private void maybeInlineNestedCatalogs(FileCollection catalogs,
                                            VersionCatalogConverter.BuilderState builderState,
                                            Property<Boolean> inlineNestedCatalogs,
-                                           SetProperty<String> excludedInlinedAliases) {
-        if (inlineNestedCatalogs.get()) {
+                                           SetProperty<String> excludedInlinedAliases,
+                                           Map<String, String> inlinedPomProperties) {
+        if (Boolean.TRUE.equals(inlineNestedCatalogs.get())) {
             VersionCatalogBuilder builder = builderState.getBuilder();
             Map<String, VersionCatalogConverter.AliasRecord> knownAliases = builderState.getKnownAliases();
             Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases = builderState.getKnownVersionAliases();
             Set<String> excludeFromInlining = excludedInlinedAliases.get();
             catalogs.forEach(catalogFile -> {
-                        try (FileInputStream fis = new FileInputStream(catalogFile)) {
-                            LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
-                            parser.parse(fis);
-                            Set<Library> librariesTable = parser.getModel().getLibrariesTable();
-                            Set<VersionModel> versionsTable = parser.getModel().getVersionsTable();
-                            librariesTable.forEach(library -> {
-                                String alias = library.getAlias();
-                                if (!excludeFromInlining.contains(alias)) {
-                                    String source = catalogFile.getName();
-                                    if (!knownAliases.containsKey(alias)) {
-                                        String reference = library.getVersion().getReference();
-                                        String version = null;
-                                        if (reference != null) {
-                                            version = reference;
-                                            if (!knownVersionAliases.containsKey(reference)) {
-                                                builder.version(reference, versionsTable.stream().filter(m -> reference.equals(m.getReference())).findFirst().get().getVersion().getRequire());
-                                            } else {
-                                                Set<String> sources = knownVersionAliases.get(reference).getSources();
-                                                if (!sources.equals(Collections.singleton(source))) {
-                                                    System.err.println("[Warning] While inlining " + source + ", version alias '" + alias + "' is already defined in the catalog by " + sources + " so it won't be imported");
-                                                }
-                                            }
-                                            knownVersionAliases.get(reference).addSource(source);
-                                        }
-                                        VersionCatalogBuilder.LibraryAliasBuilder libraryBuilder = builder.library(alias, library.getGroup(), library.getName());
-                                        if (version != null ) {
-                                            libraryBuilder.versionRef(reference);
+                try (FileInputStream fis = new FileInputStream(catalogFile)) {
+                    LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
+                    parser.parse(fis);
+                    Set<Library> librariesTable = parser.getModel().getLibrariesTable();
+                    Set<VersionModel> versionsTable = parser.getModel().getVersionsTable();
+                    librariesTable.forEach(library -> {
+                        String alias = library.getAlias();
+                        if (!excludeFromInlining.contains(alias)) {
+                            String source = catalogFile.getName();
+                            if (!knownAliases.containsKey(alias)) {
+                                String reference = library.getVersion().getReference();
+                                String version = null;
+                                if (reference != null) {
+                                    version = reference;
+                                    if (!knownVersionAliases.containsKey(reference)) {
+                                        var requiredVersion = versionsTable.stream().filter(m -> reference.equals(m.getReference())).findFirst().get().getVersion().getRequire();
+                                        if (requiredVersion != null) {
+                                            builder.version(reference, requiredVersion);
+                                            inlinedPomProperties.put(reference, requiredVersion);
                                         } else {
-                                            libraryBuilder.withoutVersion();
+                                            throw new IllegalStateException("Version '" + reference + "' is not defined as a required version in the catalog");
                                         }
                                     } else {
-                                        VersionCatalogConverter.AliasRecord record = knownAliases.get(alias);
-                                        // There is one case where we don't want to warn: the main BOM file will have
-                                        // managed version for all Micronaut BOM files, but the version catalogs of these
-                                        // imported files will also have an alias with the same name
-                                        boolean warn = true;
-                                        if (source.startsWith("micronaut-") && source.contains("-bom")) {
-                                            String shortName = source.substring(0, source.indexOf("-bom"));
-                                            if (alias.equals(shortName) && record.getSources().equals(Collections.singleton(VersionCatalogConverter.MAIN_ALIASES_SOURCE))) {
-                                                warn = false;
-                                            }
-                                        }
-                                        if (warn) {
-                                            System.err.println("[Warning] While inlining " + source + ", alias '" + alias + "' is already defined in the catalog by " + record.getSources() + " so it won't be imported");
+                                        Set<String> sources = knownVersionAliases.get(reference).getSources();
+                                        if (!sources.equals(Collections.singleton(source))) {
+                                            System.err.println("[Warning] While inlining " + source + ", version alias '" + alias + "' is already defined in the catalog by " + sources + " so it won't be imported");
                                         }
                                     }
-                                    knownAliases.get(alias).addSource(source);
+                                    knownVersionAliases.get(reference).addSource(source);
                                 }
-                            });
-                        } catch (IOException e) {
-                            System.err.println("Unable to parse version catalog file: " + catalogFile);
+                                VersionCatalogBuilder.LibraryAliasBuilder libraryBuilder = builder.library(alias, library.getGroup(), library.getName());
+                                if (version != null) {
+                                    libraryBuilder.versionRef(reference);
+                                } else {
+                                    libraryBuilder.withoutVersion();
+                                }
+                            } else {
+                                VersionCatalogConverter.AliasRecord record = knownAliases.get(alias);
+                                // There is one case where we don't want to warn: the main BOM file will have
+                                // managed version for all Micronaut BOM files, but the version catalogs of these
+                                // imported files will also have an alias with the same name
+                                boolean warn = true;
+                                if (source.startsWith("micronaut-") && source.contains("-bom")) {
+                                    String shortName = source.substring(0, source.indexOf("-bom"));
+                                    if (alias.equals(shortName) && record.getSources().equals(Collections.singleton(VersionCatalogConverter.MAIN_ALIASES_SOURCE))) {
+                                        warn = false;
+                                    }
+                                }
+                                if (warn) {
+                                    System.err.println("[Warning] While inlining " + source + ", alias '" + alias + "' is already defined in the catalog by " + record.getSources() + " so it won't be imported");
+                                }
+                            }
+                            knownAliases.get(alias).addSource(source);
                         }
                     });
+                } catch (IOException e) {
+                    System.err.println("Unable to parse version catalog file: " + catalogFile);
+                }
+            });
         }
     }
 
@@ -445,9 +464,9 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
     private static void checkVersionConstraint(DependencyConstraint constraint) {
         VersionConstraint versionConstraint = constraint.getVersionConstraint();
         if (versionConstraint.getRequiredVersion().isEmpty()
-                && versionConstraint.getPreferredVersion().isEmpty()
-                && versionConstraint.getStrictVersion().isEmpty()
-                && versionConstraint.getRejectedVersions().isEmpty()) {
+            && versionConstraint.getPreferredVersion().isEmpty()
+            && versionConstraint.getStrictVersion().isEmpty()
+            && versionConstraint.getRejectedVersions().isEmpty()) {
             throw new InvalidUserDataException("A dependency constraint was added on '" + constraint.getModule() + "' without a version. This is invalid: a constraint must specify a version.");
         }
     }
@@ -460,10 +479,10 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
 
         static ProjectDescriptor fromProject(Project project) {
             return new ProjectDescriptor(
-                    project.getPath(),
-                    String.valueOf(project.getGroup()),
-                    MicronautPlugin.moduleNameOf(project.getName()),
-                    String.valueOf(project.getVersion())
+                project.getPath(),
+                String.valueOf(project.getGroup()),
+                MicronautPlugin.moduleNameOf(project.getName()),
+                String.valueOf(project.getVersion())
             );
         }
 
