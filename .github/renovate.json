@@ -14,5 +14,6 @@
       "matchPackagePatterns": ["actions.*"],
       "dependencyDashboardApproval": true
     }
-  ]
+  ],
+  "ignorePaths": ["src/functionalTest/gradle-projects/**"]
 }
