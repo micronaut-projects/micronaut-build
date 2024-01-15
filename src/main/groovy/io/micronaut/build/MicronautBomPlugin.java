@@ -268,6 +268,11 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                             propertiesNode.appendNode(propertyName, version);
                         }
                     });
+                    propertiesNode.children().sort((o1, o2) -> {
+                        String name1 = nameOf((Node) o1);
+                        String name2 = nameOf((Node) o2);
+                        return name1.compareTo(name2);
+                    });
 
                 });
                 versionCatalog.ifPresent(libsCatalog -> libsCatalog.getVersionAliases().forEach(alias -> {
