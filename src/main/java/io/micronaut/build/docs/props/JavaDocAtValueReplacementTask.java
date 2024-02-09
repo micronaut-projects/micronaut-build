@@ -35,10 +35,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @CacheableTask
 public abstract class JavaDocAtValueReplacementTask extends DefaultTask {
+
+    private static final Pattern JAVA_CLASSNAME_PATTERN = Pattern.compile("(\\p{javaJavaIdentifierPart}+).*");
 
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
@@ -132,16 +136,18 @@ public abstract class JavaDocAtValueReplacementTask extends DefaultTask {
                 for (String line : lines) {
                     if (line.contains("class ")) {
                         String subLine = line.substring(line.indexOf("class ") + "class ".length());
-                        if (subLine.indexOf(' ') != -1) {
-                            classEvaluated = subLine.substring(0, subLine.indexOf(' '));
+                        Matcher matcher = JAVA_CLASSNAME_PATTERN.matcher(subLine);
+                        if (matcher.find()) {
+                            classEvaluated = matcher.group(1);
                         } else {
                             classEvaluated = subLine;
                         }
                     }
                     if (line.contains("interface ")) {
                         String subLine = line.substring(line.indexOf("interface ") + "interface ".length());
-                        if (subLine.indexOf(' ') != -1) {
-                            interfaceEvaluated = subLine.substring(0, subLine.indexOf(' '));
+                        Matcher matcher = JAVA_CLASSNAME_PATTERN.matcher(subLine);
+                        if (matcher.find()) {
+                            interfaceEvaluated = matcher.group(1);
                         } else {
                             interfaceEvaluated = subLine;
                         }
