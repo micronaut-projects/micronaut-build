@@ -100,13 +100,14 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                     Task effectiveJar = jar;
                     japicmpTask.configure(task -> {
                         File changesFile = binaryCompatibility.getAcceptedRegressionsFile().get().getAsFile();
+                        String changesFileRelativePath = changesFile.toPath().relativize(p.getBuildFile().toPath()).toString();
                         if (changesFile.exists()) {
                             task.getInputs().file(changesFile).withPropertyName("accepted-api-changes").withPathSensitivity(PathSensitivity.NONE).optional(true);
                         }
                         task.getNewArchives().from(effectiveJar);
                         task.richReport(report ->
                                 report.addViolationTransformer(AcceptedApiChangesRule.class,
-                                        Collections.singletonMap(AcceptedApiChangesRule.CHANGES_FILE, changesFile.getAbsolutePath())
+                                        Collections.singletonMap(AcceptedApiChangesRule.CHANGES_FILE, changesFileRelativePath)
                                 )
                         );
                     });
