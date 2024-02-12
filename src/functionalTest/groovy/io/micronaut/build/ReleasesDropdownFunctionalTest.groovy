@@ -4,8 +4,9 @@ import java.nio.file.Files
 
 class ReleasesDropdownFunctionalTest extends AbstractFunctionalTest {
 
-    void "version dropdown is populated from github"() {
+    void "version dropdown is not populated from github by default"() {
         given:
+        debug = true
         withSample("test-micronaut-module")
 
         and: 'we override the github slug to use micronaut-crac'
@@ -26,9 +27,7 @@ class ReleasesDropdownFunctionalTest extends AbstractFunctionalTest {
             version
         }
 
-        then: 'there are more than 2, and 2 of them are latest and snapshot'
-        versions.contains('latest')
-        versions.contains('snapshot')
-        versions.size() > 2
+        then: 'no dropdown options'
+        versions.empty
     }
 }
