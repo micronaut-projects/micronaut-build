@@ -80,8 +80,8 @@ public abstract class CreateReleasesDropdownTask extends DefaultTask {
         String slug = getSlug().get();
         String version = getVersion().get();
 
-        String selectHtml = composeSelectHtml(getVersionsJson().get(), slug, version);
-
+        var json = getVersionsJson().getOrNull();
+        String selectHtml = json != null ? composeSelectHtml(json, slug, version) : version;
 
         String versionHtml = "<p><strong>Version:</strong> " + version + "</p>";
         String substitute = selectHtml.replaceAll(" style='margin-top: 10px' ", " style='max-width: 200px' ");

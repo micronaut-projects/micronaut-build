@@ -18,6 +18,7 @@ import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.javadoc.Javadoc
+
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
@@ -186,6 +187,10 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
 
             def githubApi = GitHubApiService.registerOn(project)
 
+            def createReleaseDowndownFlag = providers.gradleProperty("createReleaseDropdown")
+                    .map(Boolean::parseBoolean)
+                    .orElse(false)
+
             def createReleasesDropdown = tasks.register("createReleasesDropdown", CreateReleasesDropdownTask) { task ->
                 task.group(DOCUMENTATION_GROUP)
                 task.usesService(githubApi)
@@ -193,16 +198,18 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                 version = projectVersion
                 sourceIndex = publishGuide.flatMap { it.targetDir.file("guide/index.html") }
                 outputIndex = layout.buildDir.file("working/05-dropdown/index.html")
-                versionsJson = githubApi.zip(slug) { api, ghSlug ->
-                    try {
-                        byte[] jsonArr = api.fetchTagsFromGitHub(ghSlug)
-                        return new String(jsonArr, "UTF-8")
-                    } catch (Exception e) {
-                        task.logger.error("Exception fetching github tags for $ghSlug", e)
-                        return "[]"
+                if (createReleaseDowndownFlag.get()) {
+                    versionsJson = githubApi.zip(slug) { api, ghSlug ->
+                        try {
+                            byte[] jsonArr = api.fetchTagsFromGitHub(ghSlug)
+                            return new String(jsonArr, "UTF-8")
+                        } catch (Exception e) {
+                            task.logger.error("Exception fetching github tags for $ghSlug", e)
+                            return "[]"
+                        }
                     }
                 }
-                outputs.doNotCacheIf("error while fetching releases list") { CreateReleasesDropdownTask t -> t.versionsJson.get() == "[]" }
+                outputs.doNotCacheIf("error while fetching releases list") { CreateReleasesDropdownTask t -> t.versionsJson.getOrElse("[]") == "[]" }
             }
 
             def assembleFinalDocs = tasks.register("assembleFinalDocs", Copy) {
