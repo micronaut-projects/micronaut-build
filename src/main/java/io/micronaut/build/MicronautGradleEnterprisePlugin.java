@@ -28,13 +28,11 @@ import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.caching.configuration.BuildCacheConfiguration;
-import org.gradle.caching.http.HttpBuildCache;
 import org.nosphere.gradle.github.ActionsPlugin;
 
 import java.lang.reflect.InvocationTargetException;
 
 import static io.micronaut.build.BuildEnvironment.PREDICTIVE_TEST_SELECTION_ENV_VAR;
-import static io.micronaut.build.utils.ProviderUtils.envOrSystemProperty;
 
 public class MicronautGradleEnterprisePlugin implements Plugin<Settings> {
     private static final String[] SAFE_TO_LOG_ENV_VARIABLES = new String[] {
@@ -82,20 +80,14 @@ public class MicronautGradleEnterprisePlugin implements Plugin<Settings> {
                 }
                 buildCache.getLocal().setEnabled(localEnabled);
                 if (remoteEnabled) {
-                    buildCache.remote(HttpBuildCache.class, remote -> {
-                        remote.setUrl("https://ge.micronaut.io/cache/");
+                    buildCache.remote(ge.getBuildCache(), remote -> {
                         remote.setEnabled(true);
                         if (push) {
-                            String username = envOrSystemProperty(providers, "GRADLE_ENTERPRISE_CACHE_USERNAME", "gradleEnterpriseCacheUsername", "");
-                            String password = envOrSystemProperty(providers, "GRADLE_ENTERPRISE_CACHE_PASSWORD", "gradleEnterpriseCachePassword", "");
-                            if (!username.isEmpty() && !password.isEmpty()) {
+                            String accessKey = providers.systemProperty("GRADLE_ENTERPRISE_ACCESS_KEY").getOrNull();
+                            if (accessKey != null && !accessKey.isEmpty()) {
                                 remote.setPush(true);
-                                remote.credentials(creds -> {
-                                    creds.setUsername(username);
-                                    creds.setPassword(password);
-                                });
                             } else {
-                                System.err.println("WARNING: No credentials for remote build cache, cannot configure push!");
+                                System.err.println("WARNING: Access key missing for remote build cache, cannot configure push!");
                             }
                         }
                     });
