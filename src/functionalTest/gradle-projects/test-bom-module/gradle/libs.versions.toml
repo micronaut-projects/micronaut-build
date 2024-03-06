@@ -4,6 +4,7 @@ asm = "9.6"
 managed-dekorate = "3.7.0"
 managed-junit = "5.9.10"
 managed-micronaut-aws = "4.0.1"
+managed-ksp = "1.9.22-1.0.17"
 
 [libraries]
 boms-micronaut-aws = { module = "io.micronaut.aws:micronaut-aws-bom", version.ref = "managed-micronaut-aws" }
@@ -19,3 +20,8 @@ managed-dekorate = { module = "io.dekorate:dekorate-project", version.ref = "man
 # Other libraries are used by Micronaut but will not appear in the BOM
 #
 asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+
+[plugins]
+managed-ksp = { id = "com.google.devtools.ksp", version.ref = "managed-ksp" }
+managed-hard-versioned = { id = "some.other.id", version = "1.2.3" }
+shadow = { id = "com.github.johnrengelman.shadow", version = "7.1.2" }

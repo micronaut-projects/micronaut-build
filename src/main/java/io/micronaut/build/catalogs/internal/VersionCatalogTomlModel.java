@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2012 the original author or authors.
+ * Copyright 2003-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import java.util.Set;
  */
 public class VersionCatalogTomlModel {
     private final Set<Library> libraries = new HashSet<>();
+    private final Set<Plugin> plugins = new HashSet<>();
     private final Set<VersionModel> versions = new HashSet<>();
     private final Map<String, Library> gaToLibrary = new HashMap<>();
     private final Map<String, VersionModel> versionAliasToVersion = new HashMap<>();
@@ -37,6 +38,7 @@ public class VersionCatalogTomlModel {
      * a list of libraries found in the "[libraries]" section.
      */
     private final Map<String, Set<Library>> versionAliasToModules = new HashMap<>();
+    private final Map<String, Set<Plugin>> versionAliasToPlugins = new HashMap<>();
 
     public void addLibrary(Library library) {
         libraries.add(library);
@@ -45,6 +47,15 @@ public class VersionCatalogTomlModel {
         if (versionRef != null) {
             Set<Library> librariesByVersionRef = versionAliasToModules.computeIfAbsent(versionRef, e -> new HashSet<>());
             librariesByVersionRef.add(library);
+        }
+    }
+
+    public void addPlugin(Plugin plugin) {
+        plugins.add(plugin);
+        String versionRef = plugin.version().getReference();
+        if (versionRef != null) {
+            Set<Plugin> pluginsByVersionRef = versionAliasToPlugins.computeIfAbsent(versionRef, e -> new HashSet<>());
+            pluginsByVersionRef.add(plugin);
         }
     }
 
@@ -66,8 +77,16 @@ public class VersionCatalogTomlModel {
         return versionAliasToModules.getOrDefault(versionRef, Collections.emptySet());
     }
 
+    public Set<Plugin> findPluginsForVersionReference(String versionRef) {
+        return versionAliasToPlugins.getOrDefault(versionRef, Collections.emptySet());
+    }
+
     public Set<Library> getLibrariesTable() {
         return libraries;
+    }
+
+    public Set<Plugin> getPluginsTable() {
+        return plugins;
     }
 
     public Set<VersionModel> getVersionsTable() {
