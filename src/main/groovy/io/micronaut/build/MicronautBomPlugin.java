@@ -19,6 +19,7 @@ import groovy.namespace.QName;
 import groovy.util.Node;
 import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
 import io.micronaut.build.catalogs.internal.Library;
+import io.micronaut.build.catalogs.internal.Plugin;
 import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
 import io.micronaut.build.catalogs.internal.VersionModel;
 import io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin;
@@ -368,6 +369,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         if (Boolean.TRUE.equals(inlineNestedCatalogs.get())) {
             VersionCatalogBuilder builder = builderState.getBuilder();
             Map<String, VersionCatalogConverter.AliasRecord> knownAliases = builderState.getKnownAliases();
+            Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases = builderState.getKnownPluginAliases();
             Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases = builderState.getKnownVersionAliases();
             Set<String> excludeFromInlining = excludedInlinedAliases.get();
             catalogs.forEach(catalogFile -> {
@@ -375,6 +377,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                     LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
                     parser.parse(fis);
                     Set<Library> librariesTable = parser.getModel().getLibrariesTable();
+                    Set<Plugin> pluginsTable = parser.getModel().getPluginsTable();
                     Set<VersionModel> versionsTable = parser.getModel().getVersionsTable();
                     librariesTable.forEach(library -> {
                         String alias = library.getAlias();
@@ -424,6 +427,56 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                                 }
                             }
                             knownAliases.get(alias).addSource(source);
+                        }
+                    });
+                    pluginsTable.forEach(plugin -> {
+                        String alias = plugin.alias();
+                        if (!excludeFromInlining.contains(alias)) {
+                            String source = catalogFile.getName();
+                            if (!knownPluginAliases.containsKey(alias)) {
+                                String reference = plugin.version().getReference();
+                                String version = null;
+                                if (reference != null) {
+                                    version = reference;
+                                    if (!knownVersionAliases.containsKey(reference)) {
+                                        var requiredVersion = versionsTable.stream().filter(m -> reference.equals(m.getReference())).findFirst().get().getVersion().getRequire();
+                                        if (requiredVersion != null) {
+                                            builder.version(reference, requiredVersion);
+                                            inlinedPomProperties.put(reference, requiredVersion);
+                                        } else {
+                                            throw new IllegalStateException("Version '" + reference + "' is not defined as a required version in the catalog");
+                                        }
+                                    } else {
+                                        Set<String> sources = knownVersionAliases.get(reference).getSources();
+                                        if (!sources.equals(Collections.singleton(source))) {
+                                            System.err.println("[Warning] While inlining " + source + ", version alias '" + alias + "' is already defined in the catalog by " + sources + " so it won't be imported");
+                                        }
+                                    }
+                                    knownVersionAliases.get(reference).addSource(source);
+                                }
+                                VersionCatalogBuilder.PluginAliasBuilder pluginAliasBuilder = builder.plugin(alias, plugin.id());
+                                if (version != null) {
+                                    pluginAliasBuilder.versionRef(reference);
+                                } else {
+                                    pluginAliasBuilder.version(plugin.version().getVersion().getRequire());
+                                }
+                            } else {
+                                VersionCatalogConverter.AliasRecord record = knownPluginAliases.get(alias);
+                                // There is one case where we don't want to warn: the main BOM file will have
+                                // managed version for all Micronaut BOM files, but the version catalogs of these
+                                // imported files will also have an alias with the same name
+                                boolean warn = true;
+                                if (source.startsWith("micronaut-") && source.contains("-bom")) {
+                                    String shortName = source.substring(0, source.indexOf("-bom"));
+                                    if (alias.equals(shortName) && record.getSources().equals(Collections.singleton(VersionCatalogConverter.MAIN_ALIASES_SOURCE))) {
+                                        warn = false;
+                                    }
+                                }
+                                if (warn) {
+                                    System.err.println("[Warning] While inlining " + source + ", alias '" + alias + "' is already defined in the catalog by " + record.getSources() + " so it won't be imported");
+                                }
+                            }
+                            knownPluginAliases.get(alias).addSource(source);
                         }
                     });
                 } catch (IOException e) {
