@@ -411,20 +411,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                                     libraryBuilder.withoutVersion();
                                 }
                             } else {
-                                VersionCatalogConverter.AliasRecord record = knownAliases.get(alias);
-                                // There is one case where we don't want to warn: the main BOM file will have
-                                // managed version for all Micronaut BOM files, but the version catalogs of these
-                                // imported files will also have an alias with the same name
-                                boolean warn = true;
-                                if (source.startsWith("micronaut-") && source.contains("-bom")) {
-                                    String shortName = source.substring(0, source.indexOf("-bom"));
-                                    if (alias.equals(shortName) && record.getSources().equals(Collections.singleton(VersionCatalogConverter.MAIN_ALIASES_SOURCE))) {
-                                        warn = false;
-                                    }
-                                }
-                                if (warn) {
-                                    System.err.println("[Warning] While inlining " + source + ", alias '" + alias + "' is already defined in the catalog by " + record.getSources() + " so it won't be imported");
-                                }
+                                maybeWarn(knownAliases, alias, source);
                             }
                             knownAliases.get(alias).addSource(source);
                         }
@@ -461,20 +448,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                                     pluginAliasBuilder.version(plugin.version().getVersion().getRequire());
                                 }
                             } else {
-                                VersionCatalogConverter.AliasRecord record = knownPluginAliases.get(alias);
-                                // There is one case where we don't want to warn: the main BOM file will have
-                                // managed version for all Micronaut BOM files, but the version catalogs of these
-                                // imported files will also have an alias with the same name
-                                boolean warn = true;
-                                if (source.startsWith("micronaut-") && source.contains("-bom")) {
-                                    String shortName = source.substring(0, source.indexOf("-bom"));
-                                    if (alias.equals(shortName) && record.getSources().equals(Collections.singleton(VersionCatalogConverter.MAIN_ALIASES_SOURCE))) {
-                                        warn = false;
-                                    }
-                                }
-                                if (warn) {
-                                    System.err.println("[Warning] While inlining " + source + ", alias '" + alias + "' is already defined in the catalog by " + record.getSources() + " so it won't be imported");
-                                }
+                                maybeWarn(knownPluginAliases, alias, source);
                             }
                             knownPluginAliases.get(alias).addSource(source);
                         }
@@ -483,6 +457,23 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                     System.err.println("Unable to parse version catalog file: " + catalogFile);
                 }
             });
+        }
+    }
+
+    private static void maybeWarn(Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases, String alias, String source) {
+        VersionCatalogConverter.AliasRecord record = knownPluginAliases.get(alias);
+        // There is one case where we don't want to warn: the main BOM file will have
+        // managed version for all Micronaut BOM files, but the version catalogs of these
+        // imported files will also have an alias with the same name
+        boolean warn = true;
+        if (source.startsWith("micronaut-") && source.contains("-bom")) {
+            String shortName = source.substring(0, source.indexOf("-bom"));
+            if (alias.equals(shortName) && record.getSources().equals(Collections.singleton(VersionCatalogConverter.MAIN_ALIASES_SOURCE))) {
+                warn = false;
+            }
+        }
+        if (warn) {
+            System.err.println("[Warning] While inlining " + source + ", alias '" + alias + "' is already defined in the catalog by " + record.getSources() + " so it won't be imported");
         }
     }
 
