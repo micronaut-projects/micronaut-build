@@ -70,6 +70,7 @@ class VersionCatalogConverter {
     void populateModel() {
         catalogExtension.versionCatalog { builder ->
             Set<String> knownAliases = []
+            Set<String> knownPluginAliases = []
             Set<String> knwonVersionAliases = []
             extraVersions.forEach { alias, version ->
                 knwonVersionAliases.add(alias)
@@ -106,7 +107,7 @@ class VersionCatalogConverter {
                         throw new InvalidUserCodeException("Version catalog declares a managed plugin '${pluginAlias}' referencing a non managed version '${plugin.version().reference}'. Make sure to use a managed version.")
                     }
                     def alias = pluginAlias.substring(pluginAlias.indexOf('-') + 1)
-                    knownAliases.add(alias)
+                    knownPluginAliases.add(alias)
                     if (plugin.version().reference) {
                         builder.plugin(alias, plugin.id()).versionRef(plugin.version().reference.substring(8))
                     } else {
@@ -118,6 +119,9 @@ class VersionCatalogConverter {
                 BuilderState builderState = new BuilderState(builder)
                 knownAliases.each {
                     builderState.knownAliases.get(it).addSource(MAIN_ALIASES_SOURCE)
+                }
+                knownPluginAliases.each {
+                    builderState.knownPluginAliases.get(it).addSource(MAIN_ALIASES_SOURCE)
                 }
                 knwonVersionAliases.each {
                     builderState.knownVersionAliases.get(it).addSource(MAIN_ALIASES_SOURCE);
@@ -150,6 +154,9 @@ class VersionCatalogConverter {
     static class BuilderState {
         final VersionCatalogBuilder builder
         final Map<String, AliasRecord> knownAliases = [:].withDefault { String alias ->
+            new AliasRecord(alias)
+        }
+        final Map<String, AliasRecord> knownPluginAliases = [:].withDefault { String alias ->
             new AliasRecord(alias)
         }
         final Map<String, AliasRecord> knownVersionAliases = [:].withDefault { String alias ->
