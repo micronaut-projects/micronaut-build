@@ -18,4 +18,28 @@ package io.micronaut.build.catalogs.internal;
 import org.tomlj.TomlPosition;
 
 public record Plugin(String alias, String id, VersionModel version, TomlPosition position) {
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Plugin plugin = (Plugin) o;
+
+        if (!id.equals(plugin.id)) {
+            return false;
+        }
+        return version.equals(plugin.version);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id.hashCode();
+        result = 31 * result + (version != null ? version.hashCode() : 0);
+        return result;
+    }
 }
