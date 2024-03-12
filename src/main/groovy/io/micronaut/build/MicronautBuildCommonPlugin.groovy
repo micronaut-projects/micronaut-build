@@ -38,7 +38,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
 
     private void configureDependencies(Project project, MicronautBuildExtension micronautBuild) {
         def micronautVersionProvider = versionProviderOrDefault(project, 'micronaut', '')
-        def groovyVersionProvider = versionProviderOrDefault(project, 'groovy', '')
+        // The Groovy version comes from core if not defined locally
+        def groovyVersionProvider = versionProviderOrDefault(project, 'groovy', List.of("libs", "mn"), '')
         def groovyGroupProvider = groovyVersionProvider.map { groovyVersion ->
             groovyVersion.split("\\.").first().toInteger() <= 3 ?
                     'org.codehaus.groovy' :
