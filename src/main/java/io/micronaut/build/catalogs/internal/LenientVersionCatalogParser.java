@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2012 the original author or authors.
+ * Copyright 2003-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,9 @@ import java.util.stream.Collectors;
  * coordinates.
  */
 public class LenientVersionCatalogParser {
+
     private static final String LIBRARIES_KEY = "libraries";
+    private static final String PLUGINS_KEY = "plugins";
     private static final String VERSIONS_KEY = "versions";
 
     private final VersionCatalogTomlModel model = new VersionCatalogTomlModel();
@@ -57,8 +59,10 @@ public class LenientVersionCatalogParser {
         RichVersionParser strictVersionParser = new RichVersionParser();
         TomlParseResult result = Toml.parse(in);
         TomlTable librariesTable = result.getTable(LIBRARIES_KEY);
+        TomlTable pluginsTable = result.getTable(PLUGINS_KEY);
         TomlTable versionsTable = result.getTable(VERSIONS_KEY);
         parseLibraries(librariesTable, strictVersionParser);
+        parsePlugins(pluginsTable, strictVersionParser);
         parseVersions(versionsTable, strictVersionParser);
     }
 
@@ -76,6 +80,19 @@ public class LenientVersionCatalogParser {
                 .collect(Collectors.toList());
         for (String alias : keys) {
             parseLibrary(alias, librariesTable, strictVersionParser);
+        }
+    }
+
+    private void parsePlugins(@Nullable TomlTable pluginsTable, RichVersionParser strictVersionParser) {
+        if (pluginsTable == null) {
+            return;
+        }
+        List<String> keys = pluginsTable.keySet()
+                .stream()
+                .sorted(Comparator.comparing(String::length))
+                .toList();
+        for (String alias : keys) {
+            parsePlugin(alias, pluginsTable, strictVersionParser);
         }
     }
 
@@ -176,6 +193,25 @@ public class LenientVersionCatalogParser {
         }
     }
 
+    private void parsePlugin(String alias, TomlTable pluginsTable, RichVersionParser strictVersionParser) {
+        TomlPosition position = pluginsTable.inputPositionOf(alias);
+        String id = expectString(alias, pluginsTable, "id");
+        Object version = pluginsTable.get(alias + ".version");
+        VersionModel versionModel = null;
+        if (version instanceof String) {
+            String require = (String) version;
+            RichVersion richVersion = strictVersionParser.parse(require);
+            versionModel = new VersionModel(null, richVersion, position);
+        } else if (version instanceof TomlTable) {
+            TomlTable versionTable = (TomlTable) version;
+            String versionRef = versionTable.getString("ref");
+            versionModel = new VersionModel(versionRef, null, position);
+        }
+        if (versionModel != null) {
+            model.addPlugin(new Plugin(alias, id, versionModel, position));
+        }
+    }
+
     private void parseVersion(String alias, TomlTable versionsTable, RichVersionParser strictVersionParser) {
         String require = null;
         String strictly = null;
@@ -207,5 +243,4 @@ public class LenientVersionCatalogParser {
             ), position));
         }
     }
-
 }

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017-2024 original authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.micronaut.build.pom
 
 import groovy.transform.Canonical
@@ -55,6 +70,7 @@ class VersionCatalogConverter {
     void populateModel() {
         catalogExtension.versionCatalog { builder ->
             Set<String> knownAliases = []
+            Set<String> knownPluginAliases = []
             Set<String> knwonVersionAliases = []
             extraVersions.forEach { alias, version ->
                 knwonVersionAliases.add(alias)
@@ -84,10 +100,28 @@ class VersionCatalogConverter {
                             .versionRef(library.version.reference.substring(8))
                 }
             }
+            model.pluginsTable.each { plugin ->
+                String pluginAlias = plugin.alias()
+                if (isManagedAlias(pluginAlias)) {
+                    if (plugin.version().reference && !isManagedAlias(plugin.version().reference)) {
+                        throw new InvalidUserCodeException("Version catalog declares a managed plugin '${pluginAlias}' referencing a non managed version '${plugin.version().reference}'. Make sure to use a managed version.")
+                    }
+                    def alias = pluginAlias.substring(pluginAlias.indexOf('-') + 1)
+                    knownPluginAliases.add(alias)
+                    if (plugin.version().reference) {
+                        builder.plugin(alias, plugin.id()).versionRef(plugin.version().reference.substring(8))
+                    } else {
+                        builder.plugin(alias, plugin.id()).version(plugin.version().version.require)
+                    }
+                }
+            }
             afterBuildingModel.each {
                 BuilderState builderState = new BuilderState(builder)
                 knownAliases.each {
                     builderState.knownAliases.get(it).addSource(MAIN_ALIASES_SOURCE)
+                }
+                knownPluginAliases.each {
+                    builderState.knownPluginAliases.get(it).addSource(MAIN_ALIASES_SOURCE)
                 }
                 knwonVersionAliases.each {
                     builderState.knownVersionAliases.get(it).addSource(MAIN_ALIASES_SOURCE);
@@ -98,7 +132,7 @@ class VersionCatalogConverter {
     }
 
     private static boolean isManagedAlias(String libraryAlias) {
-        libraryAlias.startsWith("managed-")
+        libraryAlias?.startsWith("managed-")
     }
 
     private static boolean isBomAlias(String reference) {
@@ -120,6 +154,9 @@ class VersionCatalogConverter {
     static class BuilderState {
         final VersionCatalogBuilder builder
         final Map<String, AliasRecord> knownAliases = [:].withDefault { String alias ->
+            new AliasRecord(alias)
+        }
+        final Map<String, AliasRecord> knownPluginAliases = [:].withDefault { String alias ->
             new AliasRecord(alias)
         }
         final Map<String, AliasRecord> knownVersionAliases = [:].withDefault { String alias ->

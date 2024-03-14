@@ -32,7 +32,7 @@ class PreReleaseFunctionalTest extends AbstractFunctionalTest {
             succeeded ':subproject2:checkPom'
         }
         outputContains "POM io.micronaut.project-template:micronaut-subproject1:1.0.0-SNAPSHOT (via io.micronaut.project-template:micronaut-subproject1:1.0.0-SNAPSHOT) declares a SNAPSHOT dependency on io.micronaut.validation:micronaut-validation:666-SNAPSHOT"
-        errorOutputContains "POM verification failed. See report in ${testDirectory.toFile()}/subproject1/build/reports/checkPom/report-checkPom.txt"
+        errorOutputContains "POM verification failed. See report in ${testDirectory.toFile().canonicalPath}/subproject1/build/reports/checkPom/report-checkPom.txt"
 
         when:
         run 'preReleaseCheck', '-Dmicronaut.fail.on.snapshots=false', '--continue'
@@ -42,7 +42,5 @@ class PreReleaseFunctionalTest extends AbstractFunctionalTest {
             succeeded ':subproject1:checkPom'
             succeeded ':subproject2:checkPom'
         }
-
     }
-
 }
