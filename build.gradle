@@ -44,7 +44,9 @@ tasks.register('functionalTest', Test) {
     systemProperty "CURRENT_JDK", JavaVersion.current().majorVersion
     environment("GH_USERNAME", System.getenv("GH_USERNAME"))
     environment("GH_TOKEN_PUBLIC_REPOS_READONLY", System.getenv("GH_TOKEN_PUBLIC_REPOS_READONLY"))
-    environment("CI", System.getenv("CI"))
+    if (System.getenv("CI") != null) {
+        environment("CI", System.getenv("CI"))
+    }
 }
 
 tasks.named('check') {

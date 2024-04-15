@@ -69,6 +69,13 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
         repository.when(
                 request()
         ).respond(new LoggingCallback())
+        if (idx == 7) {
+            buildFile << """
+                tasks.named("updateVersionCatalogs") {
+                    rejectedVersionsPerModule['awesome.lib:awesome'] = '3\\\\.0\\\\.[8-9]'
+                }
+            """
+        }
         run 'useLatestVersions'
 
         then:
@@ -88,7 +95,7 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
         catalogFile.text == expected
 
         where:
-        idx << (0..6)
+        idx << (0..7)
     }
 
     static class LoggingCallback implements ExpectationResponseCallback {
