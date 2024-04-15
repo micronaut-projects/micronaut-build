@@ -34,6 +34,7 @@ import org.gradle.api.artifacts.result.ResolutionResult;
 import org.gradle.api.artifacts.result.UnresolvedDependencyResult;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Input;
@@ -78,11 +79,14 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
     @Input
     public abstract Property<Boolean> getAllowMajorUpdates();
 
+    @Input
+    public abstract MapProperty<String, String> getRejectedVersionsPerModule();
+
     @TaskAction
     void updateCatalogs() throws IOException, InterruptedException {
         Set<File> catalogs = getCatalogsDirectory().getAsFileTree()
-                .matching(pattern -> pattern.include("*.versions.toml"))
-                .getFiles();
+            .matching(pattern -> pattern.include("*.versions.toml"))
+            .getFiles();
         File outputDir = getOutputDirectory().getAsFile().get();
         File logFile = getOutputDirectory().file("updates.log").get().getAsFile();
         if (outputDir.isDirectory() || outputDir.mkdirs()) {
@@ -100,11 +104,11 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
 
     private static boolean supportsUpdate(RichVersion richVersion) {
         return richVersion != null
-                && richVersion.getRequire() != null
-                && richVersion.getStrictly() == null
-                && richVersion.getPrefer() == null
-                && !richVersion.isRejectAll()
-                && richVersion.getRejectedVersions() == null;
+               && richVersion.getRequire() != null
+               && richVersion.getStrictly() == null
+               && richVersion.getPrefer() == null
+               && !richVersion.isRejectAll()
+               && richVersion.getRejectedVersions() == null;
     }
 
     private void updateCatalog(File inputCatalog, File outputCatalog, File logFile) throws IOException, InterruptedException {
@@ -124,20 +128,30 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
             detachedConfiguration.setCanBeResolved(true);
             detachedConfiguration.setTransitive(false);
             detachedConfiguration.getResolutionStrategy()
-                    .cacheDynamicVersionsFor(0, TimeUnit.MINUTES);
+                .cacheDynamicVersionsFor(0, TimeUnit.MINUTES);
             List<Pattern> rejectedQualifiers = getRejectedQualifiers().get()
-                    .stream()
-                    .map(qualifier -> Pattern.compile("(?i).*[.-]" + qualifier + "[.\\d-+]*"))
-                    .collect(Collectors.toList());
+                .stream()
+                .map(qualifier -> Pattern.compile("(?i).*[.-]" + qualifier + "[.\\d-+]*"))
+                .toList();
+            var rejectedVersionsPerModule = getRejectedVersionsPerModule().get();
             detachedConfiguration.getResolutionStrategy().getComponentSelection().all(rules -> {
                 ModuleComponentIdentifier candidateModule = rules.getCandidate();
                 String candidateVersion = candidateModule.getVersion();
+                var moduleIdentifier = candidateModule.getModuleIdentifier();
                 rejectedQualifiers.forEach(qualifier -> {
                     if (qualifier.matcher(candidateVersion).find()) {
                         rules.reject("Rejecting qualifier " + qualifier);
-                        log.println("Rejecting " + candidateModule.getModuleIdentifier() + " version " + candidateVersion + " because of qualifier '" + qualifier + "'");
+                        log.println("Rejecting " + moduleIdentifier + " version " + candidateVersion + " because of qualifier '" + qualifier + "'");
                     }
                 });
+                var rejected = rejectedVersionsPerModule.get(moduleIdentifier.toString());
+                if (rejected != null) {
+                    var exclusion = Pattern.compile(rejected);
+                    if (exclusion.matcher(candidateVersion).find()) {
+                        rules.reject("Rejecting version " + candidateVersion + " because of configuration. It matches regular expression: " + rejected);
+                        log.println("Rejecting version " + candidateVersion + " because of configuration. It matches regular expression: " + rejected);
+                    }
+                }
                 if (!allowMajorUpdate) {
                     model.findLibrary(
                             candidateModule.getGroup(), candidateModule.getModule()
@@ -165,64 +179,64 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
             Set<String> ignoredModules = getIgnoredModules().get();
 
             model.getLibrariesTable()
-                    .stream()
-                    .filter(library -> !ignoredModules.contains(library.getModule()))
-                    .filter(library -> library.getVersion().getReference() != null || !requiredVersionOf(library).isEmpty())
-                    .map(library -> requirePom(dependencies, library))
-                    .forEach(dependency -> detachedConfiguration.getDependencies().add(dependency));
+                .stream()
+                .filter(library -> !ignoredModules.contains(library.getModule()))
+                .filter(library -> library.getVersion().getReference() != null || !requiredVersionOf(library).isEmpty())
+                .map(library -> requirePom(dependencies, library))
+                .forEach(dependency -> detachedConfiguration.getDependencies().add(dependency));
 
             ResolutionResult resolutionResult = detachedConfiguration.getIncoming()
-                    .getResolutionResult();
+                .getResolutionResult();
             resolutionResult
-                    .allComponents(result -> {
-                        ModuleVersionIdentifier mid = result.getModuleVersion();
-                        String latest = mid.getVersion();
-                        Status targetStatus = Status.detectStatus(latest);
-                        log.println("Latest release of " + mid.getModule() + " is " + latest + " (status " + targetStatus + ")");
-                        model.findLibrary(mid.getGroup(), mid.getName()).ifPresent(library -> {
-                            VersionModel version = library.getVersion();
-                            String reference = version.getReference();
-                            if (reference != null) {
-                                model.findVersion(reference).ifPresent(referencedVersion -> {
-                                    RichVersion richVersion = referencedVersion.getVersion();
-                                    if (supportsUpdate(richVersion)) {
-                                        String require = richVersion.getRequire();
-                                        Status sourceStatus = Status.detectStatus(require);
-                                        if (!Objects.equals(require, latest) && targetStatus.isAsStableOrMoreStableThan(sourceStatus)) {
-                                            log.println("Updating required version from " + require + " to " + latest);
-                                            String lookup = "(" + reference + "\\s*=\\s*[\"'])(.+?)([\"'])";
-                                            int lineNb = referencedVersion.getPosition().line() - 1;
-                                            String line = lines.get(lineNb);
-                                            Matcher m = Pattern.compile(lookup).matcher(line);
-                                            if (m.find()) {
-                                                lines.set(lineNb, m.replaceAll("$1" + latest + "$3"));
-                                            } else {
-                                                log.println("Line " + lineNb + " contains unsupported notation, automatic updating failed");
-                                            }
+                .allComponents(result -> {
+                    ModuleVersionIdentifier mid = result.getModuleVersion();
+                    String latest = mid.getVersion();
+                    Status targetStatus = Status.detectStatus(latest);
+                    log.println("Latest release of " + mid.getModule() + " is " + latest + " (status " + targetStatus + ")");
+                    model.findLibrary(mid.getGroup(), mid.getName()).ifPresent(library -> {
+                        VersionModel version = library.getVersion();
+                        String reference = version.getReference();
+                        if (reference != null) {
+                            model.findVersion(reference).ifPresent(referencedVersion -> {
+                                RichVersion richVersion = referencedVersion.getVersion();
+                                if (supportsUpdate(richVersion)) {
+                                    String require = richVersion.getRequire();
+                                    Status sourceStatus = Status.detectStatus(require);
+                                    if (!Objects.equals(require, latest) && targetStatus.isAsStableOrMoreStableThan(sourceStatus)) {
+                                        log.println("Updating required version from " + require + " to " + latest);
+                                        String lookup = "(" + reference + "\\s*=\\s*[\"'])(.+?)([\"'])";
+                                        int lineNb = referencedVersion.getPosition().line() - 1;
+                                        String line = lines.get(lineNb);
+                                        Matcher m = Pattern.compile(lookup).matcher(line);
+                                        if (m.find()) {
+                                            lines.set(lineNb, m.replaceAll("$1" + latest + "$3"));
+                                        } else {
+                                            log.println("Line " + lineNb + " contains unsupported notation, automatic updating failed");
                                         }
-                                    } else {
-                                        log.println("Version '" + reference + "' uses a notation which is not supported for automatic upgrades yet.");
                                     }
-                                });
-                            } else {
-                                String lookup = "(version\\s*=\\s*[\"'])(.+?)([\"'])";
-                                int lineNb = library.getPosition().line() - 1;
-                                String line = lines.get(lineNb);
-                                Matcher m = Pattern.compile(lookup).matcher(line);
-                                if (m.find()) {
-                                    lines.set(lineNb, m.replaceAll("$1" + latest + "$3"));
                                 } else {
-                                    lookup = "(\\s*=\\s*[\"'])(" + library.getGroup() + "):("+ library.getName()+"):(.+?)([\"'])";
-                                    m = Pattern.compile(lookup).matcher(line);
-                                    if (m.find()) {
-                                        lines.set(lineNb, m.replaceAll("$1$2:$3:" + latest + "$5"));
-                                    } else {
-                                        log.println("Line " + lineNb + " contains unsupported notation, automatic updating failed");
-                                    }
+                                    log.println("Version '" + reference + "' uses a notation which is not supported for automatic upgrades yet.");
+                                }
+                            });
+                        } else {
+                            String lookup = "(version\\s*=\\s*[\"'])(.+?)([\"'])";
+                            int lineNb = library.getPosition().line() - 1;
+                            String line = lines.get(lineNb);
+                            Matcher m = Pattern.compile(lookup).matcher(line);
+                            if (m.find()) {
+                                lines.set(lineNb, m.replaceAll("$1" + latest + "$3"));
+                            } else {
+                                lookup = "(\\s*=\\s*[\"'])(" + library.getGroup() + "):(" + library.getName() + "):(.+?)([\"'])";
+                                m = Pattern.compile(lookup).matcher(line);
+                                if (m.find()) {
+                                    lines.set(lineNb, m.replaceAll("$1$2:$3:" + latest + "$5"));
+                                } else {
+                                    log.println("Line " + lineNb + " contains unsupported notation, automatic updating failed");
                                 }
                             }
-                        });
+                        }
                     });
+                });
 
             getLogger().lifecycle("Writing updated catalog at " + outputCatalog);
             try (PrintWriter writer = newPrintWriter(outputCatalog)) {
@@ -230,17 +244,17 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
             }
 
             String errors = resolutionResult.getAllDependencies()
-                    .stream()
-                    .filter(UnresolvedDependencyResult.class::isInstance)
-                    .map(UnresolvedDependencyResult.class::cast)
-                    .map(r -> {
-                        log.println("Unresolved dependency " + r.getAttempted().getDisplayName());
-                        log.println("   reason " + r.getAttemptedReason());
-                        log.println("   failure" );
-                        r.getFailure().printStackTrace(log);
-                        return "\n    - " + r.getAttempted().getDisplayName() + " -> " + r.getFailure().getMessage();
-                    })
-                    .collect(Collectors.joining(""));
+                .stream()
+                .filter(UnresolvedDependencyResult.class::isInstance)
+                .map(UnresolvedDependencyResult.class::cast)
+                .map(r -> {
+                    log.println("Unresolved dependency " + r.getAttempted().getDisplayName());
+                    log.println("   reason " + r.getAttemptedReason());
+                    log.println("   failure");
+                    r.getFailure().printStackTrace(log);
+                    return "\n    - " + r.getAttempted().getDisplayName() + " -> " + r.getFailure().getMessage();
+                })
+                .collect(Collectors.joining(""));
             if (!errors.isEmpty()) {
                 throw new GradleException("Some modules couldn't be updated because of the following reasons:" + errors);
             }

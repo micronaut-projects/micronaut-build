@@ -26,6 +26,7 @@ public class MicronautVersionCatalogUpdatePlugin implements Plugin<Project> {
             task.getOutputDirectory().convention(project.getLayout().getBuildDirectory().dir("catalogs-update"));
             task.getRejectedQualifiers().convention(Arrays.asList("alpha", "beta", "rc", "cr", "m", "preview", "b", "ea"));
             task.getIgnoredModules().convention(Collections.emptySet());
+            task.getRejectedVersionsPerModule().convention(Collections.emptyMap());
             task.getAllowMajorUpdates().convention(false);
         });
         tasks.register("useLatestVersions", Copy.class, task -> {
