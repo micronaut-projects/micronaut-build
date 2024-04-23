@@ -15,7 +15,7 @@ spotless-plugin = "6.25.0"
 testlogger-plugin = "4.0.0"
 tomlj = "1.1.1"
 typesafe-config = "1.4.3"
-bytebuddy = "1.14.12"
+bytebuddy = "1.14.13"
 objenesis = "3.3"
 
 [libraries]
