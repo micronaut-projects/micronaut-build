@@ -151,18 +151,20 @@ You can do this directly in the project, or, better, in a convention plugin if i
                 println("Configuring test task ${it.path} to execute specifically for vendor: $vendor")
                 inputs.property("java.vendor", vendor)
             }
-            retry {
-                if (micronautBuildExtension.environment.isGithubAction().getOrElse(false)) {
-                    maxRetries.set(2)
-                    maxFailures.set(20)
+            if (extensions.findByName('develocity')) {
+                develocity.testRetry {
+                    if (micronautBuildExtension.environment.isGithubAction().getOrElse(false)) {
+                        maxRetries.set(2)
+                        maxFailures.set(20)
+                    }
+                    failOnPassedAfterRetry.set(false)
                 }
-                failOnPassedAfterRetry.set(false)
-            }
-            predictiveSelection {
-                enabled = micronautBuildExtension.environment.isTestSelectionEnabled()
-            }
-            distribution {
-                enabled = false
+                develocity.predictiveTestSelection {
+                    enabled = micronautBuildExtension.environment.isTestSelectionEnabled()
+                }
+                develocity.testDistribution {
+                    enabled = false
+                }
             }
             javaLauncher.set(toolchains.launcherFor {
                 languageVersion.set(micronautBuildExtension.testJavaVersion.map { JavaLanguageVersion.of(it) })
