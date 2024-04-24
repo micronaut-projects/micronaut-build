@@ -61,7 +61,7 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
         PluginManager pluginManager = settings.getPluginManager();
         settings.getGradle().getSharedServices().registerIfAbsent(InternalStateCheckingService.NAME, InternalStateCheckingService.class, spec -> spec.parameters(p -> p.getRegisteredByProjectPlugin().set(false))).get();
         pluginManager.apply(MicronautBuildSettingsPlugin.class);
-        pluginManager.apply(MicronautGradleEnterprisePlugin.class);
+        pluginManager.apply(MicronautDevelocityPlugin.class);
         MicronautBuildSettingsExtension buildSettingsExtension = settings.getExtensions().findByType(MicronautBuildSettingsExtension.class);
         applyPublishingPlugin(settings);
         configureProjectNames(settings, buildSettingsExtension);

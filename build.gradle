@@ -4,7 +4,7 @@ plugins {
     id 'groovy-gradle-plugin'
     id 'groovy'
     id 'maven-publish'
-    id("io.github.gradle-nexus.publish-plugin") version "1.3.0"
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id 'signing'
 }
 
@@ -63,7 +63,7 @@ dependencies {
     implementation libs.nexus.publish.plugin
     implementation libs.sonar.plugin
 
-    implementation libs.gradle.enterprise.plugin
+    implementation libs.develocity.plugin
     implementation libs.gradle.github.actions.plugin
     implementation libs.gradle.custom.userdata.plugin
     implementation libs.japicmp.plugin
@@ -159,6 +159,10 @@ gradlePlugin {
         gradleEnterprise {
             id = 'io.micronaut.build.internal.gradle-enterprise'
             implementationClass = 'io.micronaut.build.MicronautGradleEnterprisePlugin'
+        }
+        develocity {
+            id = 'io.micronaut.build.internal.develocity'
+            implementationClass = 'io.micronaut.build.MicronautDevelocityPlugin'
         }
         sharedSettings {
             id = 'io.micronaut.build.shared.settings'
