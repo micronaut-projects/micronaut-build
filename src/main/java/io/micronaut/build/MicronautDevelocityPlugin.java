@@ -31,8 +31,8 @@ import org.nosphere.gradle.github.ActionsPlugin;
 import static io.micronaut.build.BuildEnvironment.PREDICTIVE_TEST_SELECTION_ENV_VAR;
 
 public class MicronautDevelocityPlugin implements Plugin<Settings> {
-    private static final String[] SAFE_TO_LOG_ENV_VARIABLES = new String[] {
-            PREDICTIVE_TEST_SELECTION_ENV_VAR
+    private static final String[] SAFE_TO_LOG_ENV_VARIABLES = new String[]{
+        PREDICTIVE_TEST_SELECTION_ENV_VAR
     };
 
     @Override
@@ -70,9 +70,7 @@ public class MicronautDevelocityPlugin implements Plugin<Settings> {
                                      DevelocityConfiguration config,
                                      MicronautBuildSettingsExtension micronautBuildSettingsExtension) {
         var providers = settings.getProviders();
-        var publishScanOnDemand = providers.gradleProperty("publishScanOnDemand")
-                .map(Boolean::parseBoolean)
-                .orElse(false);
+        var publishScanOnDemand = booleanProperty(settings, "publishScanOnDemand", false);
         var isCI = ProviderUtils.guessCI(providers);
         var buildScanExplicit = settings.getStartParameter().isBuildScan();
         configureBuildScansPublishing(config, isCI, publishScanOnDemand, buildScanExplicit);
@@ -137,17 +135,16 @@ public class MicronautDevelocityPlugin implements Plugin<Settings> {
 
     private void configureBuildScansPublishing(DevelocityConfiguration config,
                                                boolean isCI,
-                                               Provider<Boolean> publishScanOnDemand,
+                                               boolean publishScanOnDemand,
                                                boolean buildScanExplicit) {
         config.getServer().convention("https://ge.micronaut.io");
         config.buildScan(buildScan -> {
             buildScan.getPublishing().onlyIf(context -> {
-                if (Boolean.TRUE.equals(publishScanOnDemand.get())) {
+                if (publishScanOnDemand) {
                     return buildScanExplicit;
                 }
-                return  isCI || context.isAuthenticated();
+                return isCI || context.isAuthenticated();
             });
-            buildScan.capture(c -> c.getFileFingerprints().convention(true));
         });
     }
 
