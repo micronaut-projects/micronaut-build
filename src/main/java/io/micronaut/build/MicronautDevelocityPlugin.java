@@ -37,11 +37,11 @@ public class MicronautDevelocityPlugin implements Plugin<Settings> {
 
     @Override
     public void apply(Settings settings) {
+        var pluginManager = settings.getPluginManager();
+        pluginManager.apply(MicronautBuildSettingsPlugin.class);
         if (!isDevelocityEnabled(settings)) {
             return;
         }
-        var pluginManager = settings.getPluginManager();
-        pluginManager.apply(MicronautBuildSettingsPlugin.class);
         pluginManager.apply(DevelocityPlugin.class);
         pluginManager.apply(CommonCustomUserDataGradlePlugin.class);
         Provider<String> projectGroup = settings.getProviders().gradleProperty("projectGroup");
@@ -108,7 +108,11 @@ public class MicronautDevelocityPlugin implements Plugin<Settings> {
         buildCache.remote(config.getBuildCache(), remote -> {
             remote.setEnabled(true);
             if (push) {
-                String accessKey = providers.systemProperty("GRADLE_ENTERPRISE_ACCESS_KEY").getOrNull();
+                String accessKey = providers.environmentVariable("GRADLE_ENTERPRISE_ACCESS_KEY")
+                    .orElse(providers.environmentVariable("DEVELOCITY_ACCESS_KEY"))
+                    // this one below is weird but for backward compatibility
+                    .orElse(providers.systemProperty("GRADLE_ENTERPRISE_ACCESS_KEY"))
+                    .getOrNull();
                 if (accessKey != null && !accessKey.isEmpty()) {
                     remote.setPush(true);
                 } else {
