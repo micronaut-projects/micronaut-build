@@ -3,11 +3,11 @@ asciidoctorj = "2.5.12"
 commons-lang3 = "3.14.0"
 japicmp-plugin = "0.4.2"
 gradle-custom-userdata-plugin = "2.0.1"
-gradle-enterprise-plugin = "3.17.2"
-gradle-github-actions-plugin = "1.3.2"
+develocity-plugin = "3.17.2"
+gradle-github-actions-plugin = "1.4.0"
 grails-gdoc = "1.0.1"
 mockserver = "5.15.0"
-nexus-publish-plugin = "1.3.0"
+nexus-publish-plugin = "2.0.0"
 snakeyaml = "2.2"
 sonar-plugin = "4.0.0.2929"
 spock = "2.1-groovy-3.0"
@@ -24,7 +24,7 @@ bytebuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
 japicmp-plugin = { module = "me.champeau.gradle:japicmp-gradle-plugin", version.ref = "japicmp-plugin" }
 gradle-custom-userdata-plugin = { module = "com.gradle:common-custom-user-data-gradle-plugin", version.ref = "gradle-custom-userdata-plugin" }
-gradle-enterprise-plugin = { module = "com.gradle:gradle-enterprise-gradle-plugin", version.ref = "gradle-enterprise-plugin" }
+develocity-plugin = { module = "com.gradle:develocity-gradle-plugin", version.ref = "develocity-plugin" }
 gradle-github-actions-plugin = { module = "org.nosphere.gradle.github:gradle-github-actions-plugin", version.ref = "gradle-github-actions-plugin" }
 grails-gdoc = { module = "org.grails:grails-gdoc-engine", version.ref = "grails-gdoc" }
 nexus-publish-plugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexus-publish-plugin" }
