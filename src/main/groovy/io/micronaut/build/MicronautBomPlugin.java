@@ -17,7 +17,6 @@ package io.micronaut.build;
 
 import groovy.namespace.QName;
 import groovy.util.Node;
-import groovy.util.NodeList;
 import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
 import io.micronaut.build.catalogs.internal.Library;
 import io.micronaut.build.catalogs.internal.Plugin;
@@ -28,6 +27,31 @@ import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.pom.PomChecker;
 import io.micronaut.build.pom.PomCheckerUtils;
 import io.micronaut.build.pom.VersionCatalogConverter;
+import org.apache.maven.model.building.DefaultModelBuilder;
+import org.apache.maven.model.building.DefaultModelBuildingRequest;
+import org.apache.maven.model.building.DefaultModelProcessor;
+import org.apache.maven.model.building.ModelBuilder;
+import org.apache.maven.model.building.ModelBuildingException;
+import org.apache.maven.model.building.ModelBuildingRequest;
+import org.apache.maven.model.composition.DefaultDependencyManagementImporter;
+import org.apache.maven.model.inheritance.DefaultInheritanceAssembler;
+import org.apache.maven.model.interpolation.DefaultModelVersionProcessor;
+import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
+import org.apache.maven.model.io.DefaultModelReader;
+import org.apache.maven.model.locator.DefaultModelLocator;
+import org.apache.maven.model.management.DefaultDependencyManagementInjector;
+import org.apache.maven.model.management.DefaultPluginManagementInjector;
+import org.apache.maven.model.normalization.DefaultModelNormalizer;
+import org.apache.maven.model.path.DefaultModelPathTranslator;
+import org.apache.maven.model.path.DefaultModelUrlNormalizer;
+import org.apache.maven.model.path.DefaultPathTranslator;
+import org.apache.maven.model.path.DefaultUrlNormalizer;
+import org.apache.maven.model.path.ProfileActivationFilePathInterpolator;
+import org.apache.maven.model.plugin.DefaultReportingConverter;
+import org.apache.maven.model.profile.DefaultProfileSelector;
+import org.apache.maven.model.resolution.ModelResolver;
+import org.apache.maven.model.superpom.DefaultSuperPomProvider;
+import org.apache.maven.model.validation.DefaultModelValidator;
 import org.gradle.api.Action;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
@@ -35,10 +59,13 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencyConstraint;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.VersionCatalog;
 import org.gradle.api.artifacts.VersionCatalogsExtension;
 import org.gradle.api.artifacts.VersionConstraint;
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
+import org.gradle.api.artifacts.result.ResolvedVariantResult;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.component.AdhocComponentWithVariants;
@@ -48,21 +75,29 @@ import org.gradle.api.plugins.JavaPlatformPlugin;
 import org.gradle.api.plugins.PluginManager;
 import org.gradle.api.plugins.catalog.CatalogPluginExtension;
 import org.gradle.api.plugins.catalog.VersionCatalogPlugin;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.PublishingExtension;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.maven.tasks.GenerateMavenPom;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,6 +105,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -85,8 +121,12 @@ import java.util.stream.Stream;
  */
 @SuppressWarnings({"UnstableApiUsage", "HardCodedStringLiteral"})
 public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MicronautBomPlugin.class);
 
+    private static final Pattern BASENAME_EXTRACTOR = Pattern.compile("^([a-zA-Z0-9-]+?)-\\d[\\d.-]*(-[a-zA-Z0-9]+)?.+$");
     public static final List<String> DEPENDENCY_PATH = Arrays.asList("dependencyManagement", "dependencies", "dependency");
+
+    private ModelResolver mavenModelResolver;
 
     @Override
     public void apply(Project project) {
@@ -105,9 +145,11 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         bomExtension.getExtraExcludedProjects().add(project.getName());
         bomExtension.getCatalogToPropertyNameOverrides().convention(Collections.emptyMap());
         bomExtension.getInlineNestedCatalogs().convention(true);
-        bomExtension.getExcludedInlinedAliases().convention(Collections.emptySet());
+        bomExtension.getExcludedInlinedAliases().convention(Set.of());
+        bomExtension.getInlineRegularBOMs().convention(false);
         bomExtension.getInferProjectsToInclude().convention(true);
         configureBOM(project, bomExtension);
+        mavenModelResolver = new SimpleMavenModelResolver(project.getConfigurations(), project.getDependencies());
     }
 
     private static String nameOf(Node n) {
@@ -223,6 +265,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         );
         Map<String, String> inlinedPomProperties = new LinkedHashMap<>();
         List<InlinedDependency> inlinedMavenDependencies = new ArrayList<>();
+        var logFile = prepareLogFile(project);
         publishing.getPublications().named("maven", MavenPublication.class, pub -> {
             pub.setArtifactId(publishedName);
             pub.from(project.getComponents().getByName("javaPlatform"));
@@ -318,6 +361,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                                     .collect(Collectors.joining("\n"))
                                 );
                             }
+                            System.out.println("Inlining log file: " + logFile);
                         }
                     });
                 });
@@ -331,14 +375,20 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             attrs.attribute(Category.CATEGORY_ATTRIBUTE, project.getObjects().named(Category.class, Category.REGULAR_PLATFORM));
             attrs.attribute(Usage.USAGE_ATTRIBUTE, project.getObjects().named(Usage.class, Usage.VERSION_CATALOG));
         });
+        Configuration allBoms = project.getConfigurations().detachedConfiguration();
         versionCatalog.ifPresent(libsCatalog -> libsCatalog.getLibraryAliases().forEach(alias -> {
             if (alias.startsWith("boms.")) {
-                Dependency bomDependency = project.getDependencies().platform(libsCatalog.findLibrary(alias)
+                var catalogEntry = libsCatalog.findLibrary(alias)
                     .map(Provider::get)
-                    .orElseThrow(() -> new RuntimeException("Unexpected missing alias in catalog: " + alias))
-                );
-                api.getDependencies().add(bomDependency);
-                catalogs.getDependencies().add(bomDependency);
+                    .orElseThrow(() -> new RuntimeException("Unexpected missing alias in catalog: " + alias));
+                var catalog = project.getDependencies().platform(catalogEntry);
+                api.getDependencies().add(catalog);
+                catalogs.getDependencies().add(catalog);
+                Dependency bomDependency = project.getDependencies().create(catalogEntry);
+                if (bomDependency instanceof ExternalModuleDependency emd) {
+                    emd.artifact(a -> a.setExtension("pom"));
+                }
+                allBoms.getDependencies().add(bomDependency);
             } else if (alias.startsWith("managed.")) {
                 api.getDependencyConstraints().add(
                     project.getDependencies().getConstraints().create(libsCatalog.findLibrary(alias).map(Provider::get)
@@ -350,12 +400,22 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         var catalogArtifactView = catalogs.getIncoming()
             .artifactView(spec -> spec.lenient(true));
         var catalogArtifacts = catalogArtifactView.getArtifacts().getArtifacts();
+        var bomArtifacts = allBoms.getIncoming()
+            .artifactView(spec -> spec.lenient(true))
+            .getArtifacts().getArtifacts();
         Property<Boolean> inlineNestedCatalogs = bomExtension.getInlineNestedCatalogs();
-        SetProperty<String> excludedInlinedAliases = bomExtension.getExcludedInlinedAliases();
+        Property<Boolean> inlineNestedBOMs = bomExtension.getInlineRegularBOMs();
+        var excludedInlinedAliases = bomExtension.getExcludeFromInlining()
+            .zip(bomExtension.getExcludedInlinedAliases(), (excludeMap, simpleExcludes) -> {
+                Map<String, Set<String>> result = new HashMap<>(excludeMap);
+                simpleExcludes.forEach(e -> result.computeIfAbsent("*", k -> new HashSet<>()).add(e));
+                return result;
+            });
+        var includedAliases = bomExtension.getInlinedAliases();
         modelConverter.afterBuildingModel(builderState -> {
             api.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
-            maybeInlineNestedCatalogs(catalogArtifacts, builderState, inlineNestedCatalogs, excludedInlinedAliases, inlinedPomProperties, inlinedMavenDependencies);
+            maybeInlineNestedCatalogs(logFile, catalogArtifacts, bomArtifacts, builderState, inlineNestedCatalogs, inlineNestedBOMs, excludedInlinedAliases, includedAliases, inlinedPomProperties, inlinedMavenDependencies, project);
         });
         projectDescriptors.get().forEach(p -> {
             String moduleGroup = p.getGroupId();
@@ -374,10 +434,23 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         });
     }
 
+    private static @NotNull Path prepareLogFile(Project project) {
+        var logFile = project.getLayout().getBuildDirectory().file("logs/inlining-" + System.currentTimeMillis() + ".log")
+            .get()
+            .getAsFile()
+            .toPath();
+        try {
+            Files.createDirectories(logFile.getParent());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return logFile;
+    }
+
     private void makeImportedBOMsLast(Node dependencyManagementDependenciesNode) {
         dependencyManagementDependenciesNode.children().sort((o1, o2) -> {
-            var scope1 = childOf((Node)o1, "scope");
-            var scope2 = childOf((Node)o2, "scope");
+            var scope1 = childOf((Node) o1, "scope");
+            var scope2 = childOf((Node) o2, "scope");
             if (scope1 == null && scope2 == null) {
                 return 0;
             }
@@ -391,120 +464,485 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         });
     }
 
-    private static List<Node> getParentList(Node parent) {
-        Object parentValue = parent.value();
-        Object parentList;
-        if (parentValue instanceof List) {
-            parentList = (List<Node>)parentValue;
-        } else {
-            parentList = new NodeList();
-            ((List)parentList).add(parentValue);
-            parent.setValue(parentList);
-        }
-
-        return (List<Node>)parentList;
-    }
-
-    private void maybeInlineNestedCatalogs(Set<ResolvedArtifactResult> catalogs,
+    private void maybeInlineNestedCatalogs(Path logFile,
+                                           Set<ResolvedArtifactResult> catalogs,
+                                           Set<ResolvedArtifactResult> bomArtifacts,
                                            VersionCatalogConverter.BuilderState builderState,
                                            Property<Boolean> inlineNestedCatalogs,
-                                           SetProperty<String> excludedInlinedAliases,
+                                           Property<Boolean> inlineNestedBOMs,
+                                           Provider<Map<String, Set<String>>> excludedInlinedAliases,
+                                           MapProperty<String, Set<String>> inlinedAliases,
                                            Map<String, String> inlinedPomProperties,
-                                           List<InlinedDependency> inlinedMavenDependencies) {
-        if (Boolean.TRUE.equals(inlineNestedCatalogs.get())) {
-            VersionCatalogBuilder builder = builderState.getBuilder();
-            Map<String, VersionCatalogConverter.AliasRecord> knownAliases = builderState.getKnownAliases();
-            Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases = builderState.getKnownPluginAliases();
-            Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases = builderState.getKnownVersionAliases();
-            Set<String> excludeFromInlining = excludedInlinedAliases.get();
-            catalogs.forEach(catalogArtifact -> {
-                var catalogFile = catalogArtifact.getFile();
-                try (FileInputStream fis = new FileInputStream(catalogFile)) {
-                    LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
-                    parser.parse(fis);
-                    Set<Library> librariesTable = parser.getModel().getLibrariesTable();
-                    Set<Plugin> pluginsTable = parser.getModel().getPluginsTable();
-                    Set<VersionModel> versionsTable = parser.getModel().getVersionsTable();
-                    librariesTable.forEach(library -> {
-                        String alias = library.getAlias();
-                        if (!excludeFromInlining.contains(alias)) {
-                            String source = catalogFile.getName();
-                            if (!knownAliases.containsKey(alias)) {
-                                String reference = library.getVersion().getReference();
-                                String version = null;
-                                if (reference != null) {
-                                    version = reference;
-                                    if (!knownVersionAliases.containsKey(reference)) {
-                                        var requiredVersion = versionsTable.stream().filter(m -> reference.equals(m.getReference())).findFirst().get().getVersion().getRequire();
-                                        if (requiredVersion != null) {
-                                            builder.version(reference, requiredVersion);
-                                            inlinedPomProperties.put(reference, requiredVersion);
-                                            inlinedMavenDependencies.add(new InlinedDependency(library.getGroup(), library.getName(), toPropertyName(reference) + ".version"));
-                                        } else {
-                                            throw new IllegalStateException("Version '" + reference + "' is not defined as a required version in the catalog");
-                                        }
-                                    } else {
-                                        Set<String> sources = knownVersionAliases.get(reference).getSources();
-                                        if (!sources.equals(Collections.singleton(source))) {
-                                            System.err.println("[Warning] While inlining " + source + ", version alias '" + alias + "' is already defined in the catalog by " + sources + " so it won't be imported");
-                                        }
-                                    }
-                                    knownVersionAliases.get(reference).addSource(source);
-                                }
-                                VersionCatalogBuilder.LibraryAliasBuilder libraryBuilder = builder.library(alias, library.getGroup(), library.getName());
-                                if (version != null) {
-                                    libraryBuilder.versionRef(reference);
-                                } else {
-                                    libraryBuilder.withoutVersion();
-                                }
-                            } else {
-                                maybeWarn(knownAliases, alias, source);
-                            }
-                            knownAliases.get(alias).addSource(source);
-                        }
-                    });
-                    pluginsTable.forEach(plugin -> {
-                        String alias = plugin.alias();
-                        if (!excludeFromInlining.contains(alias)) {
-                            String source = catalogFile.getName();
-                            if (!knownPluginAliases.containsKey(alias)) {
-                                String reference = plugin.version().getReference();
-                                String version = null;
-                                if (reference != null) {
-                                    version = reference;
-                                    if (!knownVersionAliases.containsKey(reference)) {
-                                        var requiredVersion = versionsTable.stream().filter(m -> reference.equals(m.getReference())).findFirst().get().getVersion().getRequire();
-                                        if (requiredVersion != null) {
-                                            builder.version(reference, requiredVersion);
-                                            inlinedPomProperties.put(reference, requiredVersion);
-                                        } else {
-                                            throw new IllegalStateException("Version '" + reference + "' is not defined as a required version in the catalog");
-                                        }
-                                    } else {
-                                        Set<String> sources = knownVersionAliases.get(reference).getSources();
-                                        if (!sources.equals(Collections.singleton(source))) {
-                                            System.err.println("[Warning] While inlining " + source + ", version alias '" + alias + "' is already defined in the catalog by " + sources + " so it won't be imported");
-                                        }
-                                    }
-                                    knownVersionAliases.get(reference).addSource(source);
-                                }
-                                VersionCatalogBuilder.PluginAliasBuilder pluginAliasBuilder = builder.plugin(alias, plugin.id());
-                                if (version != null) {
-                                    pluginAliasBuilder.versionRef(reference);
-                                } else {
-                                    pluginAliasBuilder.version(plugin.version().getVersion().getRequire());
-                                }
-                            } else {
-                                maybeWarn(knownPluginAliases, alias, source);
-                            }
-                            knownPluginAliases.get(alias).addSource(source);
-                        }
-                    });
-                } catch (IOException e) {
-                    System.err.println("Unable to parse version catalog file: " + catalogFile);
+                                           List<InlinedDependency> inlinedMavenDependencies,
+                                           // This last argument breaks configuration cache but for now we have no choice :(
+                                           Project p) {
+        try (var log = new PrintWriter(Files.newBufferedWriter(logFile))) {
+            if (Boolean.TRUE.equals(inlineNestedCatalogs.get())) {
+                VersionCatalogBuilder builder = builderState.getBuilder();
+                Map<String, VersionCatalogConverter.AliasRecord> knownAliases = builderState.getKnownAliases();
+                Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases = builderState.getKnownPluginAliases();
+                Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases = builderState.getKnownVersionAliases();
+
+                // We're looking for catalogs in the first place, because they define aliases and properties
+                // that we can inline. Then, there are remaining dependencies which are non Micronaut modules
+                // which do not publish catalogs. The ignored bom files list is the list of files that we can
+                // safely ignore because there are catalogs.
+                Set<String> ignoredBomFiles = new HashSet<>();
+                var knownCatalogModules = catalogs.stream()
+                    .map(ResolvedArtifactResult::getVariant)
+                    .map(ResolvedVariantResult::getOwner)
+                    .filter(ModuleComponentIdentifier.class::isInstance)
+                    .map(ModuleComponentIdentifier.class::cast)
+                    .map(mci -> mci.getModuleIdentifier().toString())
+                    .collect(Collectors.toSet());
+                List<String> extraBomsToResolve = new ArrayList<>();
+                catalogs.forEach(catalogArtifact -> {
+                        var catalogFile = catalogArtifact.getFile();
+                        var excludes = determineExcludes(excludedInlinedAliases, catalogFile);
+                        var includes = inlinedAliases.get().getOrDefault(baseNameOf(catalogFile), Set.of());
+                        var excludedAliases = findRegularEntries(excludes);
+                        var excludedAliasesPrefixes = findWildcardEntries(excludes);
+                        var includeAliases = findRegularEntries(includes);
+                        var includedAliasesPrefixes = findWildcardEntries(includes);
+
+                        performSingleCatalogFileInclusion(
+                            log,
+                            inlinedPomProperties,
+                            catalogFile,
+                            ignoredBomFiles,
+                            includeAliases,
+                            includedAliasesPrefixes,
+                            excludedAliases,
+                            excludedAliasesPrefixes,
+                            knownAliases,
+                            knownVersionAliases,
+                            builder,
+                            knownPluginAliases,
+                            inlinedMavenDependencies,
+                            knownCatalogModules,
+                            extraBomsToResolve);
+                    }
+                );
+                if (Boolean.TRUE.equals(inlineNestedBOMs.get())) {
+                    log.println("Regular BOMs (without version catalog) inlining is enabled");
+                    inlineRegularBoms(log, bomArtifacts, excludedInlinedAliases, inlinedAliases, inlinedPomProperties, inlinedMavenDependencies, ignoredBomFiles, knownAliases, knownVersionAliases, builder);
+                    if (!extraBomsToResolve.isEmpty()) {
+                        log.println("Found the following BOMs to be recursively included: ");
+                        extraBomsToResolve.forEach(bom -> log.println("    - " + bom));
+                        var extraBoms = p.getConfigurations().detachedConfiguration();
+                        extraBoms.getDependencies().addAll(extraBomsToResolve.stream()
+                            .map(bom -> p.getDependencies().create(bom + "@pom"))
+                            .toList());
+                        inlineRegularBoms(log, extraBoms.getIncoming().getArtifacts().getArtifacts(), excludedInlinedAliases, inlinedAliases, inlinedPomProperties, inlinedMavenDependencies, ignoredBomFiles, knownAliases, knownVersionAliases,
+                            builder);
+                    }
                 }
-            });
+
+            }
+        } catch (IOException e) {
+            LOGGER.error("Unable to write log file for inlining", e);
         }
+    }
+
+    private static Set<String> determineExcludes(Provider<Map<String, Set<String>>> excludedInlinedAliases, File catalogFile) {
+        var moduleExcludes = excludedInlinedAliases.get().getOrDefault(baseNameOf(catalogFile), Set.of());
+        var starExcludes = excludedInlinedAliases.get().getOrDefault("*", Set.of());
+        return Stream.concat(
+                moduleExcludes.stream(),
+                starExcludes.stream()
+            )
+            .collect(Collectors.toSet());
+    }
+
+    private void inlineRegularBoms(PrintWriter log,
+                                   Set<ResolvedArtifactResult> bomArtifacts,
+                                   Provider<Map<String, Set<String>>> excludedInlinedAliases,
+                                   MapProperty<String, Set<String>> inlinedAliases,
+                                   Map<String, String> inlinedPomProperties,
+                                   List<InlinedDependency> inlinedMavenDependencies,
+                                   Set<String> ignoredBomFiles,
+                                   Map<String, VersionCatalogConverter.AliasRecord> knownAliases,
+                                   Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases,
+                                   VersionCatalogBuilder builder) {
+        bomArtifacts.forEach(bomArtifact -> {
+            var bomFile = bomArtifact.getFile();
+            var excludes = determineExcludes(excludedInlinedAliases, bomFile);
+            var includes = inlinedAliases.get().getOrDefault(baseNameOf(bomFile), Set.of());
+            Set<String> excludedAliases = findRegularEntries(excludes);
+            Set<String> excludedAliasesPrefixes = findWildcardEntries(excludes);
+            Set<String> includeAliases = findRegularEntries(includes);
+            Set<String> includedAliasesPrefixes = findWildcardEntries(includes);
+
+            performNestedBomsInclusion(log, bomFile, includeAliases, includedAliasesPrefixes, excludedAliases, excludedAliasesPrefixes, ignoredBomFiles, knownAliases, knownVersionAliases, builder, inlinedMavenDependencies, inlinedPomProperties);
+        });
+    }
+
+    private static @NotNull Set<String> findWildcardEntries(Set<String> excludes) {
+        return excludes.stream().filter(a -> a.endsWith("*")).map(a -> a.substring(0, a.length() - 1)).collect(Collectors.toSet());
+    }
+
+    private static Set<String> findRegularEntries(Set<String> items) {
+        return items.stream().filter(a -> !a.endsWith("*")).collect(Collectors.toSet());
+    }
+
+    private static String baseNameOf(File file) {
+        var matcher = BASENAME_EXTRACTOR.matcher(file.getName());
+        var baseName = file.getName();
+        if (matcher.find()) {
+            baseName = matcher.group(1);
+        }
+        return baseName;
+    }
+
+    private static void performSingleCatalogFileInclusion(PrintWriter log,
+                                                          Map<String, String> inlinedPomProperties,
+                                                          File catalogFile,
+                                                          Set<String> ignoredBomFiles,
+                                                          Set<String> includeAliases,
+                                                          Set<String> includeAliasesPrefixes,
+                                                          Set<String> excludeFromInlining,
+                                                          Set<String> excludeFromInliningPrefixes,
+                                                          Map<String, VersionCatalogConverter.AliasRecord> knownAliases,
+                                                          Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases,
+                                                          VersionCatalogBuilder builder,
+                                                          Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases,
+                                                          List<InlinedDependency> inlinedMavenDependencies,
+                                                          Set<String> knownCatalogModules,
+                                                          List<String> extraBomsToResolve) {
+        String source = catalogFile.getName();
+        log.println("Inlining catalog file: " + source);
+        ignoredBomFiles.add(source.substring(0, source.lastIndexOf(".toml")) + ".pom");
+        try (FileInputStream fis = new FileInputStream(catalogFile)) {
+            LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
+            parser.parse(fis);
+            Set<Library> librariesTable = parser.getModel().getLibrariesTable();
+            Set<Plugin> pluginsTable = parser.getModel().getPluginsTable();
+            Set<VersionModel> versionsTable = parser.getModel().getVersionsTable();
+            performLibrariesInlining(log,
+                catalogFile.getName(),
+                inlinedPomProperties,
+                includeAliases,
+                includeAliasesPrefixes,
+                excludeFromInlining,
+                excludeFromInliningPrefixes,
+                knownAliases,
+                knownVersionAliases,
+                builder,
+                librariesTable,
+                versionsTable,
+                source,
+                inlinedMavenDependencies,
+                knownCatalogModules,
+                extraBomsToResolve);
+            performPluginsInlining(log,
+                catalogFile.getName(),
+                inlinedPomProperties,
+                excludeFromInlining,
+                knownVersionAliases,
+                builder,
+                knownPluginAliases,
+                pluginsTable,
+                versionsTable,
+                source);
+        } catch (IOException e) {
+            System.err.println("Unable to parse version catalog file: " + catalogFile);
+        }
+    }
+
+    private static void performLibrariesInlining(PrintWriter log,
+                                                 String catalogName,
+                                                 Map<String, String> inlinedPomProperties,
+                                                 Set<String> includeAliases,
+                                                 Set<String> includeAliasesPrefixes,
+                                                 Set<String> excludeFromInlining,
+                                                 Set<String> excludeFromInliningPrefixes,
+                                                 Map<String, VersionCatalogConverter.AliasRecord> knownAliases,
+                                                 Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases,
+                                                 VersionCatalogBuilder builder,
+                                                 Set<Library> librariesTable,
+                                                 Set<VersionModel> versionsTable,
+                                                 String source,
+                                                 List<InlinedDependency> inlinedMavenDependencies,
+                                                 Set<String> knownCatalogModules,
+                                                 List<String> extraBomsToResolve) {
+        librariesTable.forEach(library -> {
+            String alias = library.getAlias();
+            var includeExcludeReason = shouldInclude(alias, includeAliases, includeAliasesPrefixes, excludeFromInlining, excludeFromInliningPrefixes);
+            if (includeExcludeReason.included()) {
+                if (!knownAliases.containsKey(alias)) {
+                    String reference = library.getVersion().getReference();
+                    String version = null;
+                    if (reference != null) {
+                        version = reference;
+                        var requiredVersion = versionsTable.stream().filter(m -> reference.equals(m.getReference())).findFirst().get().getVersion().getRequire();
+                        if (requiredVersion != null) {
+                            var versionProperty = toPropertyName(reference) + ".version";
+                            inlinedMavenDependencies.add(new InlinedDependency(library.getGroup(), library.getName(), versionProperty));
+                            maybeAddExtraBomToResolve(log, catalogName, knownCatalogModules, extraBomsToResolve, library, alias, requiredVersion);
+                            if (!knownVersionAliases.containsKey(reference)) {
+                                builder.version(reference, requiredVersion);
+                                inlinedPomProperties.put(reference, requiredVersion);
+                            } else {
+                                Set<String> sources = knownVersionAliases.get(reference).getSources();
+                                if (!sources.equals(Collections.singleton(source))) {
+                                    log.println("    [" + catalogName + "] [Warning] While inlining " + source + ", version alias '" + alias + "' is already defined in the catalog by " + sources + " so it won't be imported");
+                                }
+                            }
+                        }
+                        knownVersionAliases.get(reference).addSource(source);
+                    }
+                    VersionCatalogBuilder.LibraryAliasBuilder libraryBuilder = builder.library(alias, library.getGroup(), library.getName());
+                    if (version != null) {
+                        log.println("    [" + catalogName + "] Inlining '" + alias + "' with version '" + version + "' because " + includeExcludeReason.reason());
+                        libraryBuilder.versionRef(reference);
+                    } else {
+                        log.println("    [" + catalogName + "] Inlining '" + alias + "' without version because " + includeExcludeReason.reason());
+                        libraryBuilder.withoutVersion();
+                    }
+                } else {
+                    maybeWarn(knownAliases, alias, source);
+                }
+                knownAliases.get(alias).addSource(source);
+            } else {
+                log.println("    [" + catalogName + "] Excluding '" + alias + "' from inlining because " + includeExcludeReason.reason());
+            }
+        });
+    }
+
+    private static void maybeAddExtraBomToResolve(PrintWriter log, String context, Set<String> knownCatalogModules, List<String> extraBomsToResolve, Library library, String alias, String requiredVersion) {
+        if (alias.startsWith("boms-")) {
+            var module = library.getModule();
+            if (!knownCatalogModules.contains(module)) {
+                var gav = module + ":" + requiredVersion;
+                log.println("    [" + context + "] Found extra BOM to inline: " + gav);
+                extraBomsToResolve.add(gav);
+            }
+        }
+    }
+
+    private static void performPluginsInlining(PrintWriter log,
+                                               String catalogName,
+                                               Map<String, String> inlinedPomProperties,
+                                               Set<String> excludeFromInlining,
+                                               Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases,
+                                               VersionCatalogBuilder builder,
+                                               Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases,
+                                               Set<Plugin> pluginsTable,
+                                               Set<VersionModel> versionsTable,
+                                               String source) {
+        pluginsTable.forEach(plugin -> {
+            String alias = plugin.alias();
+            if (!excludeFromInlining.contains(alias)) {
+                if (!knownPluginAliases.containsKey(alias)) {
+                    String reference = plugin.version().getReference();
+                    String version = null;
+                    if (reference != null) {
+                        version = reference;
+                        if (!knownVersionAliases.containsKey(reference)) {
+                            var requiredVersion = versionsTable.stream().filter(m -> reference.equals(m.getReference())).findFirst().get().getVersion().getRequire();
+                            if (requiredVersion != null) {
+                                builder.version(reference, requiredVersion);
+                                inlinedPomProperties.put(reference, requiredVersion);
+                            } else {
+                                throw new IllegalStateException("Version '" + reference + "' is not defined as a required version in the catalog");
+                            }
+                        } else {
+                            Set<String> sources = knownVersionAliases.get(reference).getSources();
+                            if (!sources.equals(Collections.singleton(source))) {
+                                log.println("    [" + catalogName + "] [Warning] While inlining " + source + ", version alias '" + alias + "' is already defined in the catalog by " + sources + " so it won't be imported");
+                            }
+                        }
+                        knownVersionAliases.get(reference).addSource(source);
+                    }
+                    VersionCatalogBuilder.PluginAliasBuilder pluginAliasBuilder = builder.plugin(alias, plugin.id());
+                    if (version != null) {
+                        pluginAliasBuilder.versionRef(reference);
+                    } else {
+                        pluginAliasBuilder.version(plugin.version().getVersion().getRequire());
+                    }
+                } else {
+                    maybeWarn(knownPluginAliases, alias, source);
+                }
+                knownPluginAliases.get(alias).addSource(source);
+            } else {
+                log.println("    [" + catalogName + "] Excluding '" + alias + "' from inlining because ");
+            }
+        });
+    }
+
+    private void performNestedBomsInclusion(PrintWriter log,
+                                            File bomFile,
+                                            Set<String> includeAliases,
+                                            Set<String> includeAliasesPrefixes,
+                                            Set<String> excludeFromInlining,
+                                            Set<String> excludeFromInliningPrefixes,
+                                            Set<String> ignoredBomFiles,
+                                            Map<String, VersionCatalogConverter.AliasRecord> knownAliases,
+                                            Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases,
+                                            VersionCatalogBuilder builder,
+                                            List<InlinedDependency> inlinedMavenDependencies,
+                                            Map<String, String> inlinedPomProperties) {
+
+        var bomFileName = bomFile.getName();
+        if (!ignoredBomFiles.contains(bomFileName)) {
+            log.println("Inlining external BOM: " + bomFileName);
+            var request = new DefaultModelBuildingRequest();
+            request.setProcessPlugins(false);
+            request.setPomFile(bomFile);
+            request.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL);
+            request.setModelResolver(mavenModelResolver);
+            try {
+                var knownAliasesSnakeCase = knownAliases.keySet()
+                    .stream()
+                    .map(MicronautBomPlugin::convertToAlias)
+                    .collect(Collectors.toSet());
+                var knownVersionAliasesSnakeCase = knownVersionAliases.keySet()
+                    .stream()
+                    .map(MicronautBomPlugin::convertToAlias)
+                    .collect(Collectors.toSet());
+                var modelBuilder = createMavenModelBuilder();
+                var model = modelBuilder.build(request).getEffectiveModel();
+                model.getDependencyManagement()
+                    .getDependencies()
+                    .forEach(dep -> {
+                        var alias = convertToAlias(dep.getArtifactId());
+                        var includeExcludeReason = shouldInclude(alias, includeAliases, includeAliasesPrefixes, excludeFromInlining, excludeFromInliningPrefixes);
+                        if (includeExcludeReason.included()) {
+                            if (knownAliasesSnakeCase.contains(alias)) {
+                                maybeWarn(knownAliases, alias, bomFileName);
+                            } else {
+                                if (knownVersionAliasesSnakeCase.contains(alias)) {
+                                    maybeWarn(knownVersionAliases, alias, bomFileName);
+                                } else {
+                                    builder.library(alias, dep.getGroupId(), dep.getArtifactId())
+                                        .versionRef(alias);
+                                    builder.version(alias, dep.getVersion());
+                                    knownAliases.get(alias).addSource(bomFileName);
+                                    knownVersionAliases.get(alias).addSource(bomFileName);
+                                    var versionProperty = toPropertyName(alias) + ".version";
+                                    inlinedMavenDependencies.add(new InlinedDependency(dep.getGroupId(), dep.getArtifactId(), versionProperty));
+                                    inlinedPomProperties.putIfAbsent(toPropertyName(alias), dep.getVersion());
+                                    log.println("    [" + bomFileName + "] Inlining " + alias + " because " + includeExcludeReason.reason());
+                                }
+                            }
+                        } else {
+                            log.println("    [" + bomFileName + "] Excluding " + alias + " from regular BOM inlining because " + includeExcludeReason.reason());
+                        }
+                    });
+            } catch (ModelBuildingException e) {
+                log.println("Unable to inline POM file " + bomFile + ": " + e.getMessage());
+            }
+        } else {
+            log.println("Ignoring BOM file: " + bomFileName + " because we've already found a catalog for it");
+        }
+    }
+
+    private static IncludeExcludeReason shouldInclude(String alias, Set<String> included, Set<String> includedPrefixes, Set<String> excluded, Set<String> excludePrefixes) {
+        if (included.isEmpty() && excluded.isEmpty() && includedPrefixes.isEmpty() && excludePrefixes.isEmpty()) {
+            return new IncludeExcludeReason(true, "no include or exclude pattern provided");
+        }
+        if (included.isEmpty() && includedPrefixes.isEmpty()) {
+            if (excluded.contains(alias)) {
+                return new IncludeExcludeReason(false, "alias is explicitly excluded.");
+            }
+            for (String prefix : excludePrefixes) {
+                if (alias.startsWith(prefix)) {
+                    return new IncludeExcludeReason(false, "alias matches excluded prefix: " + prefix);
+                }
+            }
+            return new IncludeExcludeReason(true, "alias is not explicitly excluded and does not match any excluded prefix.");
+        }
+
+        if (included.contains(alias)) {
+            if (excluded.contains(alias)) {
+                return new IncludeExcludeReason(false, "alias is explicitly included but also explicitly excluded.");
+            }
+            for (String prefix : excludePrefixes) {
+                if (alias.startsWith(prefix)) {
+                    return new IncludeExcludeReason(false, "alias is explicitly included but matches excluded prefix: " + prefix);
+                }
+            }
+            return new IncludeExcludeReason(true, "alias is explicitly included.");
+        }
+
+        for (String prefix : includedPrefixes) {
+            if (alias.startsWith(prefix)) {
+                if (excluded.contains(alias)) {
+                    return new IncludeExcludeReason(false, "alias matches included prefix: " + prefix + " but is also explicitly excluded.");
+                }
+                for (String excludePrefix : excludePrefixes) {
+                    if (alias.startsWith(excludePrefix)) {
+                        return new IncludeExcludeReason(false, "alias matches included prefix: " + prefix + " but also matches excluded prefix: " + excludePrefix);
+                    }
+                }
+                return new IncludeExcludeReason(true, "alias matches included prefix: " + prefix);
+            }
+        }
+
+        if (excluded.contains(alias)) {
+            return new IncludeExcludeReason(false, "alias is explicitly excluded.");
+        }
+        for (String prefix : excludePrefixes) {
+            if (alias.startsWith(prefix)) {
+                return new IncludeExcludeReason(false, "alias matches excluded prefix: " + prefix);
+            }
+        }
+
+        return new IncludeExcludeReason(false, "alias is not included and does not match any included prefix.");
+    }
+
+
+    public static String convertToAlias(String artifactId) {
+        return artifactId.replaceAll("[^a-zA-Z0-9-]", "-")
+            .replaceAll("([a-z])([A-Z]+)", "$1-$2")
+            .toLowerCase();
+    }
+
+    private ModelBuilder createMavenModelBuilder() {
+        var modelProcessor = new DefaultModelProcessor();
+        var reader = new DefaultModelReader();
+        var locator = new DefaultModelLocator();
+        var modelInterpolator = new StringVisitorModelInterpolator();
+        var versionProcessor = new DefaultModelVersionProcessor();
+        var modelNormalizer = new DefaultModelNormalizer();
+        var modelValidator = new DefaultModelValidator(versionProcessor);
+        var profileSelector = new DefaultProfileSelector();
+        var superPomProvider = new DefaultSuperPomProvider();
+        var inheritanceAssembler = new DefaultInheritanceAssembler();
+        var pathTranslator = new DefaultPathTranslator();
+        var urlNormalizer = new DefaultUrlNormalizer();
+        var modelUrlNormalizer = new DefaultModelUrlNormalizer();
+        modelUrlNormalizer.setUrlNormalizer(urlNormalizer);
+        modelInterpolator.setVersionPropertiesProcessor(versionProcessor);
+        modelInterpolator.setPathTranslator(pathTranslator);
+        modelInterpolator.setUrlNormalizer(urlNormalizer);
+        modelProcessor.setModelReader(reader);
+        modelProcessor.setModelLocator(locator);
+        superPomProvider.setModelProcessor(modelProcessor);
+        var modelBuilder = new DefaultModelBuilder();
+        modelBuilder.setModelProcessor(modelProcessor);
+        modelBuilder.setModelInterpolator(modelInterpolator);
+        modelBuilder.setModelNormalizer(modelNormalizer);
+        modelBuilder.setModelValidator(modelValidator);
+        modelBuilder.setProfileSelector(profileSelector);
+        modelBuilder.setSuperPomProvider(superPomProvider);
+        modelBuilder.setInheritanceAssembler(inheritanceAssembler);
+        modelBuilder.setModelUrlNormalizer(modelUrlNormalizer);
+        var modelPathTranslator = new DefaultModelPathTranslator();
+        modelPathTranslator.setPathTranslator(pathTranslator);
+        modelBuilder.setModelPathTranslator(modelPathTranslator);
+        var profileActivationFilePathInterpolator = new ProfileActivationFilePathInterpolator();
+        profileActivationFilePathInterpolator.setPathTranslator(pathTranslator);
+        modelBuilder.setProfileActivationFilePathInterpolator(profileActivationFilePathInterpolator);
+        var depMgmtImporter = new DefaultDependencyManagementImporter();
+        modelBuilder.setDependencyManagementImporter(depMgmtImporter);
+        var depMgmtInjector = new DefaultDependencyManagementInjector();
+        modelBuilder.setDependencyManagementInjector(depMgmtInjector);
+        var reportingConverter = new DefaultReportingConverter();
+        modelBuilder.setReportingConverter(reportingConverter);
+        var pluginManagementInjector = new DefaultPluginManagementInjector();
+        modelBuilder.setPluginManagementInjector(pluginManagementInjector);
+        return modelBuilder;
     }
 
     private static void maybeWarn(Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases, String alias, String source) {
@@ -610,6 +1048,13 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         String groupId,
         String artifactId,
         String versionProperty
+    ) {
+
+    }
+
+    private record IncludeExcludeReason(
+        boolean included,
+        String reason
     ) {
 
     }

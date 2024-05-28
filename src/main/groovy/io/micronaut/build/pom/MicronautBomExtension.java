@@ -23,6 +23,8 @@ import org.gradle.api.provider.SetProperty;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Nested;
 
+import java.util.Set;
+
 /**
  * Extension to configure BOM projects.
  */
@@ -91,11 +93,49 @@ public interface MicronautBomExtension {
     Property<Boolean> getInlineNestedCatalogs();
 
     /**
+     * If set to true and that inline nested catalogs is set to true, then
+     * whenever a catalog imports another BOM which is not published alongside
+     * a version catalog, then the BOM will be inlined into the current catalog.
+     * The aliases which are going to be used are the artifact ids, normalized
+     * to catalog property names.
+     *
+     * @return the inline property
+     */
+    Property<Boolean> getInlineRegularBOMs();
+
+    /**
      * Defines which aliases shouldn't be lined when importing other
-     * catalogs
+     * catalogs. If empty, no aliases will be inlined except the ones
+     * defined in {@link #getInlinedAliases()}. If an alias ends with
+     * a wildcard, then all aliases starting with the prefix will be
+     * excluded.
+     * Behaves the same as adding `*` as the key in {@link #getExcludeFromInlining}
      * @return the ignored aliases
      */
     SetProperty<String> getExcludedInlinedAliases();
+
+    /**
+     * Defines which aliases shouldn't be lined when importing other
+     * catalogs. If empty, no aliases will be inlined except the ones
+     * defined in {@link #getInlinedAliases()}. If an alias ends with
+     * a wildcard, then all aliases starting with the prefix will be
+     * excluded.
+     * The key is the artifact id of the catalog/BOM which is inlined
+     * @return the ignored aliases
+     */
+    MapProperty<String, Set<String>> getExcludeFromInlining();
+
+    /**
+     * Defines which aliases should be lined when importing other
+     * catalogs. If empty, all aliases will be inlined except the ones
+     * defined in {@link #getExcludeFromInlining()}. If an alias ends
+     * with a wildcard, then all aliases starting with the prefix will be
+     * included.
+     * The key is the artifact id of the catalog/BOM which is inlined
+     *
+     * @return the ignored aliases
+     */
+    MapProperty<String, Set<String>> getInlinedAliases();
 
     /**
      * Defines the property name of the version of project dependencies,
@@ -117,5 +157,13 @@ public interface MicronautBomExtension {
 
     default void suppressions(Action<? super BomSuppressions> spec) {
         spec.execute(getSuppressions());
+    }
+
+    default void excludeFromInlining(String alias, String... dependencies) {
+        getExcludeFromInlining().put(alias, Set.of(dependencies));
+    }
+
+    default void excludeFromInlining(String alias, Set<String> dependencies) {
+        getExcludeFromInlining().put(alias, dependencies);
     }
 }

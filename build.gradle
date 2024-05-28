@@ -69,6 +69,7 @@ dependencies {
     implementation libs.japicmp.plugin
 
     implementation libs.tomlj
+    implementation libs.maven.model.builder
 
     testImplementation platform(libs.spock.bom)
     testImplementation(libs.spock.core)
