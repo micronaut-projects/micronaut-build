@@ -17,6 +17,7 @@ package io.micronaut.build;
 
 import groovy.namespace.QName;
 import groovy.util.Node;
+import groovy.util.NodeList;
 import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
 import io.micronaut.build.catalogs.internal.Library;
 import io.micronaut.build.catalogs.internal.Plugin;
@@ -37,10 +38,10 @@ import org.gradle.api.artifacts.DependencyConstraint;
 import org.gradle.api.artifacts.VersionCatalog;
 import org.gradle.api.artifacts.VersionCatalogsExtension;
 import org.gradle.api.artifacts.VersionConstraint;
+import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.component.AdhocComponentWithVariants;
-import org.gradle.api.file.FileCollection;
 import org.gradle.api.initialization.dsl.VersionCatalogBuilder;
 import org.gradle.api.plugins.JavaPlatformExtension;
 import org.gradle.api.plugins.JavaPlatformPlugin;
@@ -221,6 +222,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             computeProjectDescriptors(bomExtension, project, includedProjects, skippedProjects)
         );
         Map<String, String> inlinedPomProperties = new LinkedHashMap<>();
+        List<InlinedDependency> inlinedMavenDependencies = new ArrayList<>();
         publishing.getPublications().named("maven", MavenPublication.class, pub -> {
             pub.setArtifactId(publishedName);
             pub.from(project.getComponents().getByName("javaPlatform"));
@@ -262,6 +264,8 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                     });
                     // Add extra versions as properties
                     var propertiesNode = childOf(node, "properties");
+                    var dependencyManagementNode = childOf(node, "dependencyManagement");
+                    var dependencyManagementDependenciesNode = childOf(dependencyManagementNode, "dependencies");
                     inlinedPomProperties.forEach((moduleName, version) -> {
                         String propertyName = bomPropertyName(bomExtension, moduleName);
                         var existingProperty = childOf(propertiesNode, propertyName);
@@ -274,7 +278,16 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                         String name2 = nameOf((Node) o2);
                         return name1.compareTo(name2);
                     });
-
+                    // add inlined Maven dependencies (issue #689)
+                    inlinedMavenDependencies.forEach(dep -> {
+                        var dependencyNode = new Node(null, "dependency");
+                        dependencyNode.append(new Node(null, "groupId", dep.groupId));
+                        dependencyNode.append(new Node(null, "artifactId", dep.artifactId));
+                        dependencyNode.append(new Node(null, "version", "${" + dep.versionProperty + "}"));
+                        dependencyManagementDependenciesNode.append(dependencyNode);
+                    });
+                    // then sort nodes so that these which have <import> scope appear last
+                    makeImportedBOMsLast(dependencyManagementDependenciesNode);
                 });
                 versionCatalog.ifPresent(libsCatalog -> libsCatalog.getVersionAliases().forEach(alias -> {
                     if (alias.startsWith("managed.")) {
@@ -334,15 +347,15 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         }));
         // the following properties are captures _outside_ of the lambda
         // to avoid it referencing `bomExtension` or `catalogs`
-        FileCollection catalogFiles = catalogs.getIncoming()
-            .artifactView(spec -> spec.lenient(true))
-            .getFiles();
+        var catalogArtifactView = catalogs.getIncoming()
+            .artifactView(spec -> spec.lenient(true));
+        var catalogArtifacts = catalogArtifactView.getArtifacts().getArtifacts();
         Property<Boolean> inlineNestedCatalogs = bomExtension.getInlineNestedCatalogs();
         SetProperty<String> excludedInlinedAliases = bomExtension.getExcludedInlinedAliases();
         modelConverter.afterBuildingModel(builderState -> {
             api.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
-            maybeInlineNestedCatalogs(catalogFiles, builderState, inlineNestedCatalogs, excludedInlinedAliases, inlinedPomProperties);
+            maybeInlineNestedCatalogs(catalogArtifacts, builderState, inlineNestedCatalogs, excludedInlinedAliases, inlinedPomProperties, inlinedMavenDependencies);
         });
         projectDescriptors.get().forEach(p -> {
             String moduleGroup = p.getGroupId();
@@ -361,18 +374,51 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         });
     }
 
-    private void maybeInlineNestedCatalogs(FileCollection catalogs,
+    private void makeImportedBOMsLast(Node dependencyManagementDependenciesNode) {
+        dependencyManagementDependenciesNode.children().sort((o1, o2) -> {
+            var scope1 = childOf((Node)o1, "scope");
+            var scope2 = childOf((Node)o2, "scope");
+            if (scope1 == null && scope2 == null) {
+                return 0;
+            }
+            if (scope1 != null && scope2 == null) {
+                return 1;
+            }
+            if (scope1 == null) {
+                return -1;
+            }
+            return String.valueOf(scope1.value()).compareTo(String.valueOf(scope2.value()));
+        });
+    }
+
+    private static List<Node> getParentList(Node parent) {
+        Object parentValue = parent.value();
+        Object parentList;
+        if (parentValue instanceof List) {
+            parentList = (List<Node>)parentValue;
+        } else {
+            parentList = new NodeList();
+            ((List)parentList).add(parentValue);
+            parent.setValue(parentList);
+        }
+
+        return (List<Node>)parentList;
+    }
+
+    private void maybeInlineNestedCatalogs(Set<ResolvedArtifactResult> catalogs,
                                            VersionCatalogConverter.BuilderState builderState,
                                            Property<Boolean> inlineNestedCatalogs,
                                            SetProperty<String> excludedInlinedAliases,
-                                           Map<String, String> inlinedPomProperties) {
+                                           Map<String, String> inlinedPomProperties,
+                                           List<InlinedDependency> inlinedMavenDependencies) {
         if (Boolean.TRUE.equals(inlineNestedCatalogs.get())) {
             VersionCatalogBuilder builder = builderState.getBuilder();
             Map<String, VersionCatalogConverter.AliasRecord> knownAliases = builderState.getKnownAliases();
             Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases = builderState.getKnownPluginAliases();
             Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases = builderState.getKnownVersionAliases();
             Set<String> excludeFromInlining = excludedInlinedAliases.get();
-            catalogs.forEach(catalogFile -> {
+            catalogs.forEach(catalogArtifact -> {
+                var catalogFile = catalogArtifact.getFile();
                 try (FileInputStream fis = new FileInputStream(catalogFile)) {
                     LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
                     parser.parse(fis);
@@ -393,6 +439,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                                         if (requiredVersion != null) {
                                             builder.version(reference, requiredVersion);
                                             inlinedPomProperties.put(reference, requiredVersion);
+                                            inlinedMavenDependencies.add(new InlinedDependency(library.getGroup(), library.getName(), toPropertyName(reference) + ".version"));
                                         } else {
                                             throw new IllegalStateException("Version '" + reference + "' is not defined as a required version in the catalog");
                                         }
@@ -557,5 +604,13 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         public String getVersion() {
             return version;
         }
+    }
+
+    private record InlinedDependency(
+        String groupId,
+        String artifactId,
+        String versionProperty
+    ) {
+
     }
 }
