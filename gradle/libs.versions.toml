@@ -17,6 +17,7 @@ tomlj = "1.1.1"
 typesafe-config = "1.4.3"
 bytebuddy = "1.14.13"
 objenesis = "3.3"
+maven-model-builder = "3.9.6"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
@@ -39,3 +40,4 @@ testlogger-plugin = { module = "com.adarshr:gradle-test-logger-plugin", version.
 tomlj = { module = "org.tomlj:tomlj", version.ref = "tomlj" }
 typesafe-config = { module = "com.typesafe:config", version.ref = "typesafe-config" }
 objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
+maven-model-builder = { module = "org.apache.maven:maven-model-builder", version.ref = "maven-model-builder" }
