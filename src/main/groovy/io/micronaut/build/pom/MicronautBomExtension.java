@@ -152,6 +152,20 @@ public interface MicronautBomExtension {
      */
     Property<Boolean> getInferProjectsToInclude();
 
+    /**
+     * Allows setting a list of modules (group:artifact) which are going to be
+     * managed, but for which the version must be inferred from what is in the
+     * catalog. This can be useful when we know a dependency will be used, but
+     * it's not managed by any BOM we include, but it still appears in the
+     * dependency graph.
+     *
+     * The key is `groupId:artifactId` project coordinates and the value is
+     * an alias (without `managed-`) to be included.
+     *
+     * @return
+     */
+    MapProperty<String, String> getInferredManagedDependencies();
+
     @Nested
     BomSuppressions getSuppressions();
 
