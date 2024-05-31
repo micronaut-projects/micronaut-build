@@ -240,6 +240,7 @@ class BomGenerationFunctionalTest extends AbstractFunctionalTest {
         mavenProperties.get('junit.platform.suite.version') == '1.10.2'
     }
 
+    @Unroll
     def "can infer a version from a transitive dependency"() {
 
         given:
@@ -247,9 +248,7 @@ class BomGenerationFunctionalTest extends AbstractFunctionalTest {
         buildFile << """
             micronautBom {
                 inlineRegularBOMs = true
-                inferredManagedDependencies = [
-                    'org.opentest4j:opentest4j' : 'opentest4j'
-                ]
+                $notation
             }
         """
 
@@ -327,6 +326,14 @@ class BomGenerationFunctionalTest extends AbstractFunctionalTest {
                     it.artifactId[0].text() == 'opentest4j' &&
                     it.version[0].text() == '${opentest4j.version}'
         }
+
+        where:
+        notation << [
+                "inferredManagedDependencies = [\n" +
+                        "                    'org.opentest4j:opentest4j' : 'opentest4j'\n" +
+                        "                ]",
+                "inferredManagedDependencies(['org.opentest4j:opentest4j'])"
+        ]
     }
 
     @Unroll
