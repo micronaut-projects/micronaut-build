@@ -23,7 +23,9 @@ import org.gradle.api.provider.SetProperty;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Nested;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Extension to configure BOM projects.
@@ -51,6 +53,7 @@ public interface MicronautBomExtension {
     /**
      * If set to true, a Gradle version catalog will be published
      * alongside the BOM file.
+     *
      * @return the catalog property
      */
     Property<Boolean> getPublishCatalog();
@@ -59,6 +62,7 @@ public interface MicronautBomExtension {
      * If set to true and that a version catalog is used in the project
      * declaring the BOM, then the BOM will automatically be generated
      * with elements of the version catalog.
+     *
      * @return the project catalog import property
      */
     Property<Boolean> getImportProjectCatalog();
@@ -66,6 +70,7 @@ public interface MicronautBomExtension {
     /**
      * If set to true, the BOM will be added to the generated
      * version catalog.
+     *
      * @return the include bom property
      */
     Property<Boolean> getIncludeBomInCatalog();
@@ -88,6 +93,7 @@ public interface MicronautBomExtension {
      * entries would be inlined into the current catalog (without version),
      * so that users get type-safe accessors without having to explicitly
      * import the nested catalog.
+     *
      * @return the inline property
      */
     Property<Boolean> getInlineNestedCatalogs();
@@ -110,6 +116,7 @@ public interface MicronautBomExtension {
      * a wildcard, then all aliases starting with the prefix will be
      * excluded.
      * Behaves the same as adding `*` as the key in {@link #getExcludeFromInlining}
+     *
      * @return the ignored aliases
      */
     SetProperty<String> getExcludedInlinedAliases();
@@ -121,6 +128,7 @@ public interface MicronautBomExtension {
      * a wildcard, then all aliases starting with the prefix will be
      * excluded.
      * The key is the artifact id of the catalog/BOM which is inlined
+     *
      * @return the ignored aliases
      */
     MapProperty<String, Set<String>> getExcludeFromInlining();
@@ -140,6 +148,7 @@ public interface MicronautBomExtension {
     /**
      * Defines the property name of the version of project dependencies,
      * in case it cannot be deduced properly from the root project name
+     *
      * @return the property name
      */
     Property<String> getPropertyName();
@@ -148,9 +157,29 @@ public interface MicronautBomExtension {
      * Determines if the projects to include in the BOM are inferred,
      * in which case it would automatically include projects which
      * apply the publishing plugin.
+     *
      * @return the infer property
      */
     Property<Boolean> getInferProjectsToInclude();
+
+    /**
+     * Allows setting a list of modules (group:artifact) which are going to be
+     * managed, but for which the version must be inferred from what is in the
+     * catalog. This can be useful when we know a dependency will be used, but
+     * it's not managed by any BOM we include, but it still appears in the
+     * dependency graph.
+     *
+     * The key is `groupId:artifactId` project coordinates and the value is
+     * an alias (without `managed-`) to be included.
+     */
+    MapProperty<String, String> getInferredManagedDependencies();
+
+    default void inferredManagedDependencies(List<String> dependencies) {
+        getInferredManagedDependencies().putAll(dependencies.stream().collect(Collectors.toMap(
+            d -> d,
+            d -> d.substring(d.indexOf(":") + 1)
+        )));
+    }
 
     @Nested
     BomSuppressions getSuppressions();

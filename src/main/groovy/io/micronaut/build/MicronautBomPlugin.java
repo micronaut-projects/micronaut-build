@@ -23,6 +23,7 @@ import io.micronaut.build.catalogs.internal.Plugin;
 import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
 import io.micronaut.build.catalogs.internal.VersionModel;
 import io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin;
+import io.micronaut.build.pom.InterceptedVersionCatalogBuilder;
 import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.pom.PomChecker;
 import io.micronaut.build.pom.PomCheckerUtils;
@@ -65,6 +66,7 @@ import org.gradle.api.artifacts.VersionCatalogsExtension;
 import org.gradle.api.artifacts.VersionConstraint;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
+import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.artifacts.result.ResolvedVariantResult;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.Usage;
@@ -253,6 +255,8 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             project.getRootProject().file("gradle/libs.versions.toml"),
             project.getExtensions().findByType(CatalogPluginExtension.class)
         );
+        var libraryDefinitions = new ArrayList<InterceptedVersionCatalogBuilder.LibraryDefinition>();
+        modelConverter.onLibrary(libraryDefinitions::add);
         tasks.named("generateCatalogAsToml", task -> modelConverter.populateModel());
         if (bomExtension.getPublishCatalog().get()) {
             configureVersionCatalog(project, bomExtension, publishedName, group, mainProjectId);
@@ -416,6 +420,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             api.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             maybeInlineNestedCatalogs(logFile, catalogArtifacts, bomArtifacts, builderState, inlineNestedCatalogs, inlineNestedBOMs, excludedInlinedAliases, includedAliases, inlinedPomProperties, inlinedMavenDependencies, project);
+            performVersionInference(project, bomExtension, builderState, libraryDefinitions, inlinedPomProperties, inlinedMavenDependencies);
         });
         projectDescriptors.get().forEach(p -> {
             String moduleGroup = p.getGroupId();
@@ -432,6 +437,53 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             modelConverter.getExtraVersions().put(mainModuleName, moduleVersion);
             modelConverter.getExtraLibraries().put(moduleName, VersionCatalogConverter.library(moduleGroup, moduleName, mainModuleName));
         });
+    }
+
+    private static void performVersionInference(Project project, MicronautBomExtension bomExtension, VersionCatalogConverter.BuilderState builderState, ArrayList<InterceptedVersionCatalogBuilder.LibraryDefinition> libraryDefinitions,
+                                  Map<String, String> inlinedPomProperties, List<InlinedDependency> inlinedMavenDependencies) {
+        var inferredLibraries = bomExtension.getInferredManagedDependencies().getOrElse(Map.of());
+        if (!inferredLibraries.isEmpty()) {
+            Set<String> found = new HashSet<>();
+            var resolvableConfiguration = project.getConfigurations().detachedConfiguration();
+            libraryDefinitions.forEach(lib -> {
+                if (lib.version() != null) {
+                    resolvableConfiguration.getDependencies().add(project.getDependencies().create(lib.toString()));
+                }
+            });
+            resolvableConfiguration.getIncoming()
+                .getResolutionResult()
+                .allDependencies(dep -> {
+                    if (dep instanceof ResolvedDependencyResult resolved) {
+                        if (resolved.getSelected().getId() instanceof ModuleComponentIdentifier mid) {
+                            var module = mid.getModuleIdentifier().toString();
+                            if (inferredLibraries.containsKey(module)) {
+                                found.add(module);
+                                var alias = inferredLibraries.get(module);
+                                if (!builderState.getKnownVersionAliases().containsKey(alias)) {
+                                    builderState.getBuilder().version(alias, mid.getVersion());
+                                }
+                                var mavenPropertyName = toPropertyName(alias);
+                                if (!inlinedPomProperties.containsKey(alias)) {
+                                    inlinedPomProperties.put(mavenPropertyName, mid.getVersion());
+                                }
+                                if (!builderState.getKnownAliases().containsKey(alias)) {
+                                    builderState.getBuilder().library(alias, mid.getGroup(), mid.getModule()).versionRef(alias);
+                                }
+                                var inlinedMavenDep = new InlinedDependency(mid.getGroup(), mid.getModule(), mavenPropertyName + ".version");
+                                if (!inlinedMavenDependencies.contains(inlinedMavenDep)) {
+                                    inlinedMavenDependencies.add(inlinedMavenDep);
+                                }
+                            }
+                        }
+                    }
+                });
+            // throw an error if an inferred module cannot be found
+            var missing = new ArrayList<>(inferredLibraries.keySet());
+            missing.removeAll(found);
+            if (!missing.isEmpty()) {
+                throw new RuntimeException("Some dependencies were declared as inferred, but they don't appear in the dependency graph. You must use an explicit version for these : " + missing);
+            }
+        }
     }
 
     private static @NotNull Path prepareLogFile(Project project) {

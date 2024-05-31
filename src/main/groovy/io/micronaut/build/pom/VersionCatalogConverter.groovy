@@ -44,6 +44,7 @@ class VersionCatalogConverter {
     final Map<String, String> extraVersions = [:]
     final Map<String, Library> extraLibraries = [:]
     final List<Consumer<? super BuilderState>> afterBuildingModel = []
+    final List<Consumer<? super InterceptedVersionCatalogBuilder.LibraryDefinition>> onLibrary = []
 
     VersionCatalogConverter(File catalogFile, CatalogPluginExtension ext) {
         this.catalogFile = catalogFile
@@ -51,6 +52,10 @@ class VersionCatalogConverter {
     }
 
     private VersionCatalogTomlModel model
+
+    void onLibrary(Consumer<? super InterceptedVersionCatalogBuilder.LibraryDefinition> consumer) {
+        onLibrary.add(consumer)
+    }
 
     void afterBuildingModel(Consumer<? super BuilderState> consumer) {
         afterBuildingModel << consumer
@@ -68,7 +73,9 @@ class VersionCatalogConverter {
     }
 
     void populateModel() {
-        catalogExtension.versionCatalog { builder ->
+        catalogExtension.versionCatalog { bd ->
+            def builder = new InterceptedVersionCatalogBuilder(bd)
+            onLibrary.each { builder.onLibrary(it) }
             Set<String> knownAliases = []
             Set<String> knownPluginAliases = []
             Set<String> knwonVersionAliases = []
