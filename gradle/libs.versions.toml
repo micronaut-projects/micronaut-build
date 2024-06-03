@@ -16,7 +16,7 @@ testlogger-plugin = "4.0.0"
 tomlj = "1.1.1"
 typesafe-config = "1.4.3"
 bytebuddy = "1.14.17"
-objenesis = "3.3"
+objenesis = "3.4"
 maven-model-builder = "3.9.7"
 
 [libraries]
