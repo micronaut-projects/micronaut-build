@@ -127,6 +127,10 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
 
     private static final Pattern BASENAME_EXTRACTOR = Pattern.compile("^([a-zA-Z0-9-]+?)-\\d[\\d.-]*(-[a-zA-Z0-9]+)?.+$");
     public static final List<String> DEPENDENCY_PATH = Arrays.asList("dependencyManagement", "dependencies", "dependency");
+    public static final String BOM_VERSION_INFERENCE_CONFIGURATION_NAME = "bomVersionInference";
+    public static final String EXTRA_BOMS_INLINING_CONFIGURATION_NAME = "extraBomsInlining";
+    public static final String ALL_BOMS_CONFIGURATION_NAME = "allBoms";
+    public static final String CATALOGS_INLINING_CONFIGURATION_NAME = "inlinedCatalogs";
 
     private ModelResolver mavenModelResolver;
 
@@ -152,6 +156,30 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         bomExtension.getInferProjectsToInclude().convention(true);
         configureBOM(project, bomExtension);
         mavenModelResolver = new SimpleMavenModelResolver(project.getConfigurations(), project.getDependencies());
+        createHelperConfigurations(project);
+    }
+
+    private static void createHelperConfigurations(Project project) {
+        project.getConfigurations().create(BOM_VERSION_INFERENCE_CONFIGURATION_NAME, conf -> {
+            conf.setCanBeResolved(true);
+            conf.setCanBeConsumed(false);
+        });
+        project.getConfigurations().create(ALL_BOMS_CONFIGURATION_NAME, conf -> {
+            conf.setCanBeResolved(true);
+            conf.setCanBeConsumed(false);
+        });
+        project.getConfigurations().create(EXTRA_BOMS_INLINING_CONFIGURATION_NAME, conf -> {
+            conf.setCanBeResolved(true);
+            conf.setCanBeConsumed(false);
+        });
+        project.getConfigurations().create(CATALOGS_INLINING_CONFIGURATION_NAME, catalogs -> {
+            catalogs.setCanBeResolved(true);
+            catalogs.setCanBeConsumed(false);
+            catalogs.attributes(attrs -> {
+                attrs.attribute(Category.CATEGORY_ATTRIBUTE, project.getObjects().named(Category.class, Category.REGULAR_PLATFORM));
+                attrs.attribute(Usage.USAGE_ATTRIBUTE, project.getObjects().named(Usage.class, Usage.VERSION_CATALOG));
+            });
+        });
     }
 
     private static String nameOf(Node n) {
@@ -374,12 +402,8 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
 
         Configuration api = project.getConfigurations().getByName(JavaPlatformPlugin.API_CONFIGURATION_NAME);
         Configuration runtime = project.getConfigurations().getByName(JavaPlatformPlugin.RUNTIME_CONFIGURATION_NAME);
-        Configuration catalogs = project.getConfigurations().detachedConfiguration();
-        catalogs.attributes(attrs -> {
-            attrs.attribute(Category.CATEGORY_ATTRIBUTE, project.getObjects().named(Category.class, Category.REGULAR_PLATFORM));
-            attrs.attribute(Usage.USAGE_ATTRIBUTE, project.getObjects().named(Usage.class, Usage.VERSION_CATALOG));
-        });
-        Configuration allBoms = project.getConfigurations().detachedConfiguration();
+        Configuration catalogs = project.getConfigurations().getByName(CATALOGS_INLINING_CONFIGURATION_NAME);
+        Configuration allBoms = project.getConfigurations().getByName(ALL_BOMS_CONFIGURATION_NAME);
         versionCatalog.ifPresent(libsCatalog -> libsCatalog.getLibraryAliases().forEach(alias -> {
             if (alias.startsWith("boms.")) {
                 var catalogEntry = libsCatalog.findLibrary(alias)
@@ -420,7 +444,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             api.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             maybeInlineNestedCatalogs(logFile, catalogArtifacts, bomArtifacts, builderState, inlineNestedCatalogs, inlineNestedBOMs, excludedInlinedAliases, includedAliases, inlinedPomProperties, inlinedMavenDependencies, project);
-            performVersionInference(project, bomExtension, builderState, libraryDefinitions, inlinedPomProperties, inlinedMavenDependencies);
+            performVersionInference(project, bomExtension, builderState, libraryDefinitions, inlinedPomProperties, inlinedMavenDependencies, project.getConfigurations().findByName(BOM_VERSION_INFERENCE_CONFIGURATION_NAME));
         });
         projectDescriptors.get().forEach(p -> {
             String moduleGroup = p.getGroupId();
@@ -439,18 +463,22 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         });
     }
 
-    private static void performVersionInference(Project project, MicronautBomExtension bomExtension, VersionCatalogConverter.BuilderState builderState, ArrayList<InterceptedVersionCatalogBuilder.LibraryDefinition> libraryDefinitions,
-                                  Map<String, String> inlinedPomProperties, List<InlinedDependency> inlinedMavenDependencies) {
+    private static void performVersionInference(Project project,
+                                                MicronautBomExtension bomExtension,
+                                                VersionCatalogConverter.BuilderState builderState,
+                                                ArrayList<InterceptedVersionCatalogBuilder.LibraryDefinition> libraryDefinitions,
+                                                Map<String, String> inlinedPomProperties,
+                                                List<InlinedDependency> inlinedMavenDependencies,
+                                                Configuration versionInferenceConfiguration) {
         var inferredLibraries = bomExtension.getInferredManagedDependencies().getOrElse(Map.of());
         if (!inferredLibraries.isEmpty()) {
             Set<String> found = new HashSet<>();
-            var resolvableConfiguration = project.getConfigurations().detachedConfiguration();
             libraryDefinitions.forEach(lib -> {
                 if (lib.version() != null) {
-                    resolvableConfiguration.getDependencies().add(project.getDependencies().create(lib.toString()));
+                    versionInferenceConfiguration.getDependencies().add(project.getDependencies().create(lib.toString()));
                 }
             });
-            resolvableConfiguration.getIncoming()
+            versionInferenceConfiguration.getIncoming()
                 .getResolutionResult()
                 .allDependencies(dep -> {
                     if (dep instanceof ResolvedDependencyResult resolved) {
@@ -581,7 +609,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                     if (!extraBomsToResolve.isEmpty()) {
                         log.println("Found the following BOMs to be recursively included: ");
                         extraBomsToResolve.forEach(bom -> log.println("    - " + bom));
-                        var extraBoms = p.getConfigurations().detachedConfiguration();
+                        var extraBoms = p.getConfigurations().getByName(EXTRA_BOMS_INLINING_CONFIGURATION_NAME);
                         extraBoms.getDependencies().addAll(extraBomsToResolve.stream()
                             .map(bom -> p.getDependencies().create(bom + "@pom"))
                             .toList());
