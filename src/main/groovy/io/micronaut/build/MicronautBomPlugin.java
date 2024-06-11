@@ -717,7 +717,10 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             performPluginsInlining(log,
                 catalogFile.getName(),
                 inlinedPomProperties,
+                includeAliases,
+                includeAliasesPrefixes,
                 excludeFromInlining,
+                excludeFromInliningPrefixes,
                 knownVersionAliases,
                 builder,
                 knownPluginAliases,
@@ -803,7 +806,10 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
     private static void performPluginsInlining(PrintWriter log,
                                                String catalogName,
                                                Map<String, String> inlinedPomProperties,
+                                               Set<String> includeAliases,
+                                               Set<String> includeAliasesPrefixes,
                                                Set<String> excludeFromInlining,
+                                               Set<String> excludeFromInliningPrefixes,
                                                Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases,
                                                VersionCatalogBuilder builder,
                                                Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases,
@@ -812,7 +818,8 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                                                String source) {
         pluginsTable.forEach(plugin -> {
             String alias = plugin.alias();
-            if (!excludeFromInlining.contains(alias)) {
+            var includeExcludeReason = shouldInclude(alias, includeAliases, includeAliasesPrefixes, excludeFromInlining, excludeFromInliningPrefixes);
+            if (includeExcludeReason.included()) {
                 if (!knownPluginAliases.containsKey(alias)) {
                     String reference = plugin.version().getReference();
                     String version = null;
@@ -829,7 +836,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                         } else {
                             Set<String> sources = knownVersionAliases.get(reference).getSources();
                             if (!sources.equals(Collections.singleton(source))) {
-                                log.println("    [" + catalogName + "] [Warning] While inlining " + source + ", version alias '" + alias + "' is already defined in the catalog by " + sources + " so it won't be imported");
+                                log.println("    [" + catalogName + "] [Warning] While inlining plugin " + source + ", version alias '" + alias + "' is already defined in the catalog by " + sources + " so it won't be imported");
                             }
                         }
                         knownVersionAliases.get(reference).addSource(source);
@@ -845,7 +852,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                 }
                 knownPluginAliases.get(alias).addSource(source);
             } else {
-                log.println("    [" + catalogName + "] Excluding '" + alias + "' from inlining because ");
+                log.println("    [" + catalogName + "] Excluding plugin '" + alias + "' from inlining because " + includeExcludeReason.reason());
             }
         });
     }
