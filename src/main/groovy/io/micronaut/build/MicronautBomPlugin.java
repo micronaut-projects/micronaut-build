@@ -64,10 +64,12 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.VersionCatalog;
 import org.gradle.api.artifacts.VersionCatalogsExtension;
 import org.gradle.api.artifacts.VersionConstraint;
+import org.gradle.api.artifacts.component.ComponentSelector;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.artifacts.result.ResolvedVariantResult;
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.component.AdhocComponentWithVariants;
@@ -92,6 +94,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -102,6 +105,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -154,6 +158,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         bomExtension.getExcludedInlinedAliases().convention(Set.of());
         bomExtension.getInlineRegularBOMs().convention(false);
         bomExtension.getInferProjectsToInclude().convention(true);
+        bomExtension.getCatalogName().convention("libs");
         configureBOM(project, bomExtension);
         mavenModelResolver = new SimpleMavenModelResolver(project.getConfigurations(), project.getDependencies());
         createHelperConfigurations(project);
@@ -280,7 +285,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         String group = String.valueOf(project.getGroup());
         Optional<VersionCatalog> versionCatalog = findVersionCatalog(project, bomExtension);
         final VersionCatalogConverter modelConverter = new VersionCatalogConverter(
-            project.getRootProject().file("gradle/libs.versions.toml"),
+            project.getRootProject().file("gradle/" +  bomExtension.getCatalogName().get() + ".versions.toml"),
             project.getExtensions().findByType(CatalogPluginExtension.class)
         );
         var libraryDefinitions = new ArrayList<InterceptedVersionCatalogBuilder.LibraryDefinition>();
@@ -445,6 +450,31 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             maybeInlineNestedCatalogs(logFile, catalogArtifacts, bomArtifacts, builderState, inlineNestedCatalogs, inlineNestedBOMs, excludedInlinedAliases, includedAliases, inlinedPomProperties, inlinedMavenDependencies, project);
             performVersionInference(project, bomExtension, builderState, libraryDefinitions, inlinedPomProperties, inlinedMavenDependencies, project.getConfigurations().findByName(BOM_VERSION_INFERENCE_CONFIGURATION_NAME));
+            try (var writer = new PrintWriter(new FileWriter(logFile.toFile(), true))) {
+                var unresolvedDependencies = new LinkedHashSet<ComponentSelector>();
+                catalogs.getIncoming()
+                    .getResolutionResult()
+                    .allDependencies(dep -> {
+                        if (dep instanceof UnresolvedDependencyResult unresolved) {
+                            unresolvedDependencies.add(unresolved.getRequested());
+                        }
+                    });
+                allBoms.getIncoming()
+                    .getResolutionResult()
+                    .allDependencies(dep -> {
+                        if (dep instanceof UnresolvedDependencyResult unresolved) {
+                            unresolvedDependencies.add(unresolved.getRequested());
+                        }
+                    });
+                if (!unresolvedDependencies.isEmpty()) {
+                    writer.println("[WARNING] There were unresolved dependencies during inlining! This may cause incomplete catalogs!");
+                    for (ComponentSelector unresolvedDependency : unresolvedDependencies) {
+                        writer.println("   " + unresolvedDependency);
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         });
         projectDescriptors.get().forEach(p -> {
             String moduleGroup = p.getGroupId();
@@ -1062,7 +1092,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
             return Optional.empty();
         }
         VersionCatalogsExtension versionCatalogsExtension = project.getExtensions().findByType(VersionCatalogsExtension.class);
-        return Optional.ofNullable(versionCatalogsExtension).flatMap(e -> e.find("libs"));
+        return Optional.ofNullable(versionCatalogsExtension).flatMap(e -> e.find(bomExtension.getCatalogName().get()));
     }
 
     private void configureVersionCatalog(Project project, MicronautBomExtension bomExtension, String publishedName, String group, String mainProjectId) {
