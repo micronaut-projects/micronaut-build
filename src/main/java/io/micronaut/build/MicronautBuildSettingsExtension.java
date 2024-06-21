@@ -142,15 +142,19 @@ public abstract class MicronautBuildSettingsExtension {
         // Because we're a settings plugin, the "libs" version catalog
         // isn't available yet. So we have to parse it ourselves to find
         // the micronaut version!
-        File versionCatalog = new File(settings.getRootDir(), "gradle/libs.versions.toml");
-        if (versionCatalog.exists()) {
+        File catalogsDir = new File(settings.getRootDir(), "gradle");
+        if (catalogsDir.exists()) {
             LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
-            try (InputStream in = Files.newInputStream(versionCatalog.toPath())) {
-                parser.parse(in);
-                return parser.getModel();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            Arrays.stream(catalogsDir.listFiles())
+                .filter(f -> f.getName().endsWith(".versions.toml"))
+                .forEach(f -> {
+                    try (InputStream in = Files.newInputStream(f.toPath())) {
+                        parser.parse(in);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            return parser.getModel();
         }
         return null;
     }
@@ -182,9 +186,9 @@ public abstract class MicronautBuildSettingsExtension {
         if (!micronautVersion.isPresent()) {
             String capitalizedName = moduleNameKebabCase.charAt(0) +
                                      Arrays.stream(moduleNameKebabCase.split("-"))
-                                             .map(StringUtils::capitalize)
-                                             .collect(Collectors.joining())
-                                             .substring(1)
+                                         .map(StringUtils::capitalize)
+                                         .collect(Collectors.joining())
+                                         .substring(1)
                                      + "Version";
             micronautVersion = Optional.ofNullable(getProviders().gradleProperty(capitalizedName).getOrNull());
         }
@@ -263,8 +267,8 @@ public abstract class MicronautBuildSettingsExtension {
                     artifactId = artifactId.substring(0, artifactId.length() - 4);
                 }
                 name += Arrays.stream(artifactId.split("-"))
-                        .map(StringUtils::capitalize)
-                        .collect(Collectors.joining());
+                    .map(StringUtils::capitalize)
+                    .collect(Collectors.joining());
                 mgmt.getVersionCatalogs().create(name, catalog -> catalog.from(gavCoordinates));
             } else {
                 throw new IllegalStateException("Invalid version catalog GAV coordinates: " + gavCoordinates + ". Expected format: group:artifact:version");
@@ -289,22 +293,22 @@ public abstract class MicronautBuildSettingsExtension {
         settings.dependencyResolutionManagement(mgmt -> {
             configureRepositories(mgmt);
             String gavCoordinates = versionCatalogTomlModel.getLibrariesTable()
-                    .stream()
-                    .filter(lib -> lib.getAlias().equals(alias))
-                    .findFirst()
-                    .map(library -> {
-                        String version;
-                        if (library.getVersion().getReference() != null) {
-                            version = versionCatalogTomlModel.findVersion(library.getVersion().getReference())
-                                    .map(VersionModel::getVersion)
-                                    .map(RichVersion::getRequire)
-                                    .orElse(null);
-                        } else {
-                            version = library.getVersion().getVersion().getRequire();
-                        }
-                        return library.getGroup() + ":" + library.getName() + ":" + version;
-                    })
-                    .orElseThrow(() -> new IllegalStateException("Version catalog doesn't contain a library with alias: " + alias));
+                .stream()
+                .filter(lib -> lib.getAlias().equals(alias))
+                .findFirst()
+                .map(library -> {
+                    String version;
+                    if (library.getVersion().getReference() != null) {
+                        version = versionCatalogTomlModel.findVersion(library.getVersion().getReference())
+                            .map(VersionModel::getVersion)
+                            .map(RichVersion::getRequire)
+                            .orElse(null);
+                    } else {
+                        version = library.getVersion().getVersion().getRequire();
+                    }
+                    return library.getGroup() + ":" + library.getName() + ":" + version;
+                })
+                .orElseThrow(() -> new IllegalStateException("Version catalog doesn't contain a library with alias: " + alias));
             List<String> parts = Arrays.asList(gavCoordinates.split(":"));
             String groupId = parts.get(0);
             String artifactId = parts.get(1);
@@ -320,8 +324,8 @@ public abstract class MicronautBuildSettingsExtension {
                     artifactId = artifactId.substring(0, artifactId.length() - 4);
                 }
                 name += Arrays.stream(artifactId.split("-"))
-                        .map(StringUtils::capitalize)
-                        .collect(Collectors.joining());
+                    .map(StringUtils::capitalize)
+                    .collect(Collectors.joining());
                 mgmt.getVersionCatalogs().create(name, catalog -> catalog.from(gavCoordinates));
             } else {
                 throw new IllegalStateException("Invalid version catalog GAV coordinates: " + gavCoordinates + ". Expected format: group:artifact:version");

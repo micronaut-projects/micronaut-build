@@ -32,6 +32,13 @@ import java.util.stream.Collectors;
  */
 public interface MicronautBomExtension {
     /**
+     * Specifies the name of the catalog to use.
+     * Defaults to "libs"
+     * @return the catalog to use
+     */
+    Property<String> getCatalogName();
+
+    /**
      * Excludes projects from the BOM. Any call to this
      * method will override the default spec which excludes
      * modules containing the name "bom" or starting with
