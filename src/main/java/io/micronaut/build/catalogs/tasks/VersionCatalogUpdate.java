@@ -82,20 +82,30 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
     @Input
     public abstract MapProperty<String, String> getRejectedVersionsPerModule();
 
+    /**
+     * Subclasses may implement this method to add custom rejection logic
+     * without breaking up-to-date checking
+     * @param currentVersion the current version of a module, as found in the catalog
+     * @param candidateVersion the candidate version of a module, as found in a remote repository
+     * @return true if the candidate version should be excluded
+     */
+    protected boolean shouldIgnoreVersion(String currentVersion, String candidateVersion) {
+        return false;
+    }
+
     @TaskAction
     void updateCatalogs() throws IOException, InterruptedException {
         Set<File> catalogs = getCatalogsDirectory().getAsFileTree()
             .matching(pattern -> pattern.include("*.versions.toml"))
             .getFiles();
         File outputDir = getOutputDirectory().getAsFile().get();
-        File logFile = getOutputDirectory().file("updates.log").get().getAsFile();
         if (outputDir.isDirectory() || outputDir.mkdirs()) {
             if (catalogs.isEmpty()) {
                 getLogger().info("Didn't find any version catalog to process");
             }
             for (File catalog : catalogs) {
                 getLogger().info("Processing {}", catalog);
-                updateCatalog(catalog, new File(outputDir, catalog.getName()), logFile);
+                updateCatalog(catalog, new File(outputDir, catalog.getName()), getOutputDirectory().file(catalog.getName() + "-updates.log").get().getAsFile());
             }
         } else {
             throw new GradleException("Unable to create output directory " + outputDir);
@@ -136,26 +146,9 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
             var rejectedVersionsPerModule = getRejectedVersionsPerModule().get();
             detachedConfiguration.getResolutionStrategy().getComponentSelection().all(rules -> {
                 ModuleComponentIdentifier candidateModule = rules.getCandidate();
-                String candidateVersion = candidateModule.getVersion();
-                var moduleIdentifier = candidateModule.getModuleIdentifier();
-                rejectedQualifiers.forEach(qualifier -> {
-                    if (qualifier.matcher(candidateVersion).find()) {
-                        rules.reject("Rejecting qualifier " + qualifier);
-                        log.println("Rejecting " + moduleIdentifier + " version " + candidateVersion + " because of qualifier '" + qualifier + "'");
-                    }
-                });
-                var rejected = rejectedVersionsPerModule.get(moduleIdentifier.toString());
-                if (rejected != null) {
-                    var exclusion = Pattern.compile(rejected);
-                    if (exclusion.matcher(candidateVersion).find()) {
-                        rules.reject("Rejecting version " + candidateVersion + " because of configuration. It matches regular expression: " + rejected);
-                        log.println("Rejecting version " + candidateVersion + " because of configuration. It matches regular expression: " + rejected);
-                    }
-                }
-                if (!allowMajorUpdate) {
-                    model.findLibrary(
-                            candidateModule.getGroup(), candidateModule.getModule()
-                    ).ifPresent(library -> {
+                model.findLibrary(
+                    candidateModule.getGroup(), candidateModule.getModule()
+                ).ifPresent(library -> {
                         VersionModel version = library.getVersion();
                         if (version.getReference() != null) {
                             version = model.findVersion(version.getReference()).orElse(null);
@@ -163,17 +156,39 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
                         if (version != null) {
                             String required = version.getVersion().getRequire();
                             if (required != null) {
-                                String major = majorVersionOf(required);
-                                String candidateMajor = majorVersionOf(candidateVersion);
-                                if (!major.equals(candidateMajor)) {
-                                    rules.reject("Rejecting major version " + candidateMajor);
-                                    log.println("Rejecting " + candidateModule.getModuleIdentifier() + " version " + candidateVersion + " because it's not the same major version");
+                                var candidateVersion = candidateModule.getVersion();
+                                if (shouldIgnoreVersion(required, candidateVersion)) {
+                                    rules.reject("Rejecting version " + candidateVersion + " because of configuration. It was rejected by custom logic");
+                                    log.println("Rejecting version " + candidateVersion + " because of configuration. It was rejected by custom logic");
+                                    return;
+                                }
+                                var moduleIdentifier = candidateModule.getModuleIdentifier();
+                                rejectedQualifiers.forEach(qualifier -> {
+                                    if (qualifier.matcher(candidateVersion).find()) {
+                                        rules.reject("Rejecting qualifier " + qualifier);
+                                        log.println("Rejecting " + moduleIdentifier + " version " + candidateVersion + " because of qualifier '" + qualifier + "'");
+                                    }
+                                });
+                                var rejected = rejectedVersionsPerModule.get(moduleIdentifier.toString());
+                                if (rejected != null) {
+                                    var exclusion = Pattern.compile(rejected);
+                                    if (exclusion.matcher(candidateVersion).find()) {
+                                        rules.reject("Rejecting version " + candidateVersion + " because of configuration. It matches regular expression: " + rejected);
+                                        log.println("Rejecting version " + candidateVersion + " because of configuration. It matches regular expression: " + rejected);
+                                    }
+                                }
+                                if (!allowMajorUpdate) {
+                                    String major = majorVersionOf(required);
+                                    String candidateMajor = majorVersionOf(candidateVersion);
+                                    if (!major.equals(candidateMajor)) {
+                                        rules.reject("Rejecting major version " + candidateMajor);
+                                        log.println("Rejecting " + candidateModule.getModuleIdentifier() + " version " + candidateVersion + " because it's not the same major version");
+                                    }
                                 }
                             }
                         }
-                    });
-                }
-
+                    }
+                );
             });
 
             Set<String> ignoredModules = getIgnoredModules().get();
