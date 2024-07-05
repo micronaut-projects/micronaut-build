@@ -39,6 +39,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
@@ -81,6 +82,9 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
 
     @Input
     public abstract MapProperty<String, String> getRejectedVersionsPerModule();
+
+    @Internal
+    public abstract Property<Boolean> getFailWhenNoVersionFound();
 
     /**
      * Subclasses may implement this method to add custom rejection logic
@@ -271,7 +275,13 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
                 })
                 .collect(Collectors.joining(""));
             if (!errors.isEmpty()) {
-                throw new GradleException("Some modules couldn't be updated because of the following reasons:" + errors);
+                boolean fail = getFailWhenNoVersionFound().getOrElse(Boolean.TRUE);
+                if (fail) {
+                    throw new GradleException("Some modules couldn't be updated because of the following reasons:" + errors);
+                } else {
+                    getLogger().lifecycle("Some modules had all versions rejected or no candidate, check the logs for details");
+                    log.println(errors);
+                }
             }
         }
     }
