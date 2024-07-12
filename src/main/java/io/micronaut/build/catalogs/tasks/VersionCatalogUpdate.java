@@ -23,6 +23,7 @@ import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
 import io.micronaut.build.catalogs.internal.VersionModel;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
+import org.gradle.api.artifacts.ComponentSelection;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
@@ -81,6 +82,9 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
     public abstract Property<Boolean> getAllowMajorUpdates();
 
     @Input
+    public abstract Property<Boolean> getAllowMinorUpdates();
+
+    @Input
     public abstract MapProperty<String, String> getRejectedVersionsPerModule();
 
     @Internal
@@ -134,6 +138,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
             }
             List<String> lines = Files.readAllLines(inputCatalog.toPath(), StandardCharsets.UTF_8);
             boolean allowMajorUpdate = getAllowMajorUpdates().get();
+            boolean allowMinorUpdate = getAllowMinorUpdates().get();
             VersionCatalogTomlModel model = parser.getModel();
             DependencyHandler dependencies = getProject().getDependencies();
             ConfigurationContainer configurations = getProject().getConfigurations();
@@ -181,14 +186,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
                                         log.println("Rejecting version " + candidateVersion + " because of configuration. It matches regular expression: " + rejected);
                                     }
                                 }
-                                if (!allowMajorUpdate) {
-                                    String major = majorVersionOf(required);
-                                    String candidateMajor = majorVersionOf(candidateVersion);
-                                    if (!major.equals(candidateMajor)) {
-                                        rules.reject("Rejecting major version " + candidateMajor);
-                                        log.println("Rejecting " + candidateModule.getModuleIdentifier() + " version " + candidateVersion + " because it's not the same major version");
-                                    }
-                                }
+                                maybeRejectVersionByMinorMajor(rules, allowMajorUpdate, allowMinorUpdate, required, candidateVersion, log, candidateModule);
                             }
                         }
                     }
@@ -286,6 +284,31 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
         }
     }
 
+    // Visible for testing
+    static void maybeRejectVersionByMinorMajor(ComponentSelection rules,
+                                               boolean allowMajorUpdate,
+                                               boolean allowMinorUpdate,
+                                               String currentVersion,
+                                               String candidateVersion,
+                                               PrintWriter log,
+                                               ModuleComponentIdentifier candidateModule) {
+        if (!allowMajorUpdate || !allowMinorUpdate) {
+            int major = majorVersionOf(currentVersion);
+            int candidateMajor = majorVersionOf(candidateVersion);
+            if (major != candidateMajor && !allowMajorUpdate) {
+                rules.reject("Rejecting major version " + candidateMajor);
+                log.println("Rejecting " + candidateModule.getModuleIdentifier() + " version " + candidateVersion + " because it's not the same major version");
+            } else if (major == candidateMajor && !allowMinorUpdate) {
+                int minor = minorVersionOf(currentVersion);
+                int candidateMinor = minorVersionOf(candidateVersion);
+                if (minor!=candidateMinor) {
+                    rules.reject("Rejecting minor version " + candidateMinor);
+                    log.println("Rejecting " + candidateModule.getModuleIdentifier() + " version " + candidateVersion + " because it's not the same minor version");
+                }
+            }
+        }
+    }
+
     private static String requiredVersionOf(Library library) {
         RichVersion version = library.getVersion().getVersion();
         if (version != null) {
@@ -307,11 +330,38 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
         return new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
     }
 
-    private static String majorVersionOf(String version) {
+    static int majorVersionOf(String version) {
         int idx = version.indexOf(".");
         if (idx < 0) {
-            return version;
+            return safeParseInt(version);
         }
-        return version.substring(0, idx);
+        return safeParseInt(version.substring(0, idx));
+    }
+
+    static int minorVersionOf(String version) {
+        int idx = version.indexOf(".");
+        if (idx < 0) {
+            return 0;
+        }
+        var bugfixIdx = version.indexOf(".", idx + 1);
+        if (bugfixIdx < 0) {
+            return safeParseInt(version.substring(idx + 1));
+        }
+        return safeParseInt(version.substring(idx + 1, bugfixIdx));
+    }
+
+    private static int safeParseInt(String pollutedVersion) {
+        int idx = 0;
+        while (idx < pollutedVersion.length() && Character.isDigit(pollutedVersion.charAt(idx))) {
+            idx++;
+        }
+        if (idx == 0) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(pollutedVersion.substring(0, idx));
+        } catch (NumberFormatException ex) {
+            return 0;
+        }
     }
 }
