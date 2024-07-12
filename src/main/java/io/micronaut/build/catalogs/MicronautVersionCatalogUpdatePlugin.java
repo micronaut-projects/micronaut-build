@@ -28,6 +28,7 @@ public class MicronautVersionCatalogUpdatePlugin implements Plugin<Project> {
             task.getIgnoredModules().convention(Collections.emptySet());
             task.getRejectedVersionsPerModule().convention(Collections.emptyMap());
             task.getAllowMajorUpdates().convention(false);
+            task.getAllowMinorUpdates().convention(true);
         });
         tasks.register("useLatestVersions", Copy.class, task -> {
             VersionCatalogUpdate dependent = updater.get();
