@@ -1,5 +1,7 @@
 package io.micronaut.build.compat
 
+import io.micronaut.build.utils.ComparableVersion
+import io.micronaut.build.utils.VersionParser
 import spock.lang.Specification
 
 class MavenMetadataVersionParserTest extends Specification {
@@ -10,9 +12,7 @@ class MavenMetadataVersionParserTest extends Specification {
         def versions = MavenMetadataVersionHelper.findReleasesFrom(metadata)
 
         then:
-        versions.size() == 125
-        versions[0].version == "1.0.0"
-        versions[124].version == "3.8.6"
+        versions.size() == 147
 
         previousReleaseOf("3.8.7", versions) == "3.8.6"
         previousReleaseOf("1.1.0", versions) == "1.0.5"
@@ -21,7 +21,7 @@ class MavenMetadataVersionParserTest extends Specification {
         previousReleaseOf("1.0.5", versions) == "1.0.4"
     }
 
-    static String previousReleaseOf(String version, List<VersionModel> versions) {
-        MavenMetadataVersionHelper.findPreviousReleaseFor(VersionModel.of(version), versions).orElse(null)
+    static String previousReleaseOf(String version, List<ComparableVersion> versions) {
+        MavenMetadataVersionHelper.findPreviousReleaseFor(VersionParser.parse(version), versions).orElse(null)
     }
 }

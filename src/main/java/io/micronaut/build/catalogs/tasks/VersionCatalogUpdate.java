@@ -21,18 +21,16 @@ import io.micronaut.build.catalogs.internal.RichVersion;
 import io.micronaut.build.catalogs.internal.Status;
 import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
 import io.micronaut.build.catalogs.internal.VersionModel;
+import io.micronaut.build.compat.MavenMetadataVersionHelper;
+import io.micronaut.build.utils.ComparableVersion;
+import io.micronaut.build.utils.Downloader;
+import io.micronaut.build.utils.VersionParser;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
-import org.gradle.api.artifacts.ComponentSelection;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.artifacts.ModuleVersionIdentifier;
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.artifacts.result.ResolutionResult;
-import org.gradle.api.artifacts.result.UnresolvedDependencyResult;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
@@ -51,15 +49,21 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static java.util.Collections.reverseOrder;
 
 /**
  * A task which updates version catalog files and outputs a copy
@@ -90,15 +94,21 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
     @Internal
     public abstract Property<Boolean> getFailWhenNoVersionFound();
 
-    /**
-     * Subclasses may implement this method to add custom rejection logic
-     * without breaking up-to-date checking
-     * @param currentVersion the current version of a module, as found in the catalog
-     * @param candidateVersion the candidate version of a module, as found in a remote repository
-     * @return true if the candidate version should be excluded
-     */
-    protected boolean shouldIgnoreVersion(String currentVersion, String candidateVersion) {
-        return false;
+    @Input
+    public abstract ListProperty<URI> getRepositoryBaseUris();
+
+    public VersionCatalogUpdate() {
+        getRepositoryBaseUris().convention(
+            getProject().getRepositories().stream()
+                .filter(MavenArtifactRepository.class::isInstance)
+                .map(MavenArtifactRepository.class::cast)
+                .map(MavenArtifactRepository::getUrl)
+                .toList()
+        );
+    }
+
+    protected void processCandidate(CandidateDetails details) {
+
     }
 
     @TaskAction
@@ -148,131 +158,79 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
             detachedConfiguration.setTransitive(false);
             detachedConfiguration.getResolutionStrategy()
                 .cacheDynamicVersionsFor(0, TimeUnit.MINUTES);
-            List<Pattern> rejectedQualifiers = getRejectedQualifiers().get()
+            var rejectedQualifiers = getRejectedQualifiers().get()
                 .stream()
                 .map(qualifier -> Pattern.compile("(?i).*[.-]" + qualifier + "[.\\d-+]*"))
                 .toList();
             var rejectedVersionsPerModule = getRejectedVersionsPerModule().get();
-            detachedConfiguration.getResolutionStrategy().getComponentSelection().all(rules -> {
-                ModuleComponentIdentifier candidateModule = rules.getCandidate();
-                model.findLibrary(
-                    candidateModule.getGroup(), candidateModule.getModule()
-                ).ifPresent(library -> {
-                        VersionModel version = library.getVersion();
-                        if (version.getReference() != null) {
-                            version = model.findVersion(version.getReference()).orElse(null);
-                        }
-                        if (version != null) {
-                            String required = version.getVersion().getRequire();
-                            if (required != null) {
-                                var candidateVersion = candidateModule.getVersion();
-                                if (shouldIgnoreVersion(required, candidateVersion)) {
-                                    rules.reject("Rejecting version " + candidateVersion + " because of configuration. It was rejected by custom logic");
-                                    log.println("Rejecting version " + candidateVersion + " because of configuration. It was rejected by custom logic");
-                                    return;
-                                }
-                                var moduleIdentifier = candidateModule.getModuleIdentifier();
-                                rejectedQualifiers.forEach(qualifier -> {
-                                    if (qualifier.matcher(candidateVersion).find()) {
-                                        rules.reject("Rejecting qualifier " + qualifier);
-                                        log.println("Rejecting " + moduleIdentifier + " version " + candidateVersion + " because of qualifier '" + qualifier + "'");
-                                    }
-                                });
-                                var rejected = rejectedVersionsPerModule.get(moduleIdentifier.toString());
-                                if (rejected != null) {
-                                    var exclusion = Pattern.compile(rejected);
-                                    if (exclusion.matcher(candidateVersion).find()) {
-                                        rules.reject("Rejecting version " + candidateVersion + " because of configuration. It matches regular expression: " + rejected);
-                                        log.println("Rejecting version " + candidateVersion + " because of configuration. It matches regular expression: " + rejected);
-                                    }
-                                }
-                                maybeRejectVersionByMinorMajor(rules, allowMajorUpdate, allowMinorUpdate, required, candidateVersion, log, candidateModule);
-                            }
-                        }
-                    }
-                );
-            });
+            var ignoredModules = getIgnoredModules().get();
 
-            Set<String> ignoredModules = getIgnoredModules().get();
-
-            model.getLibrariesTable()
+            var allDetails = model.getLibrariesTable()
                 .stream()
                 .filter(library -> !ignoredModules.contains(library.getModule()))
                 .filter(library -> library.getVersion().getReference() != null || !requiredVersionOf(library).isEmpty())
-                .map(library -> requirePom(dependencies, library))
-                .forEach(dependency -> detachedConfiguration.getDependencies().add(dependency));
-
-            ResolutionResult resolutionResult = detachedConfiguration.getIncoming()
-                .getResolutionResult();
-            resolutionResult
-                .allComponents(result -> {
-                    ModuleVersionIdentifier mid = result.getModuleVersion();
-                    String latest = mid.getVersion();
-                    Status targetStatus = Status.detectStatus(latest);
-                    log.println("Latest release of " + mid.getModule() + " is " + latest + " (status " + targetStatus + ")");
-                    model.findLibrary(mid.getGroup(), mid.getName()).ifPresent(library -> {
-                        VersionModel version = library.getVersion();
-                        String reference = version.getReference();
-                        if (reference != null) {
-                            model.findVersion(reference).ifPresent(referencedVersion -> {
-                                RichVersion richVersion = referencedVersion.getVersion();
-                                if (supportsUpdate(richVersion)) {
-                                    String require = richVersion.getRequire();
-                                    Status sourceStatus = Status.detectStatus(require);
-                                    if (!Objects.equals(require, latest) && targetStatus.isAsStableOrMoreStableThan(sourceStatus)) {
-                                        log.println("Updating required version from " + require + " to " + latest);
-                                        String lookup = "(" + reference + "\\s*=\\s*[\"'])(.+?)([\"'])";
-                                        int lineNb = referencedVersion.getPosition().line() - 1;
-                                        String line = lines.get(lineNb);
-                                        Matcher m = Pattern.compile(lookup).matcher(line);
-                                        if (m.find()) {
-                                            lines.set(lineNb, m.replaceAll("$1" + latest + "$3"));
-                                        } else {
-                                            log.println("Line " + lineNb + " contains unsupported notation, automatic updating failed");
-                                        }
+                .parallel()
+                .map(library -> findBestVersion(model, log, library, rejectedQualifiers, rejectedVersionsPerModule, allowMajorUpdate, allowMinorUpdate))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
+            List<String> unresolved = new ArrayList<>();
+            for (var details : allDetails) {
+                var latest = details.acceptedVersion != null ? details.acceptedVersion : details.fallbackVersion;
+                if (latest!=null) {
+                    var library = details.library;
+                    VersionModel version = library.getVersion();
+                    String reference = version.getReference();
+                    if (reference != null) {
+                        model.findVersion(reference).ifPresent(referencedVersion -> {
+                            RichVersion richVersion = referencedVersion.getVersion();
+                            if (supportsUpdate(richVersion)) {
+                                String require = richVersion.getRequire();
+                                if (!Objects.equals(require, latest.fullVersion())) {
+                                    log.println("Updating required version from " + require + " to " + latest);
+                                    String lookup = "(" + reference + "\\s*=\\s*[\"'])(.+?)([\"'])";
+                                    int lineNb = referencedVersion.getPosition().line() - 1;
+                                    String line = lines.get(lineNb);
+                                    Matcher m = Pattern.compile(lookup).matcher(line);
+                                    if (m.find()) {
+                                        lines.set(lineNb, m.replaceAll("$1" + latest + "$3"));
+                                    } else {
+                                        log.println("Line " + lineNb + " contains unsupported notation, automatic updating failed");
                                     }
-                                } else {
-                                    log.println("Version '" + reference + "' uses a notation which is not supported for automatic upgrades yet.");
                                 }
-                            });
-                        } else {
-                            String lookup = "(version\\s*=\\s*[\"'])(.+?)([\"'])";
-                            int lineNb = library.getPosition().line() - 1;
-                            String line = lines.get(lineNb);
-                            Matcher m = Pattern.compile(lookup).matcher(line);
-                            if (m.find()) {
-                                lines.set(lineNb, m.replaceAll("$1" + latest + "$3"));
                             } else {
-                                lookup = "(\\s*=\\s*[\"'])(" + library.getGroup() + "):(" + library.getName() + "):(.+?)([\"'])";
-                                m = Pattern.compile(lookup).matcher(line);
-                                if (m.find()) {
-                                    lines.set(lineNb, m.replaceAll("$1$2:$3:" + latest + "$5"));
-                                } else {
-                                    log.println("Line " + lineNb + " contains unsupported notation, automatic updating failed");
-                                }
+                                log.println("[" + details.module + "] version '" + reference + "' uses a notation which is not supported for automatic upgrades yet.");
+                            }
+                        });
+                    } else {
+                        String lookup = "(version\\s*=\\s*[\"'])(.+?)([\"'])";
+                        int lineNb = library.getPosition().line() - 1;
+                        String line = lines.get(lineNb);
+                        Matcher m = Pattern.compile(lookup).matcher(line);
+                        if (m.find()) {
+                            lines.set(lineNb, m.replaceAll("$1" + latest + "$3"));
+                        } else {
+                            lookup = "(\\s*=\\s*[\"'])(" + library.getGroup() + "):(" + library.getName() + "):(.+?)([\"'])";
+                            m = Pattern.compile(lookup).matcher(line);
+                            if (m.find()) {
+                                lines.set(lineNb, m.replaceAll("$1$2:$3:" + latest + "$5"));
+                            } else {
+                                log.println("Line " + lineNb + " contains unsupported notation, automatic updating failed");
                             }
                         }
-                    });
-                });
+                    }
+                } else {
+                    unresolved.add("Cannot resolve module " + details.module);
+                }
+            }
 
             getLogger().lifecycle("Writing updated catalog at " + outputCatalog);
             try (PrintWriter writer = newPrintWriter(outputCatalog)) {
                 lines.forEach(writer::println);
             }
 
-            String errors = resolutionResult.getAllDependencies()
-                .stream()
-                .filter(UnresolvedDependencyResult.class::isInstance)
-                .map(UnresolvedDependencyResult.class::cast)
-                .map(r -> {
-                    log.println("Unresolved dependency " + r.getAttempted().getDisplayName());
-                    log.println("   reason " + r.getAttemptedReason());
-                    log.println("   failure");
-                    r.getFailure().printStackTrace(log);
-                    return "\n    - " + r.getAttempted().getDisplayName() + " -> " + r.getFailure().getMessage();
-                })
-                .collect(Collectors.joining(""));
-            if (!errors.isEmpty()) {
+            if (!unresolved.isEmpty()) {
+                var errors = unresolved.stream().map(s -> "    - " + s).collect(Collectors.joining("\n"));
                 boolean fail = getFailWhenNoVersionFound().getOrElse(Boolean.TRUE);
                 if (fail) {
                     throw new GradleException("Some modules couldn't be updated because of the following reasons:" + errors);
@@ -284,26 +242,98 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
         }
     }
 
+    private Optional<DefaultCandidateDetails> findBestVersion(VersionCatalogTomlModel model,
+                                                              PrintWriter log,
+                                                              Library library,
+                                                              List<Pattern> rejectedQualifiers,
+                                                              Map<String, String> rejectedVersionsPerModule,
+                                                              boolean allowMajorUpdates,
+                                                              boolean allowMinorUpdates) {
+        var reference = library.getVersion().getReference();
+        String version;
+        if (reference != null) {
+            version = model.findVersion(reference).map(VersionModel::getVersion).map(RichVersion::getRequire).orElse(null);
+        } else {
+            version = library.getVersion().getVersion().getRequire();
+        }
+        if (version != null) {
+            var group = library.getGroup();
+            var name = library.getName();
+            var currentVersion = VersionParser.parse(version);
+            var module = group + ":" + name;
+            var candidateDetails = new DefaultCandidateDetails(log, library, currentVersion);
+            var comparableVersions = fetchVersions(group, name);
+            for (var candidateVersion : comparableVersions) {
+                candidateDetails.prepare(candidateVersion);
+                var candidateStatus = Status.detectStatus(candidateVersion.fullVersion());
+                var sourceStatus = Status.detectStatus(currentVersion.fullVersion());
+                if (!candidateStatus.isAsStableOrMoreStableThan(sourceStatus)) {
+                    candidateDetails.rejectCandidate("it's not as stable as " + sourceStatus);
+                }
+                if (candidateVersion.qualifier().isPresent()) {
+                    var candidateQualifier = candidateVersion.qualifier().get();
+                    rejectedQualifiers.forEach(qualifier -> {
+                        if (qualifier.matcher(candidateQualifier).find()) {
+                            candidateDetails.rejectCandidate("of qualifier '" + qualifier + "'");
+                        }
+                    });
+                }
+                var rejected = rejectedVersionsPerModule.get(module);
+                if (rejected != null) {
+                    var exclusion = Pattern.compile(rejected);
+                    if (exclusion.matcher(candidateVersion.fullVersion()).find()) {
+                        candidateDetails.rejectCandidate("of configuration. It matches regular expression: " + rejected);
+                    }
+                }
+                maybeRejectVersionByMinorMajor(allowMajorUpdates, allowMinorUpdates, currentVersion, candidateVersion, candidateDetails);
+                if (!candidateDetails.isRejected()) {
+                    processCandidate(candidateDetails);
+                }
+                if (!candidateDetails.isRejected() && !candidateDetails.hasFallback()) {
+                    candidateDetails.acceptCandidate();
+                    break;
+                }
+            }
+            return Optional.of(candidateDetails);
+        }
+        return Optional.empty();
+    }
+
+    public List<ComparableVersion> fetchVersions(String groupId, String artifactId) {
+        var uris = getRepositoryBaseUris().get();
+        for (var baseUrl : uris) {
+            var metadata = URI.create(baseUrl.toString() + "/" + groupId.replace('.', '/') + "/" + artifactId + "/maven-metadata.xml");
+            var data = Downloader.doDownload(metadata);
+            if (data != null) {
+                var list = MavenMetadataVersionHelper.findReleasesFrom(data)
+                    .stream()
+                    .sorted(reverseOrder())
+                    .toList();
+                if (!list.isEmpty()) {
+                    // Goto next repository
+                    return list;
+                }
+            }
+        }
+        return List.of();
+    }
+
     // Visible for testing
-    static void maybeRejectVersionByMinorMajor(ComponentSelection rules,
-                                               boolean allowMajorUpdate,
+    static void maybeRejectVersionByMinorMajor(boolean allowMajorUpdate,
                                                boolean allowMinorUpdate,
-                                               String currentVersion,
-                                               String candidateVersion,
-                                               PrintWriter log,
-                                               ModuleComponentIdentifier candidateModule) {
+                                               ComparableVersion currentVersion,
+                                               ComparableVersion candidateVersion,
+                                               CandidateDetails details) {
         if (!allowMajorUpdate || !allowMinorUpdate) {
-            int major = majorVersionOf(currentVersion);
-            int candidateMajor = majorVersionOf(candidateVersion);
+            int major = currentVersion.major().orElse(0);
+            int candidateMajor = candidateVersion.major().orElse(0);
             if (major != candidateMajor && !allowMajorUpdate) {
-                rules.reject("Rejecting major version " + candidateMajor);
-                log.println("Rejecting " + candidateModule.getModuleIdentifier() + " version " + candidateVersion + " because it's not the same major version");
+                details.rejectCandidate("it's not the same major version as current : " + currentVersion + " (current) vs " + candidateVersion + " (candidate)");
             } else if (major == candidateMajor && !allowMinorUpdate) {
-                int minor = minorVersionOf(currentVersion);
-                int candidateMinor = minorVersionOf(candidateVersion);
-                if (minor!=candidateMinor) {
-                    rules.reject("Rejecting minor version " + candidateMinor);
-                    log.println("Rejecting " + candidateModule.getModuleIdentifier() + " version " + candidateVersion + " because it's not the same minor version");
+                int minor = currentVersion.minor().orElse(0);
+                int candidateMinor = candidateVersion.minor().orElse(0);
+                if (minor != candidateMinor) {
+                    details.rejectCandidate("it's not the same minor version : "  + currentVersion + " (current) vs " + candidateVersion + " (candidate)");
                 }
             }
         }
@@ -320,48 +350,131 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
         return "";
     }
 
-    private static Dependency requirePom(DependencyHandler dependencies, Library library) {
-        ExternalModuleDependency dependency = (ExternalModuleDependency) dependencies.create(library.getGroup() + ":" + library.getName() + ":+");
-        dependency.artifact(artifact -> artifact.setType("pom"));
-        return dependency;
-    }
-
     private static PrintWriter newPrintWriter(File file) throws FileNotFoundException {
         return new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
     }
 
-    static int majorVersionOf(String version) {
-        int idx = version.indexOf(".");
-        if (idx < 0) {
-            return safeParseInt(version);
-        }
-        return safeParseInt(version.substring(0, idx));
+    /**
+     * Stateful details about a candidate. Allows subclasses to
+     * perform custom selection.
+     */
+    protected interface CandidateDetails {
+        /**
+         * The candidate module, in the group:name format
+         * @return the module id
+         */
+        String getModule();
+
+        /**
+         * The current version of a module, as found in the catalog
+         * @return the current version
+         */
+        ComparableVersion getCurrentVersion();
+
+        /**
+         * A candidate version of the module, as found in a repository
+         * @return the candidate version
+         */
+        ComparableVersion getCandidateVersion();
+
+        /**
+         * Tells that this version should be selected if no better
+         * match is found. The first fallback will be used, any
+         * subsequent call to this method once a fallback is set
+         * will be ignored.
+         */
+        void acceptAsFallback();
+
+        /**
+         * Rejects a candidate with a reason.
+         * @param reason the reason to reject the candidate
+         */
+        void rejectCandidate(String reason);
+
+        /**
+         * Accepts a candidate. No other candidate will be tested.
+         */
+        void acceptCandidate();
     }
 
-    static int minorVersionOf(String version) {
-        int idx = version.indexOf(".");
-        if (idx < 0) {
-            return 0;
-        }
-        var bugfixIdx = version.indexOf(".", idx + 1);
-        if (bugfixIdx < 0) {
-            return safeParseInt(version.substring(idx + 1));
-        }
-        return safeParseInt(version.substring(idx + 1, bugfixIdx));
-    }
+    private static class DefaultCandidateDetails implements CandidateDetails {
+        private final Library library;
+        private final PrintWriter log;
+        private final String module;
+        private final ComparableVersion currentVersion;
+        private ComparableVersion candidateVersion;
+        private ComparableVersion acceptedVersion;
+        private ComparableVersion fallbackVersion;
+        private boolean rejected;
 
-    private static int safeParseInt(String pollutedVersion) {
-        int idx = 0;
-        while (idx < pollutedVersion.length() && Character.isDigit(pollutedVersion.charAt(idx))) {
-            idx++;
+        private DefaultCandidateDetails(PrintWriter log,
+                                        Library library,
+                                        ComparableVersion currentVersion) {
+            this.log = log;
+            this.library = library;
+            this.module = library.getGroup() + ":" + library.getName();
+            this.currentVersion = currentVersion;
         }
-        if (idx == 0) {
-            return 0;
+
+        @Override
+        public String getModule() {
+            return module;
         }
-        try {
-            return Integer.parseInt(pollutedVersion.substring(0, idx));
-        } catch (NumberFormatException ex) {
-            return 0;
+
+        @Override
+        public ComparableVersion getCurrentVersion() {
+            return currentVersion;
+        }
+
+        @Override
+        public ComparableVersion getCandidateVersion() {
+            return candidateVersion;
+        }
+
+        @Override
+        public void acceptAsFallback() {
+            if (fallbackVersion == null) {
+                fallbackVersion = candidateVersion;
+                String message = "[" + module + "] Accepting version '" + candidateVersion + "' as fallback in case no better match is found";
+                log.println(message);
+            }
+            rejected = true;
+        }
+
+        @Override
+        public void rejectCandidate(String reason) {
+            rejected = true;
+            String message = "[" + module + "] Rejecting version '" + candidateVersion + "' because " + reason;
+            log.println(message);
+        }
+
+        @Override
+        public void acceptCandidate() {
+            acceptedVersion = candidateVersion;
+            String message;
+            if (currentVersion.equals(candidateVersion)) {
+                message = "[" + module + "] Current version " + currentVersion + " is suitable";
+            } else {
+                message = "[" + module + "] Accepting candidate " + candidateVersion + " as replacement to " + currentVersion;
+            }
+            log.println(message);
+        }
+
+        public boolean isRejected() {
+            return rejected;
+        }
+
+        public boolean hasFallback() {
+            return fallbackVersion != null;
+        }
+
+        public boolean isAccepted() {
+            return acceptedVersion != null;
+        }
+
+        public void prepare(ComparableVersion candidateVersion) {
+            this.candidateVersion = candidateVersion;
+            this.rejected = false;
         }
     }
 }
