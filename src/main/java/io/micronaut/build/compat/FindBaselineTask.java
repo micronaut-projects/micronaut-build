@@ -16,6 +16,8 @@
 package io.micronaut.build.compat;
 
 import io.micronaut.build.utils.ExternalURLService;
+import io.micronaut.build.utils.ComparableVersion;
+import io.micronaut.build.utils.VersionParser;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.RegularFileProperty;
@@ -87,9 +89,9 @@ public abstract class FindBaselineTask extends DefaultTask {
     @TaskAction
     public void execute() throws IOException {
         byte[] metadata = getMavenMetadata().get();
-        List<VersionModel> releases = MavenMetadataVersionHelper.findReleasesFrom(metadata);
-        VersionModel current = VersionModel.of(trimVersion());
-        Optional<VersionModel> previous = MavenMetadataVersionHelper.findPreviousReleaseFor(current, releases);
+        List<ComparableVersion> releases = MavenMetadataVersionHelper.findReleasesFrom(metadata);
+        ComparableVersion current = VersionParser.parse(trimVersion());
+        Optional<ComparableVersion> previous = MavenMetadataVersionHelper.findPreviousReleaseFor(current, releases);
         if (!previous.isPresent()) {
             throw new IllegalStateException("Could not find a previous version for " + current);
         }

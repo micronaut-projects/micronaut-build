@@ -21,9 +21,6 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.services.BuildService;
 import org.gradle.api.services.BuildServiceParameters;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Map;
@@ -59,7 +56,7 @@ public abstract class ExternalURLService implements BuildService<BuildServicePar
             lock.unlock();
         }
         try {
-            return Optional.ofNullable(responses.computeIfAbsent(uri, ExternalURLService::doDownload));
+            return Optional.ofNullable(responses.computeIfAbsent(uri, Downloader::doDownload));
         } finally {
             lock.lock();
             try {
@@ -69,21 +66,6 @@ public abstract class ExternalURLService implements BuildService<BuildServicePar
                 lock.unlock();
             }
         }
-    }
-
-    private static byte[] doDownload(URI uri) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-        try (InputStream stream = uri.toURL().openStream()) {
-            byte[] buffer = new byte[4096];
-            int read;
-            while ((read = stream.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, read);
-            }
-        } catch (IOException e) {
-            return null;
-        }
-        return outputStream.toByteArray();
     }
 
     public static Provider<ExternalURLService> registerOn(Project project) {

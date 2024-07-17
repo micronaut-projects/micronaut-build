@@ -15,7 +15,8 @@
  */
 package io.micronaut.build.compat;
 
-import org.gradle.api.GradleException;
+import io.micronaut.build.utils.ComparableVersion;
+import io.micronaut.build.utils.VersionParser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,9 +24,7 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -33,12 +32,12 @@ public abstract class MavenMetadataVersionHelper {
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+\\.\\d+\\.\\d+)([.-]\\w+)?$");
     private static final String VERSION_OPEN_TAG = "<version>";
     private static final String VERSION_CLOSE_TAG = "</version>";
-    
+
     private MavenMetadataVersionHelper() {
 
     }
 
-    public static List<VersionModel> findReleasesFrom(byte[] mavenMetadata) {
+    public static List<ComparableVersion> findReleasesFrom(byte[] mavenMetadata) {
         List<String> allVersions = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new StringReader(new String(mavenMetadata, StandardCharsets.UTF_8)))) {
             String line;
@@ -49,30 +48,19 @@ public abstract class MavenMetadataVersionHelper {
                 }
             }
             return allVersions.stream()
-                    .map(version -> {
-                        Matcher m = VERSION_PATTERN.matcher(version);
-                        if (m.find()) {
-                            if (m.group(2) != null) {
-                                // discard non release versions like M2, RC1, etc
-                                return null;
-                            }
-                            return m.group(1);
-                        }
-                        return null;
-                    })
-                    .filter(Objects::nonNull)
-                    .map(VersionModel::of)
-                    .sorted()
-                    .collect(Collectors.toList());
+                .map(VersionParser::parse)
+                .sorted()
+                .collect(Collectors.toList());
 
         } catch (IOException e) {
-            throw new GradleException("Error parsing maven-metadata.xml", e);
+            return List.of();
         }
     }
 
-    public static Optional<VersionModel> findPreviousReleaseFor(VersionModel version, List<VersionModel> releases) {
+    public static Optional<ComparableVersion> findPreviousReleaseFor(ComparableVersion version, List<ComparableVersion> releases) {
         return releases.stream()
-                .filter(v -> v.compareTo(version) < 0)
-                .reduce((a, b) -> b);
+            .filter(v -> v.qualifier().isEmpty())
+            .filter(v -> v.compareTo(version) < 0)
+            .reduce((a, b) -> b);
     }
 }
