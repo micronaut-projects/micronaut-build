@@ -39,7 +39,11 @@ class MicronautBasePlugin implements Plugin<Project> {
     }
 
     private void configureProjectVersion(Project project) {
-        project.version = project.providers.gradleProperty("projectVersion").orElse("undefined").get()
+        def version = project.providers.gradleProperty("projectVersion").orElse("undefined").get()
+        if (version.isEmpty() || !Character.isDigit(version.charAt(0))) {
+            throw new IllegalArgumentException("Version '" + version + "' is not a valid Micronaut version. It must start with a digit.")
+        }
+        project.version = version
     }
 
 }
