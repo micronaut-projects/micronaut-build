@@ -24,7 +24,8 @@ public class VersionParser {
 
     public static ComparableVersion parse(String version) {
         try {
-            var matcher = SEMANTIC_VERSION.matcher(version);
+            var matchVersion = version.startsWith(".") ? "0" + version : version;
+            var matcher = SEMANTIC_VERSION.matcher(matchVersion);
             if (matcher.find()) {
                 var major = matcher.group("major");
                 var minor = matcher.group("minor");

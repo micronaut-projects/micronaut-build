@@ -35,6 +35,11 @@ class VersionParserTest extends Specification {
         "1.5.7.45.0.1"                                   | 1     | 5     | 7     | null       | null             | [45, 0, 1]    | [1, 5, 7, 45, 0, 1]
         "1.5.7.45.0.1-SNAPSHOT"                          | 1     | 5     | 7     | "SNAPSHOT" | null             | [45, 0, 1]    | [1, 5, 7, 45, 0, 1]
         "1.1.0-9f31d6308e7ebbc3d7904b64ebb9f61f7e22a968" | 1     | 1     | 0     | null       | null             | []            | [1, 1, 0]
+        // The next items are not semantic versions, and we do best effort to return something reasonable. For example, if we considered
+        // that the qualifier for "1.0.0-jdk8" is "jdk8", then how do you make a difference with "1.2.0-beta8", where actually the qualifier is "beta"
+        // and the qualifier version is "8"? Instead of adding a dozen special cases, the parser will simply do best effort.
+        "2.2-pre-release-emit-jdk8-version.1"            | 2     | 2     | null  | "pre"       | null             | []            | [2, 2, 0]
+        ".8.2"                                           | 0     | 8     | 2     | null       | null             | []            | [0, 8, 2]
     }
 
     def "compares versions"() {

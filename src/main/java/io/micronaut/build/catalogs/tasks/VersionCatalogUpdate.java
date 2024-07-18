@@ -160,7 +160,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
                 .cacheDynamicVersionsFor(0, TimeUnit.MINUTES);
             var rejectedQualifiers = getRejectedQualifiers().get()
                 .stream()
-                .map(qualifier -> Pattern.compile("(?i).*[.-]" + qualifier + "[.\\d-+]*"))
+                .map(qualifier -> Pattern.compile("(?i)" + qualifier + "[.\\d-+]*"))
                 .toList();
             var rejectedVersionsPerModule = getRejectedVersionsPerModule().get();
             var ignoredModules = getIgnoredModules().get();
