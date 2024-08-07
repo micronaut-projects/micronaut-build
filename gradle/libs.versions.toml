@@ -1,6 +1,6 @@
 [versions]
 asciidoctorj = "2.5.13"
-commons-lang3 = "3.14.0"
+commons-lang3 = "3.16.0"
 japicmp-plugin = "0.4.3"
 gradle-custom-userdata-plugin = "2.0.2"
 develocity-plugin = "3.17.5"
