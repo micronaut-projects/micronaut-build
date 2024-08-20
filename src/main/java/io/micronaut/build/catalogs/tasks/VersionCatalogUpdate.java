@@ -289,6 +289,9 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
                 if (!candidateDetails.isRejected()) {
                     processCandidate(candidateDetails);
                 }
+                if (candidateDetails.isAccepted()) {
+                    break;
+                }
                 if (!candidateDetails.isRejected() && !candidateDetails.hasFallback()) {
                     candidateDetails.acceptCandidate();
                     break;
