@@ -21,6 +21,7 @@ import io.micronaut.build.docs.ConfigurationPropertiesPlugin
 import io.micronaut.build.graalvm.NativeImageSupportPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+
 /**
  * This plugin is responsible for creating the Micronaut Build
  * project extension and configuring reasonable defaults.
@@ -39,10 +40,14 @@ class MicronautBasePlugin implements Plugin<Project> {
     }
 
     private void configureProjectVersion(Project project) {
-        def version = project.providers.gradleProperty("projectVersion").orElse("undefined").get()
-        if (version.isEmpty() || !Character.isDigit(version.charAt(0))) {
-            throw new IllegalArgumentException("Version '" + version + "' is not a valid Micronaut version. It must start with a digit.")
-        }
+        def version = project.providers.gradleProperty("projectVersion")
+                .map(v -> {
+                    if (v.isEmpty() || !Character.isDigit(v.charAt(0))) {
+                        throw new IllegalArgumentException("Version '" + v + "' is not a valid Micronaut version. It must start with a digit.")
+                    }
+                    return v;
+                })
+                .orElse("undefined").get()
         project.version = version
     }
 
