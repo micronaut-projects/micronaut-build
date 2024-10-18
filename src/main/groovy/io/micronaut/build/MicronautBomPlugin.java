@@ -934,7 +934,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                         var alias = convertToAlias(dep.getArtifactId());
                         var includeExcludeReason = shouldInclude(alias, includeAliases, includeAliasesPrefixes, excludeFromInlining, excludeFromInliningPrefixes);
                         if (includeExcludeReason.included()) {
-                            if (knownAliasesSnakeCase.contains(alias)) {
+                            if (knownAliasesSnakeCase.contains(alias) || knownAliases.containsKey(alias)) {
                                 maybeWarn(knownAliases, alias, bomFileName);
                             } else {
                                 if (knownVersionAliasesSnakeCase.contains(alias)) {
