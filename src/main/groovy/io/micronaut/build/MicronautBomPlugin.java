@@ -94,7 +94,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -285,7 +284,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         String group = String.valueOf(project.getGroup());
         Optional<VersionCatalog> versionCatalog = findVersionCatalog(project, bomExtension);
         final VersionCatalogConverter modelConverter = new VersionCatalogConverter(
-            project.getRootProject().file("gradle/" +  bomExtension.getCatalogName().get() + ".versions.toml"),
+            project.getRootProject().file("gradle/" + bomExtension.getCatalogName().get() + ".versions.toml"),
             project.getExtensions().findByType(CatalogPluginExtension.class)
         );
         var libraryDefinitions = new ArrayList<InterceptedVersionCatalogBuilder.LibraryDefinition>();
@@ -445,12 +444,14 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                 return result;
             });
         var includedAliases = bomExtension.getInlinedAliases();
+        var knownLibraries = new ArrayList<String>();
+        modelConverter.onLibrary(l -> knownLibraries.add(l.groupId() + ":" + l.artifactId()));
         modelConverter.afterBuildingModel(builderState -> {
             api.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
-            maybeInlineNestedCatalogs(logFile, catalogArtifacts, bomArtifacts, builderState, inlineNestedCatalogs, inlineNestedBOMs, excludedInlinedAliases, includedAliases, inlinedPomProperties, inlinedMavenDependencies, project);
-            performVersionInference(project, bomExtension, builderState, libraryDefinitions, inlinedPomProperties, inlinedMavenDependencies, project.getConfigurations().findByName(BOM_VERSION_INFERENCE_CONFIGURATION_NAME));
-            try (var writer = new PrintWriter(new FileWriter(logFile.toFile(), true))) {
+            try (var log = new PrintWriter(Files.newBufferedWriter(logFile))) {
+                maybeInlineNestedCatalogs(log, catalogArtifacts, bomArtifacts, builderState, inlineNestedCatalogs, inlineNestedBOMs, excludedInlinedAliases, includedAliases, inlinedPomProperties, inlinedMavenDependencies, project);
+                performVersionInference(log, project, bomExtension, builderState, libraryDefinitions, inlinedPomProperties, inlinedMavenDependencies, project.getConfigurations().findByName(BOM_VERSION_INFERENCE_CONFIGURATION_NAME), knownLibraries);
                 var unresolvedDependencies = new LinkedHashSet<ComponentSelector>();
                 catalogs.getIncoming()
                     .getResolutionResult()
@@ -467,9 +468,9 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                         }
                     });
                 if (!unresolvedDependencies.isEmpty()) {
-                    writer.println("[WARNING] There were unresolved dependencies during inlining! This may cause incomplete catalogs!");
+                    log.println("[WARNING] There were unresolved dependencies during inlining! This may cause incomplete catalogs!");
                     for (ComponentSelector unresolvedDependency : unresolvedDependencies) {
-                        writer.println("   " + unresolvedDependency);
+                        log.println("   " + unresolvedDependency);
                     }
                 }
             } catch (IOException e) {
@@ -493,13 +494,19 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         });
     }
 
-    private static void performVersionInference(Project project,
+    private static void performVersionInference(PrintWriter log,
+                                                Project project,
                                                 MicronautBomExtension bomExtension,
                                                 VersionCatalogConverter.BuilderState builderState,
-                                                ArrayList<InterceptedVersionCatalogBuilder.LibraryDefinition> libraryDefinitions,
+                                                List<InterceptedVersionCatalogBuilder.LibraryDefinition> libraryDefinitions,
                                                 Map<String, String> inlinedPomProperties,
                                                 List<InlinedDependency> inlinedMavenDependencies,
-                                                Configuration versionInferenceConfiguration) {
+                                                Configuration versionInferenceConfiguration,
+                                                List<String> knownLibrariesList) {
+        // This copy serves both optimization (search in set instead of list) but also because the
+        // list which is passed as an input will be augmented by this very method, so we have to
+        // create a defensive copy.
+        var knownLibraries = knownLibrariesList.stream().collect(Collectors.toUnmodifiableSet());
         var inferredLibraries = bomExtension.getInferredManagedDependencies().getOrElse(Map.of());
         if (!inferredLibraries.isEmpty()) {
             Set<String> found = new HashSet<>();
@@ -508,13 +515,19 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                     versionInferenceConfiguration.getDependencies().add(project.getDependencies().create(lib.toString()));
                 }
             });
+            var seen = new HashSet<String>();
             versionInferenceConfiguration.getIncoming()
                 .getResolutionResult()
                 .allDependencies(dep -> {
                     if (dep instanceof ResolvedDependencyResult resolved) {
                         if (resolved.getSelected().getId() instanceof ModuleComponentIdentifier mid) {
                             var module = mid.getModuleIdentifier().toString();
-                            if (inferredLibraries.containsKey(module)) {
+                            if (seen.add(module) && inferredLibraries.containsKey(module)) {
+                                if (knownLibraries.contains(module)) {
+                                    found.add(module);
+                                    log.println("Library " + module + " is already present in the catalog, remove it from the inferred versions list");
+                                    return;
+                                }
                                 found.add(module);
                                 var alias = inferredLibraries.get(module);
                                 if (!builderState.getKnownVersionAliases().containsKey(alias)) {
@@ -574,7 +587,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         });
     }
 
-    private void maybeInlineNestedCatalogs(Path logFile,
+    private void maybeInlineNestedCatalogs(PrintWriter log,
                                            Set<ResolvedArtifactResult> catalogs,
                                            Set<ResolvedArtifactResult> bomArtifacts,
                                            VersionCatalogConverter.BuilderState builderState,
@@ -586,71 +599,67 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                                            List<InlinedDependency> inlinedMavenDependencies,
                                            // This last argument breaks configuration cache but for now we have no choice :(
                                            Project p) {
-        try (var log = new PrintWriter(Files.newBufferedWriter(logFile))) {
-            if (Boolean.TRUE.equals(inlineNestedCatalogs.get())) {
-                VersionCatalogBuilder builder = builderState.getBuilder();
-                Map<String, VersionCatalogConverter.AliasRecord> knownAliases = builderState.getKnownAliases();
-                Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases = builderState.getKnownPluginAliases();
-                Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases = builderState.getKnownVersionAliases();
+        if (Boolean.TRUE.equals(inlineNestedCatalogs.get())) {
+            VersionCatalogBuilder builder = builderState.getBuilder();
+            Map<String, VersionCatalogConverter.AliasRecord> knownAliases = builderState.getKnownAliases();
+            Map<String, VersionCatalogConverter.AliasRecord> knownPluginAliases = builderState.getKnownPluginAliases();
+            Map<String, VersionCatalogConverter.AliasRecord> knownVersionAliases = builderState.getKnownVersionAliases();
 
-                // We're looking for catalogs in the first place, because they define aliases and properties
-                // that we can inline. Then, there are remaining dependencies which are non Micronaut modules
-                // which do not publish catalogs. The ignored bom files list is the list of files that we can
-                // safely ignore because there are catalogs.
-                Set<String> ignoredBomFiles = new HashSet<>();
-                var knownCatalogModules = catalogs.stream()
-                    .map(ResolvedArtifactResult::getVariant)
-                    .map(ResolvedVariantResult::getOwner)
-                    .filter(ModuleComponentIdentifier.class::isInstance)
-                    .map(ModuleComponentIdentifier.class::cast)
-                    .map(mci -> mci.getModuleIdentifier().toString())
-                    .collect(Collectors.toSet());
-                List<String> extraBomsToResolve = new ArrayList<>();
-                catalogs.forEach(catalogArtifact -> {
-                        var catalogFile = catalogArtifact.getFile();
-                        var excludes = determineExcludes(excludedInlinedAliases, catalogFile);
-                        var includes = inlinedAliases.get().getOrDefault(baseNameOf(catalogFile), Set.of());
-                        var excludedAliases = findRegularEntries(excludes);
-                        var excludedAliasesPrefixes = findWildcardEntries(excludes);
-                        var includeAliases = findRegularEntries(includes);
-                        var includedAliasesPrefixes = findWildcardEntries(includes);
+            // We're looking for catalogs in the first place, because they define aliases and properties
+            // that we can inline. Then, there are remaining dependencies which are non Micronaut modules
+            // which do not publish catalogs. The ignored bom files list is the list of files that we can
+            // safely ignore because there are catalogs.
+            Set<String> ignoredBomFiles = new HashSet<>();
+            var knownCatalogModules = catalogs.stream()
+                .map(ResolvedArtifactResult::getVariant)
+                .map(ResolvedVariantResult::getOwner)
+                .filter(ModuleComponentIdentifier.class::isInstance)
+                .map(ModuleComponentIdentifier.class::cast)
+                .map(mci -> mci.getModuleIdentifier().toString())
+                .collect(Collectors.toSet());
+            List<String> extraBomsToResolve = new ArrayList<>();
+            catalogs.forEach(catalogArtifact -> {
+                    var catalogFile = catalogArtifact.getFile();
+                    var excludes = determineExcludes(excludedInlinedAliases, catalogFile);
+                    var includes = inlinedAliases.get().getOrDefault(baseNameOf(catalogFile), Set.of());
+                    var excludedAliases = findRegularEntries(excludes);
+                    var excludedAliasesPrefixes = findWildcardEntries(excludes);
+                    var includeAliases = findRegularEntries(includes);
+                    var includedAliasesPrefixes = findWildcardEntries(includes);
 
-                        performSingleCatalogFileInclusion(
-                            log,
-                            inlinedPomProperties,
-                            catalogFile,
-                            ignoredBomFiles,
-                            includeAliases,
-                            includedAliasesPrefixes,
-                            excludedAliases,
-                            excludedAliasesPrefixes,
-                            knownAliases,
-                            knownVersionAliases,
-                            builder,
-                            knownPluginAliases,
-                            inlinedMavenDependencies,
-                            knownCatalogModules,
-                            extraBomsToResolve);
-                    }
-                );
-                if (Boolean.TRUE.equals(inlineNestedBOMs.get())) {
-                    log.println("Regular BOMs (without version catalog) inlining is enabled");
-                    inlineRegularBoms(log, bomArtifacts, excludedInlinedAliases, inlinedAliases, inlinedPomProperties, inlinedMavenDependencies, ignoredBomFiles, knownAliases, knownVersionAliases, builder);
-                    if (!extraBomsToResolve.isEmpty()) {
-                        log.println("Found the following BOMs to be recursively included: ");
-                        extraBomsToResolve.forEach(bom -> log.println("    - " + bom));
-                        var extraBoms = p.getConfigurations().getByName(EXTRA_BOMS_INLINING_CONFIGURATION_NAME);
-                        extraBoms.getDependencies().addAll(extraBomsToResolve.stream()
-                            .map(bom -> p.getDependencies().create(bom + "@pom"))
-                            .toList());
-                        inlineRegularBoms(log, extraBoms.getIncoming().getArtifacts().getArtifacts(), excludedInlinedAliases, inlinedAliases, inlinedPomProperties, inlinedMavenDependencies, ignoredBomFiles, knownAliases, knownVersionAliases,
-                            builder);
-                    }
+                    performSingleCatalogFileInclusion(
+                        log,
+                        inlinedPomProperties,
+                        catalogFile,
+                        ignoredBomFiles,
+                        includeAliases,
+                        includedAliasesPrefixes,
+                        excludedAliases,
+                        excludedAliasesPrefixes,
+                        knownAliases,
+                        knownVersionAliases,
+                        builder,
+                        knownPluginAliases,
+                        inlinedMavenDependencies,
+                        knownCatalogModules,
+                        extraBomsToResolve);
                 }
-
+            );
+            if (Boolean.TRUE.equals(inlineNestedBOMs.get())) {
+                log.println("Regular BOMs (without version catalog) inlining is enabled");
+                inlineRegularBoms(log, bomArtifacts, excludedInlinedAliases, inlinedAliases, inlinedPomProperties, inlinedMavenDependencies, ignoredBomFiles, knownAliases, knownVersionAliases, builder);
+                if (!extraBomsToResolve.isEmpty()) {
+                    log.println("Found the following BOMs to be recursively included: ");
+                    extraBomsToResolve.forEach(bom -> log.println("    - " + bom));
+                    var extraBoms = p.getConfigurations().getByName(EXTRA_BOMS_INLINING_CONFIGURATION_NAME);
+                    extraBoms.getDependencies().addAll(extraBomsToResolve.stream()
+                        .map(bom -> p.getDependencies().create(bom + "@pom"))
+                        .toList());
+                    inlineRegularBoms(log, extraBoms.getIncoming().getArtifacts().getArtifacts(), excludedInlinedAliases, inlinedAliases, inlinedPomProperties, inlinedMavenDependencies, ignoredBomFiles, knownAliases, knownVersionAliases,
+                        builder);
+                }
             }
-        } catch (IOException e) {
-            LOGGER.error("Unable to write log file for inlining", e);
+
         }
     }
 
@@ -925,7 +934,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
                         var alias = convertToAlias(dep.getArtifactId());
                         var includeExcludeReason = shouldInclude(alias, includeAliases, includeAliasesPrefixes, excludeFromInlining, excludeFromInliningPrefixes);
                         if (includeExcludeReason.included()) {
-                            if (knownAliasesSnakeCase.contains(alias)) {
+                            if (knownAliasesSnakeCase.contains(alias) || knownAliases.containsKey(alias)) {
                                 maybeWarn(knownAliases, alias, bomFileName);
                             } else {
                                 if (knownVersionAliasesSnakeCase.contains(alias)) {
