@@ -153,8 +153,11 @@ abstract class PomChecker extends DefaultTask {
             }
         }
 
-        File reportFile = writeReport(errorCollector.errors)
+        File reportFile = writeReport(errorCollector.errors, errorCollector.suggestions)
         if (failOnError.get() && errorCollector.errors) {
+            try (var writer = new BufferedWriter(new PrintWriter(System.err))) {
+                writeSuggestions(errorCollector.suggestions, writer)
+            }
             throw new GradleException("POM verification failed. See report in ${reportFile}")
         }
     }
@@ -169,13 +172,14 @@ abstract class PomChecker extends DefaultTask {
         groupId.startsWith('io.micronaut') && artifactId.contains('bom')
     }
 
-    private File writeReport(List<String> errors) {
+    private File writeReport(List<String> errors, Set<String> dependencySuggestions) {
         def reportFile = reportDirectory.file("report-${name}.txt").get().asFile
         reportFile.withWriter { writer ->
             errors.each {
                 println it
                 writer.println(it)
             }
+            writeSuggestions(dependencySuggestions, writer)
         }
         reportFile
     }
@@ -208,9 +212,25 @@ abstract class PomChecker extends DefaultTask {
         }
     }
 
+    void writeSuggestions(Set<String> dependencySuggestions, BufferedWriter writer) {
+        if (!dependencySuggestions.isEmpty()) {
+            writer.println()
+            writer.println("You can silence these problems by adding this to the BOM build script:")
+            writer.println()
+            writer.println("micronautBom {")
+            writer.println("    suppressions {")
+            dependencySuggestions.each {
+                writer.println("        dependencies.add(\"$it\")")
+            }
+            writer.println("    }")
+            writer.println("}")
+        }
+    }
+
     private static class ErrorCollector {
         private final Set<String> silencedDependencies
         final List<String> errors = []
+        final Set<String> suggestions = new LinkedHashSet<>()
 
         ErrorCollector(Set<String> silencedDependencies) {
             this.silencedDependencies = silencedDependencies
@@ -223,6 +243,7 @@ abstract class PomChecker extends DefaultTask {
         void error(String dependency, String message) {
             if (!silencedDependencies.contains(dependency)) {
                 errors << message
+                suggestions << dependency
             } else {
                 silenced(message)
             }
