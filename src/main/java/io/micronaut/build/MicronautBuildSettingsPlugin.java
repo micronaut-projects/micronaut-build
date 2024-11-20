@@ -15,6 +15,7 @@
  */
 package io.micronaut.build;
 
+import me.champeau.gradle.igp.IncludeGitPlugin;
 import org.gradle.api.Plugin;
 import org.gradle.api.initialization.Settings;
 
@@ -25,6 +26,7 @@ public class MicronautBuildSettingsPlugin implements Plugin<Settings> {
 
     @Override
     public void apply(Settings settings) {
+        settings.getPluginManager().apply(IncludeGitPlugin.class);
         settings.getExtensions().create("micronautBuild", MicronautBuildSettingsExtension.class, settings);
     }
 

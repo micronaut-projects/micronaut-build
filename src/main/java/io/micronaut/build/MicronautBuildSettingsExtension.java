@@ -19,6 +19,8 @@ import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
 import io.micronaut.build.catalogs.internal.RichVersion;
 import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
 import io.micronaut.build.catalogs.internal.VersionModel;
+import io.micronaut.build.utils.IncludedBuildSupport;
+import me.champeau.gradle.igp.GitIncludeExtension;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.initialization.Settings;
@@ -28,6 +30,7 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+import org.gradle.process.ExecOperations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +90,9 @@ public abstract class MicronautBuildSettingsExtension {
 
     @Inject
     protected abstract ProviderFactory getProviders();
+
+    @Inject
+    protected abstract ExecOperations getExecOperations();
 
     private final AtomicBoolean repositoriesAdded = new AtomicBoolean();
     private final Settings settings;
@@ -346,4 +352,34 @@ public abstract class MicronautBuildSettingsExtension {
     static Provider<Boolean> booleanProvider(ProviderFactory providers, String gradleProperty, boolean defaultValue) {
         return providers.gradleProperty(gradleProperty).map(Boolean::parseBoolean).orElse(defaultValue);
     }
+
+    /**
+     * Allows integrating an upstream Micronaut project as a dependency of this project,
+     * as sources.
+     *
+     * @param githubProjectName the GitHub project name (without the micronaut-projects/ part, e.g "micronaut-core")
+     * @param branch the branch to use
+     */
+    public void requiresDevelopmentVersion(String githubProjectName, String branch) {
+        var gitIncludeExtension = settings.getExtensions().findByType(GitIncludeExtension.class);
+        if (gitIncludeExtension != null) {
+            gitIncludeExtension.include(githubProjectName, repo -> {
+                repo.getUri().set("https://github.com/micronaut-projects/" + githubProjectName + ".git");
+                repo.getBranch().set(branch);
+                // The following is a workaround for a Gradle limitation: when we include a build
+                // which generates a version catalog, then Gradle is not capable of figuring out
+                // that the task which generates that version catalog has to be called so that the
+                // consuming build can use it in its settings. This slows downs builds infortunately.
+                repo.codeReady(evt -> IncludedBuildSupport.configureIncludedBuildCatalogPublication(getExecOperations(), evt, gitIncludeExtension, githubProjectName));
+            });
+        }
+        // Disable sanity check which will fail when using development versions
+        settings.getGradle().beforeProject(p -> {
+            var extensions = p.getExtensions();
+            if (extensions.findByName("disable.micronaut.version.check") == null) {
+                extensions.add("disable.micronaut.version.check", true);
+            }
+        });
+    }
+
 }

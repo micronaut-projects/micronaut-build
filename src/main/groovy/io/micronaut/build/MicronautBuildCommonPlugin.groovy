@@ -198,19 +198,21 @@ You can do this directly in the project, or, better, in a convention plugin if i
                 attributes('Implementation-Title': project.findProperty("title"))
             }
         }
-
-        ['compileClasspath', 'runtimeClasspath'].each { configName ->
-            def config = project.configurations.getByName(configName)
-            config.incoming.afterResolve { ResolvableDependencies deps ->
-                def micronautVersion = versionProviderOrDefault(project, 'micronaut', '').get()
-                def (major, minor, patch) = micronautVersion.tokenize('.')
-                deps.resolutionResult.allComponents { ResolvedComponentResult result ->
-                    def id = result.id
-                    if (id instanceof ModuleComponentIdentifier) {
-                        if (id.group == 'io.micronaut' && id.module == 'micronaut-core') {
-                            def (resolvedMajor, resolvedMinor, resolvedPatch) = id.version.tokenize('.')
-                            if (resolvedMajor != major || resolvedMinor != minor) {
-                                throw new GradleException("Micronaut version mismatch: project declares $micronautVersion but resolved version is ${id.version}. You probably have a dependency which triggered an upgrade of micronaut-core. In order to determine where it comes from, you can run ./gradlew --dependencyInsight --configuration $configName --dependency io.micronaut:micronaut-core")
+        Boolean disableVersionCheck = project.getExtensions().findByName("disable.micronaut.version.check")
+        if (disableVersionCheck==null || Boolean.FALSE.equals(disableVersionCheck)) {
+            ['compileClasspath', 'runtimeClasspath'].each { configName ->
+                def config = project.configurations.getByName(configName)
+                config.incoming.afterResolve { ResolvableDependencies deps ->
+                    def micronautVersion = versionProviderOrDefault(project, 'micronaut', '').get()
+                    def (major, minor, patch) = micronautVersion.tokenize('.')
+                    deps.resolutionResult.allComponents { ResolvedComponentResult result ->
+                        def id = result.id
+                        if (id instanceof ModuleComponentIdentifier) {
+                            if (id.group == 'io.micronaut' && id.module == 'micronaut-core') {
+                                def (resolvedMajor, resolvedMinor, resolvedPatch) = id.version.tokenize('.')
+                                if (resolvedMajor != major || resolvedMinor != minor) {
+                                    throw new GradleException("Micronaut version mismatch: project declares $micronautVersion but resolved version is ${id.version}. You probably have a dependency which triggered an upgrade of micronaut-core. In order to determine where it comes from, you can run ./gradlew --dependencyInsight --configuration $configName --dependency io.micronaut:micronaut-core")
+                                }
                             }
                         }
                     }
