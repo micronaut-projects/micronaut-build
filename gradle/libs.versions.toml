@@ -1,7 +1,7 @@
 [versions]
 asciidoctorj = "2.5.13"
 commons-lang3 = "3.17.0"
-japicmp-plugin = "0.4.4"
+japicmp-plugin = "0.4.5"
 gradle-custom-userdata-plugin = "2.0.2"
 develocity-plugin = "3.18.2"
 gradle-github-actions-plugin = "1.4.0"
