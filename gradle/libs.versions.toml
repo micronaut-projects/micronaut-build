@@ -18,6 +18,7 @@ typesafe-config = "1.4.3"
 bytebuddy = "1.15.5"
 objenesis = "3.4"
 maven-model-builder = "3.9.9"
+includegit = "0.2.0"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
@@ -41,3 +42,4 @@ tomlj = { module = "org.tomlj:tomlj", version.ref = "tomlj" }
 typesafe-config = { module = "com.typesafe:config", version.ref = "typesafe-config" }
 objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
 maven-model-builder = { module = "org.apache.maven:maven-model-builder", version.ref = "maven-model-builder" }
+includegit-plugin = { module = "me.champeau.gradle.includegit:plugin", version.ref = "includegit" }
