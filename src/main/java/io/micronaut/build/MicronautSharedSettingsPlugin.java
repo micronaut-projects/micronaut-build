@@ -16,6 +16,7 @@
 package io.micronaut.build;
 
 import io.github.gradlenexus.publishplugin.NexusPublishExtension;
+import io.micronaut.build.utils.ProviderUtils;
 import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Project;
 import org.gradle.api.initialization.ProjectDescriptor;
@@ -125,8 +126,8 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
         String ossUser = envOrSystemProperty(providers, "SONATYPE_USERNAME", "sonatypeOssUsername", "");
         String ossPass = envOrSystemProperty(providers, "SONATYPE_PASSWORD", "sonatypeOssPassword", "");
         settings.getGradle().projectsLoaded(gradle -> {
-            String projectVersion = providers.gradleProperty("projectVersion").getOrElse("unspecified");
-            Provider<String> projectGroup = providers.gradleProperty("projectGroup");
+            String projectVersion = ProviderUtils.fromGradleProperty(providers, settings.getRootDir(), "projectVersion").getOrElse("undefined");
+            Provider<String> projectGroup = ProviderUtils.fromGradleProperty(providers, settings.getRootDir(), "projectGroup");
             gradle.getRootProject().getAllprojects().forEach(project -> {
                 project.setVersion(projectVersion);
                 if (projectGroup.isPresent()) {
