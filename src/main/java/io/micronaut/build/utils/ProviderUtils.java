@@ -15,7 +15,11 @@
  */
 package io.micronaut.build.utils;
 
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+
+import java.io.File;
+import java.util.Properties;
 
 public class ProviderUtils {
     public static boolean guessCI(ProviderFactory providers) {
@@ -35,5 +39,37 @@ public class ProviderUtils {
                 .orElse(providers.gradleProperty(propertyName))
                 .orElse(providers.systemProperty(propertyName))
                 .getOrElse(defaultValue);
+    }
+
+    /**
+     * Returns a provider for a property that can be defined in gradle.properties, but can also look for
+     * a Gradle property in the project hierarchy (useful in the context of an included build).
+     * @param providers the provider factory
+     * @param baseDir the base directory where to search for gradle.properties files
+     * @param propertyName the name of the property
+     * @return a provider for the property
+     */
+    public static Provider<String> fromGradleProperty(ProviderFactory providers, File baseDir, String propertyName) {
+        return providers.gradleProperty(propertyName)
+            .orElse(providers.provider(() -> {
+                var dir = baseDir;
+                while (dir.getParentFile() != null) {
+                    var gradleProperties = new File(dir, "gradle.properties");
+                    if (gradleProperties.exists()) {
+                        var props  = new Properties();
+                        try (var reader = new java.io.FileReader(gradleProperties)) {
+                            props.load(reader);
+                            var property = props.getProperty(propertyName);
+                            if (property != null) {
+                                return property;
+                            }
+                        } catch (Exception e) {
+                            throw new RuntimeException("Error reading gradle.properties", e);
+                        }
+                    }
+                    dir = dir.getParentFile();
+                }
+                return null;
+            }));
     }
 }

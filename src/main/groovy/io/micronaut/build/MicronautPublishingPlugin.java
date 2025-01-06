@@ -73,15 +73,16 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
         ext.set("signing.keyId", ProviderUtils.envOrSystemProperty(providers, "GPG_KEY_ID", "signing.keyId", null));
         ext.set("signing.password", ProviderUtils.envOrSystemProperty(providers, "GPG_PASSWORD", "signing.password", null));
 
-        Provider<String> githubSlug = providers.gradleProperty("githubSlug");
+        var rootDir = project.getRootDir();
+        Provider<String> githubSlug = ProviderUtils.fromGradleProperty(providers, rootDir,"githubSlug");
         PublishingExtension publishing = extensions.getByType(PublishingExtension.class);
         publishing.getPublications().configureEach(publication -> {
             if (publication instanceof MavenPublication) {
                 MavenPublication mavenPublication = (MavenPublication) publication;
                 mavenPublication.pom(pom -> {
-                    pom.getName().set(providers.gradleProperty("title"));
-                    pom.getDescription().set(providers.gradleProperty("projectDesc"));
-                    pom.getUrl().set(providers.gradleProperty("projectUrl"));
+                    pom.getName().set(ProviderUtils.fromGradleProperty(providers, rootDir, "title"));
+                    pom.getDescription().set(ProviderUtils.fromGradleProperty(providers, rootDir,"projectDesc"));
+                    pom.getUrl().set(ProviderUtils.fromGradleProperty(providers, rootDir,"projectUrl"));
                     pom.licenses(licenses -> {
                         licenses.license(license -> {
                             license.getName().set("The Apache Software License, Version 2.0");
@@ -95,7 +96,7 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
                         scm.getDeveloperConnection().set(githubSlug.map(s -> "scm:git@github.com:" + s + ".git"));
                     });
                     pom.developers(developers -> {
-                        String devs = providers.gradleProperty("developers").getOrNull();
+                        String devs = ProviderUtils.fromGradleProperty(providers, rootDir,"developers").getOrNull();
                         if (devs != null) {
                             for (String dev : devs.split(",")) {
                                 developers.developer(developer -> {
@@ -132,30 +133,32 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
                 maven.setUrl(project.getRootProject().getLayout().getBuildDirectory().dir("repo"));
             });
         });
-        publishing.publications(publications -> {
-            String aid = moduleNameOf(project.getName());
-            publications.create("maven", MavenPublication.class, pub -> {
-                pub.setArtifactId(aid);
-                plugins.withPlugin("java", unused -> {
-                    pub.from(project.getComponents().getByName("java"));
-                    pub.versionMapping(mapping -> {
-                        mapping.usage("java-api", usage -> usage.fromResolutionOf("runtimeClasspath"));
-                        mapping.usage("java-runtime", VariantVersionMappingStrategy::fromResolutionResult);
+        if (!plugins.hasPlugin("java-gradle-plugin")) {
+            publishing.publications(publications -> {
+                String aid = moduleNameOf(project.getName());
+                publications.create("maven", MavenPublication.class, pub -> {
+                    pub.setArtifactId(aid);
+                    plugins.withPlugin("java", unused -> {
+                        pub.from(project.getComponents().getByName("java"));
+                        pub.versionMapping(mapping -> {
+                            mapping.usage("java-api", usage -> usage.fromResolutionOf("runtimeClasspath"));
+                            mapping.usage("java-runtime", VariantVersionMappingStrategy::fromResolutionResult);
+                        });
                     });
                 });
             });
-        });
 
-        // Include a pom.xml file into the jar
-        // so that automated vulnerability scanners are happy
-        tasks.withType(Jar.class).configureEach(jar -> {
-            if (JARS_TO_EMBED_POM.contains(jar.getName())) {
-                String aid = moduleNameOf(project.getName());
-                jar.into("META-INF/maven/" + project.getGroup() + "/" + aid, spec -> {
-                    spec.from(tasks.named("generatePomFileForMavenPublication"), it -> it.rename("pom-default.xml", "pom.xml"));
-                });
-            }
-        });
+            // Include a pom.xml file into the jar
+            // so that automated vulnerability scanners are happy
+            tasks.withType(Jar.class).configureEach(jar -> {
+                if (JARS_TO_EMBED_POM.contains(jar.getName())) {
+                    String aid = moduleNameOf(project.getName());
+                    jar.into("META-INF/maven/" + project.getGroup() + "/" + aid, spec -> {
+                        spec.from(tasks.named("generatePomFileForMavenPublication"), it -> it.rename("pom-default.xml", "pom.xml"));
+                    });
+                }
+            });
+        }
 
         //do not generate extra load on Nexus with new staging repository if signing fails
         tasks.withType(InitializeNexusStagingRepository.class).configureEach(t -> t.shouldRunAfter(tasks.withType(Sign.class)));

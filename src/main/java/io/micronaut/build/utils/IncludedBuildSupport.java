@@ -67,6 +67,7 @@ public class IncludedBuildSupport {
                     throw new RuntimeException(e);
                 }
                 newDigest = toHex(digest.digest());
+                Files.createDirectories(digestFile.getParent());
                 Files.writeString(digestFile, newDigest);
                 if (!newDigest.equals(previousDigest)) {
                     System.out.println("Catalog changed for " + githubProjectName + ": triggering build.");
