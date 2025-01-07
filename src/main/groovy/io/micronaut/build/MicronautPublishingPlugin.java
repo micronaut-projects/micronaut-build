@@ -176,8 +176,12 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
             if (hasKeyId) {
                 plugins.apply("signing");
                 SigningExtension signing = extensions.getByType(SigningExtension.class);
+                if (project.hasProperty("signing.useGpg")) {
+                    // Used in local testing
+                    signing.useGpgCmd();
+                }
                 signing.setRequired(shouldSign(project));
-                signing.sign(publishing.getPublications().getByName("maven"));
+                publishing.getPublications().all(signing::sign);
                 project.getTasks().withType(Sign.class, sign -> sign.onlyIf(t -> shouldSign(project)));
             }
 
