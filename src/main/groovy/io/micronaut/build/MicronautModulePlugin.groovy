@@ -53,6 +53,7 @@ class MicronautModulePlugin implements Plugin<Project> {
                         return List.<Dependency>of()
                     } else if (it == TestFramework.JUNIT5) {
                         return List.of(
+                                deps.create(versionProviderOrDefault(project, 'junit-platform-launcher', '1.12.0').map { "org.junit.platform:junit-platform-launcher:${it}" }.get()),
                                 deps.create(versionProviderOrDefault(project, 'junit5', 'unknown').map { "org.junit.jupiter:junit-jupiter-engine:${it}" }.get()),
                         )
                     } else {
