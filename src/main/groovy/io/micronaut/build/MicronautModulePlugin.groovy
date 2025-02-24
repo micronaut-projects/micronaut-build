@@ -53,7 +53,7 @@ class MicronautModulePlugin implements Plugin<Project> {
                         return List.<Dependency>of()
                     } else if (it == TestFramework.JUNIT5) {
                         return List.of(
-                                deps.create(versionProviderOrDefault(project, 'junit5', 'unknown').map { "org.junit.jupiter:junit-jupiter-engine:${it}" }),
+                                deps.create(versionProviderOrDefault(project, 'junit5', 'unknown').map { "org.junit.jupiter:junit-jupiter-engine:${it}" }.get()),
                         )
                     } else {
                         throw new GradleException("Unsupported test framework: $it")
