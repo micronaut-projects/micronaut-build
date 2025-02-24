@@ -30,6 +30,7 @@ public abstract class MicronautBuildExtensionPlugin implements Plugin<Project> {
 
     private void createBuildExtension(Project project) {
         BuildEnvironment buildEnvironment = new BuildEnvironment(project.getProviders());
-        project.getExtensions().create("micronautBuild", MicronautBuildExtension.class, buildEnvironment);
+        var micronautBuild = project.getExtensions().create("micronautBuild", MicronautBuildExtension.class, buildEnvironment);
+        micronautBuild.getTestFramework().convention(TestFramework.SPOCK);
     }
 }

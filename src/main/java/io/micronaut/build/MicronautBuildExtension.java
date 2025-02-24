@@ -9,7 +9,6 @@ import org.gradle.api.artifacts.ResolutionStrategy;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Nested;
-import org.gradle.jvm.toolchain.JavaLanguageVersion;
 
 import javax.inject.Inject;
 
@@ -111,6 +110,11 @@ public abstract class MicronautBuildExtension {
    */
   @Nested
   public abstract BomSuppressions getBomSuppressions();
+
+  /**
+   * The test framework to use.
+   */
+  public abstract Property<TestFramework> getTestFramework();
 
   void bomSuppressions(Action<? super BomSuppressions> spec) {
     spec.execute(getBomSuppressions());

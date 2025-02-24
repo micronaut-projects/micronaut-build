@@ -79,4 +79,17 @@ You can do this directly in the project, or, better, in a convention plugin if i
         errorOutputContains "Micronaut version mismatch: project declares 3.2.3 but resolved version is 3.7.3. You probably have a dependency which triggered an upgrade of micronaut-core. In order to determine where it comes from, you can run ./gradlew --dependencyInsight --configuration compileClasspath --dependency io.micronaut:micronaut-core"
     }
 
+    void "can use JUnit5 instead of Spock"() {
+        given:
+        withSample("test-micronaut-module")
+
+        when:
+        run 'testClasses'
+
+        then:
+        tasks {
+            succeeded ':subproject1:compileTestGroovy' // uses Spock by default
+            succeeded ':subproject2:compileTestJava' // overrides to JUnit5
+        }
+    }
 }
