@@ -1,3 +1,9 @@
+import io.micronaut.build.TestFramework
+
 plugins {
     id 'io.micronaut.build.internal.project-template-module'
+}
+
+micronautBuild {
+    testFramework = TestFramework.JUNIT5
 }
