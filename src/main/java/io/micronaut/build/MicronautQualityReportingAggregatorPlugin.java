@@ -4,14 +4,17 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.attributes.TestSuiteType;
 import org.gradle.api.plugins.BasePlugin;
+import org.gradle.api.provider.Property;
 import org.gradle.api.reporting.ReportingExtension;
 import org.gradle.testing.jacoco.plugins.JacocoCoverageReport;
 import org.gradle.testing.jacoco.plugins.JacocoReportAggregationPlugin;
+import org.gradle.util.GradleVersion;
 import org.sonarqube.gradle.SonarExtension;
 import org.sonarqube.gradle.SonarQubePlugin;
 import org.sonarqube.gradle.SonarTask;
+
+import java.lang.reflect.InvocationTargetException;
 
 @SuppressWarnings("UnstableApiUsage")
 public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project> {
@@ -62,8 +65,7 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
         rootProject.getPluginManager().apply(JacocoReportAggregationPlugin.class);
 
         ReportingExtension reporting = rootProject.getExtensions().getByType(ReportingExtension.class);
-        reporting.getReports().create(COVERAGE_REPORT_TASK_NAME, JacocoCoverageReport.class,
-                r -> r.getTestType().set(TestSuiteType.UNIT_TEST));
+        reporting.getReports().create(COVERAGE_REPORT_TASK_NAME, JacocoCoverageReport.class, this::configureReport);
 
         final Configuration jacocoAggregation = rootProject.getConfigurations().getByName("jacocoAggregation");
         rootProject.getSubprojects().forEach(subproject -> {
@@ -74,6 +76,26 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                 );
             });
         });
+    }
+
+    private void configureReport(JacocoCoverageReport r) {
+        if (GradleVersion.current().compareTo(GradleVersion.version("8.13"))<0) {
+            configureReportUsingReflection(r);
+        } else {
+            r.getTestSuiteName().set("test");
+        }
+    }
+
+    private void configureReportUsingReflection(JacocoCoverageReport r) {
+        try {
+            //  r.getTestType().set(TestSuiteType.UNIT_TEST)
+            Class<?> testSuiteType = Class.forName("org.gradle.api.attributes.TestSuiteType");
+            var junit = testSuiteType.getDeclaredField("UNIT_TEST").get(null);
+            var testType = (Property<Object>) JacocoCoverageReport.class.getDeclaredMethod("getTestType").invoke(r);
+            testType.set(junit);
+        } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            throw new GradleException("Unable to configure Jacoco report", e);
+        }
     }
 
 }
