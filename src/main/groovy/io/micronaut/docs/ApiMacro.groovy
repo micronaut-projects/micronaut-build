@@ -76,7 +76,7 @@ class ApiMacro extends InlineMacroProcessor {
         }
 
 
-        JvmLibrary lib = getJvmLibrary()
+        JvmLibrary lib = getJvmLibrary(attributes)
         String baseUri
         try {
             baseUri = getBaseUri(parent.document.attributes, getAttributeKey(), lib)
@@ -98,6 +98,26 @@ class ApiMacro extends InlineMacroProcessor {
         Map<String, Object> options = inlineAnchorOptions(baseUri, target, methodRef, propRef, lib)
         // Prepend twitterHandle with @ as text link.
         return createPhraseNode(parent, "anchor", formatShortName(shortName), attributes, options)
+    }
+
+    JvmLibrary getJvmLibrary(Map<String, Object> attributes) {
+        var packagePrefix = attributes['packagePrefix']
+        var defaultUri = attributes['defaultUri']
+        var library = getJvmLibrary()
+        if (packagePrefix != null || defaultUri != null) {
+            return new JvmLibrary() {
+                @Override
+                String defaultUri() {
+                    return defaultUri != null ? defaultUri : library.defaultUri()
+                }
+
+                @Override
+                String getDefaultPackagePrefix() {
+                    return packagePrefix != null ? packagePrefix : library.defaultPackagePrefix
+                }
+            }
+        }
+        return library
     }
 
     static Map<String, Object> inlineAnchorOptions(String baseUri, String target, String methodRef, String propRef, JvmLibrary jvmLibrary) {
