@@ -2,6 +2,7 @@ package io.micronaut.build;
 
 import io.github.gradlenexus.publishplugin.InitializeNexusStagingRepository;
 import io.micronaut.build.utils.ProviderUtils;
+import io.micronaut.build.utils.StringUtils;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.file.DuplicatesStrategy;
@@ -20,6 +21,8 @@ import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.signing.Sign;
 import org.gradle.plugins.signing.SigningExtension;
+import org.sonatype.gradle.plugins.scan.ScanPlugin;
+import org.sonatype.gradle.plugins.scan.ossindex.OssIndexPluginExtension;
 
 import java.io.File;
 import java.util.Arrays;
@@ -41,6 +44,8 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
     public void apply(Project project) {
         PluginManager plugins = project.getPluginManager();
         ProviderFactory providers = project.getProviders();
+        applySonatypeScanPlugin(plugins, providers, project);
+
         TaskContainer tasks = project.getTasks();
         ExtensionContainer extensions = project.getExtensions();
         if (isPublishingDisabledFor(project)) {
@@ -188,11 +193,49 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
         }
     }
 
+    private static boolean isSonatypeScanDisabledFor(Project project) {
+        Object p = project.findProperty("sonatypeScan");
+        // add option to skip applying the sonatype scan plugin
+        if (p == null) {
+            if (isDocOrExampleProject(project)) {
+                project.getLogger().info("sonatype scan is disabled for project {}", project.getName());
+                return true;
+            }
+        } else {
+            boolean sonatypeScanDisabled = Boolean.valueOf(p.toString()) == Boolean.TRUE;
+            if (!sonatypeScanDisabled) {
+                project.getLogger().info("sonatype scan is explicitly disabled for project {}", project.getName());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void applySonatypeScanPlugin(PluginManager plugins,
+                                         ProviderFactory providers,
+                                         Project project) {
+        if (!isSonatypeScanDisabledFor(project)) {
+            plugins.apply(ScanPlugin.class);
+            String ossIndexUsername = ProviderUtils.envOrSystemProperty(providers, "OSS_INDEX_USERNAME", "ossIndexUsername", "");
+            String ossIndexPassword = ProviderUtils.envOrSystemProperty(providers, "OSS_INDEX_PASSWORD", "ossIndexPassword", "");
+            boolean sonatypePluginConfigured = StringUtils.isNotEmpty(ossIndexUsername) && StringUtils.isNotEmpty(ossIndexPassword);
+            if (sonatypePluginConfigured) {
+                OssIndexPluginExtension ossIndexPluginExtension = project.getExtensions().getByType(OssIndexPluginExtension.class);
+                ossIndexPluginExtension.setUsername(ossIndexUsername);
+                ossIndexPluginExtension.setPassword(ossIndexPassword);
+            }
+        }
+    }
+
+    private static boolean isDocOrExampleProject(Project project) {
+        return (project.getName().contains("doc") && !project.getName().contains("adoc")) || project.getName().contains("example");
+    }
+
     private static boolean isPublishingDisabledFor(Project project) {
         Object p = project.findProperty("micronautPublish");
         // add option to skip publishing
         if (p == null) {
-            if ((project.getName().contains("doc") && !project.getName().contains("adoc")) || project.getName().contains("example")) {
+            if (isDocOrExampleProject(project)) {
                 project.getLogger().info("Publishing is disabled for project {}", project.getName());
                 return true;
             }

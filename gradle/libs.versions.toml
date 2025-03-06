@@ -19,6 +19,7 @@ bytebuddy = "1.17.1"
 objenesis = "3.4"
 maven-model-builder = "3.9.9"
 includegit = "0.2.0"
+sonatype-scan-gradle-plugin = "3.0.0"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
@@ -27,6 +28,7 @@ commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "co
 japicmp-plugin = { module = "me.champeau.gradle:japicmp-gradle-plugin", version.ref = "japicmp-plugin" }
 gradle-custom-userdata-plugin = { module = "com.gradle:common-custom-user-data-gradle-plugin", version.ref = "gradle-custom-userdata-plugin" }
 develocity-plugin = { module = "com.gradle:develocity-gradle-plugin", version.ref = "develocity-plugin" }
+sonatype-scan-gradle-plugin = { module = "org.sonatype.gradle.plugins:scan-gradle-plugin", version.ref = "sonatype-scan-gradle-plugin" }
 gradle-github-actions-plugin = { module = "org.nosphere.gradle.github:gradle-github-actions-plugin", version.ref = "gradle-github-actions-plugin" }
 grails-gdoc = { module = "org.grails:grails-gdoc-engine", version.ref = "grails-gdoc" }
 nexus-publish-plugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexus-publish-plugin" }
