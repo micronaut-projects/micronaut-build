@@ -193,28 +193,22 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
         }
     }
 
-    private static boolean isSonatypeScanDisabledFor(Project project) {
-        Object p = project.findProperty("sonatypeScan");
-        // add option to skip applying the sonatype scan plugin
-        if (p == null) {
-            if (isDocOrExampleProject(project)) {
-                project.getLogger().info("sonatype scan is disabled for project {}", project.getName());
-                return true;
-            }
-        } else {
-            boolean sonatypeScanDisabled = Boolean.valueOf(p.toString()) == Boolean.TRUE;
-            if (!sonatypeScanDisabled) {
-                project.getLogger().info("sonatype scan is explicitly disabled for project {}", project.getName());
-                return true;
-            }
+    private static boolean isSonatypeScanEnabledFor(Project project,
+                                                    ProviderFactory providers) {
+        boolean sonatypeScanEnabled = Boolean.valueOf(ProviderUtils.envOrSystemProperty(providers,
+                "OSS_INDEX_ENABLED",
+                "ossIndexEnabled",
+                Boolean.FALSE.toString())) == Boolean.TRUE;
+        if (!sonatypeScanEnabled) {
+            project.getLogger().trace("sonatype scan is not enabled for project {}", project.getName());
         }
-        return false;
+        return sonatypeScanEnabled;
     }
 
     private void applySonatypeScanPlugin(PluginManager plugins,
                                          ProviderFactory providers,
                                          Project project) {
-        if (!isSonatypeScanDisabledFor(project)) {
+        if (isSonatypeScanEnabledFor(project, providers)) {
             plugins.apply(ScanPlugin.class);
             String ossIndexUsername = ProviderUtils.envOrSystemProperty(providers, "OSS_INDEX_USERNAME", "ossIndexUsername", "");
             String ossIndexPassword = ProviderUtils.envOrSystemProperty(providers, "OSS_INDEX_PASSWORD", "ossIndexPassword", "");
