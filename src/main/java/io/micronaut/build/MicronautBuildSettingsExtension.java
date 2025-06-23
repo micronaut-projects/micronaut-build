@@ -345,7 +345,7 @@ public abstract class MicronautBuildSettingsExtension {
     public void addSnapshotRepository() {
         settings.dependencyResolutionManagement(mgmt -> {
             configureRepositories(mgmt);
-            mgmt.repositories(repos -> repos.maven(repo -> repo.setUrl("https://s01.oss.sonatype.org/content/repositories/snapshots")));
+            mgmt.repositories(repos -> repos.maven(repo -> repo.setUrl("https://central.sonatype.com/repository/maven-snapshots/")));
         });
     }
 

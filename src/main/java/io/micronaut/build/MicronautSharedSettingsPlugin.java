@@ -154,8 +154,8 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
             repo.getAllowInsecureProtocol().convention(rootProject.getProviders().systemProperty("allowInsecurePublishing").map(Boolean::parseBoolean).orElse(false));
             repo.getUsername().set(ossUser);
             repo.getPassword().set(ossPass);
-            repo.getNexusUrl().set(uri(envOrSystemProperty(rootProject.getProviders(), "SONATYPE_REPO_URI", "sonatypeRepoUri", "https://s01.oss.sonatype.org/service/local/")));
-            repo.getSnapshotRepositoryUrl().set(uri(envOrSystemProperty(rootProject.getProviders(), "SONATYPE_SNAPSHOT_REPO_URI", "sonatypeSnapshotsRepoUri", "https://s01.oss.sonatype.org/content/repositories/snapshots/")));
+            repo.getNexusUrl().set(uri(envOrSystemProperty(rootProject.getProviders(), "SONATYPE_REPO_URI", "sonatypeRepoUri", "https://ossrh-staging-api.central.sonatype.com/service/local/")));
+            repo.getSnapshotRepositoryUrl().set(uri(envOrSystemProperty(rootProject.getProviders(), "SONATYPE_SNAPSHOT_REPO_URI", "sonatypeSnapshotsRepoUri", "https://central.sonatype.com/repository/maven-snapshots/")));
             repo.getStagingProfileId().set(NEXUS_STAGING_PROFILE_ID);
         }));
     }
