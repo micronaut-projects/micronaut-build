@@ -186,6 +186,10 @@ gradlePlugin {
             id = 'io.micronaut.build.internal.binary-compatibility-check'
             implementationClass = 'io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin'
         }
+        parentPlugin {
+            id = 'io.micronaut.build.internal.parent'
+            implementationClass = 'io.micronaut.build.MicronautParentPublishingPlugin'
+        }
     }
 }
 
