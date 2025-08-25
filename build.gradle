@@ -256,7 +256,6 @@ publishing {
 
 afterEvaluate {
     signing {
-//        required { !project.version.endsWith("-SNAPSHOT") && !project.hasProperty("skipSigning") }
         publishing.publications.each {
             sign it
         }

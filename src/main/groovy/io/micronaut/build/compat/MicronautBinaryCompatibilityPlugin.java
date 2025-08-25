@@ -65,7 +65,6 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
             // We use the root project configurations here because of this issue:
             // https://discuss.gradle.org/t/is-the-default-configuration-leaking-into-independent-configurations/2088/6
             // but we'll have to find a better solution which doesn't reach into other project's state
-//            ConfigurationContainer rootProjectConfigurations = project.getRootProject().getConfigurations();
             project.getPluginManager().withPlugin("java-library", alsoUnused -> {
                 TaskProvider<FindBaselineTask> baselineTask = registerFindBaselineTask(project, binaryCompatibility, tasks, providers);
                 Provider<String> baseline = createBaselineProvider(binaryCompatibility, providers, baselineTask);
