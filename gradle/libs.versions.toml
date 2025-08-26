@@ -19,6 +19,7 @@ bytebuddy = "1.17.1"
 objenesis = "3.4"
 maven-model-builder = "3.9.9"
 includegit = "0.2.0"
+sonatype-scan = "3.0.0"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
@@ -43,3 +44,4 @@ typesafe-config = { module = "com.typesafe:config", version.ref = "typesafe-conf
 objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
 maven-model-builder = { module = "org.apache.maven:maven-model-builder", version.ref = "maven-model-builder" }
 includegit-plugin = { module = "me.champeau.gradle.includegit:plugin", version.ref = "includegit" }
+sonatype-scan-plugin = { module = "org.sonatype.gradle.plugins:scan-gradle-plugin", version.ref = "sonatype-scan" }
