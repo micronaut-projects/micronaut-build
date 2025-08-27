@@ -18,7 +18,7 @@ typesafe-config = "1.4.3"
 bytebuddy = "1.17.1"
 objenesis = "3.4"
 maven-model-builder = "3.9.9"
-includegit = "0.2.0"
+includegit = "0.3.0"
 sonatype-scan = "3.0.0"
 
 [libraries]
