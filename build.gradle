@@ -68,6 +68,7 @@ dependencies {
     implementation libs.gradle.custom.userdata.plugin
     implementation libs.japicmp.plugin
     implementation libs.includegit.plugin
+    implementation libs.sonatype.scan.plugin
 
     implementation libs.tomlj
     implementation libs.maven.model.builder
