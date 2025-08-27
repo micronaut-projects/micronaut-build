@@ -2,7 +2,7 @@
 asciidoctorj = "2.5.13"
 commons-lang3 = "3.18.0"
 japicmp-plugin = "0.4.6"
-gradle-custom-userdata-plugin = "2.1"
+gradle-custom-userdata-plugin = "2.3"
 develocity-plugin = "4.1.1"
 gradle-github-actions-plugin = "1.4.0"
 grails-gdoc = "1.0.1"
