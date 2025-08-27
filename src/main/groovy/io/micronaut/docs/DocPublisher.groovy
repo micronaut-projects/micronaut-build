@@ -529,7 +529,7 @@ class DocPublisher {
         }
 
 
-        if(propertiesFile?.exists()) {
+        if(propertiesFile != null && propertiesFile?.exists()) {
             if(propertiesFile.name.endsWith('.properties')) {
                 propertiesFile.withInputStream {
                     props.load(it)
