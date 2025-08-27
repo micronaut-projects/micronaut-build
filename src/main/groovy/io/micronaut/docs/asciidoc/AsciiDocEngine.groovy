@@ -1,6 +1,6 @@
 package io.micronaut.docs.asciidoc
 
-import groovy.transform.InheritConstructors
+
 import io.micronaut.docs.DocEngine
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
