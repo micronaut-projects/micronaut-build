@@ -8,8 +8,8 @@ plugins {
     id 'signing'
 }
 
-version project.projectVersion
-group "io.micronaut.build.internal"
+version = project.projectVersion
+group = "io.micronaut.build.internal"
 
 repositories {
     mavenCentral()
@@ -256,7 +256,6 @@ publishing {
 
 afterEvaluate {
     signing {
-        required { !project.version.endsWith("-SNAPSHOT") && !project.hasProperty("skipSigning") }
         publishing.publications.each {
             sign it
         }
@@ -267,7 +266,7 @@ afterEvaluate {
     }
 
     tasks.withType(Sign).configureEach {
-        onlyIf { !project.version.endsWith("-SNAPSHOT") }
+        onlyIf { !project.version.endsWith("-SNAPSHOT") && !project.hasProperty("skipSigning") }
     }
 
     tasks.withType(PublishToMavenRepository).configureEach {
