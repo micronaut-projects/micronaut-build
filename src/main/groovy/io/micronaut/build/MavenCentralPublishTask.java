@@ -122,7 +122,7 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
 
             var body = response.body();
             if (response.statusCode() == 200) {
-                if (body.contains("\"deploymentState\":\"COMPLETE\"")) {
+                if (body.contains("\"deploymentState\":\"COMPLETE\"") || body.contains("\"deploymentState\":\"PUBLISHED\"")) {
                     getLogger().lifecycle("Deployment {} completed successfully!", deploymentId);
                     return;
                 }
