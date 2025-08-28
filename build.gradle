@@ -191,6 +191,10 @@ gradlePlugin {
             id = 'io.micronaut.build.internal.parent'
             implementationClass = 'io.micronaut.build.MicronautParentPlugin'
         }
+        parentPublishingPlugin {
+            id = 'io.micronaut.build.internal.parent-pulishing'
+            implementationClass = 'io.micronaut.build.MicronautParentPublishingPlugin'
+        }
     }
 }
 
