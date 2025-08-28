@@ -108,8 +108,8 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
     private void verifyDeploymentStatus(HttpClient client, String deploymentId) throws IOException, InterruptedException {
         var statusUrl = "https://central.sonatype.com/api/v1/publisher/status?id=" + deploymentId;
         getLogger().lifecycle("Checking deployment status for {}", deploymentId);
-
-        while (true) {
+        int maxLookups = 100;
+        while (--maxLookups >= 0) {
             var request = HttpRequest.newBuilder()
                 .uri(URI.create(statusUrl))
                 .header("Authorization", "Bearer " + getBearerToken())
@@ -122,7 +122,7 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
 
             var body = response.body();
             if (response.statusCode() == 200) {
-                if (body.contains("\"deploymentState\":\"COMPLETE\"")) {
+                if (body.contains("\"deploymentState\":\"COMPLETE\"") || body.contains("\"deploymentState\":\"PUBLISHED\"")) {
                     getLogger().lifecycle("Deployment {} completed successfully!", deploymentId);
                     return;
                 }
@@ -134,7 +134,7 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
                 break;
             }
 
-            Thread.sleep(10_000);
+            Thread.sleep(30_000);
         }
     }
 }
