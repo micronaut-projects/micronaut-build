@@ -25,7 +25,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.catalog.internal.TomlFileGenerator;
 import org.gradle.api.provider.Provider;
@@ -57,7 +57,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
             project.getProviders().provider(() -> String.valueOf(project.getVersion()))
         );
         binaryCompatibility.getAcceptedRegressionsFile().convention(
-                project.getRootProject().getLayout().getProjectDirectory().file("config/accepted-api-changes.json")
+            project.getRootProject().getLayout().getProjectDirectory().file("config/accepted-api-changes.json")
         );
         project.getPlugins().withType(MicronautPublishingPlugin.class, unused -> {
             TaskContainer tasks = project.getTasks();
@@ -69,8 +69,8 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 TaskProvider<FindBaselineTask> baselineTask = registerFindBaselineTask(project, binaryCompatibility, tasks, providers);
                 Provider<String> baseline = createBaselineProvider(binaryCompatibility, providers, baselineTask);
                 String groupAndArtifact = findGroupOf(project) + ":" + moduleNameOf(project.getName());
-                Configuration oldClasspath = project.getConfigurations().detachedConfiguration();
-                Configuration oldJar = project.getConfigurations().detachedConfiguration();
+                Configuration oldClasspath = createDetachedConfigurationWithWorkaroundGradleResolutionError(project);
+                Configuration oldJar = createDetachedConfigurationWithWorkaroundGradleResolutionError(project);
                 oldClasspath.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(groupAndArtifact + ":" + version)));
                 oldJar.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(groupAndArtifact + ":" + version + "@jar")));
                 TaskProvider<JapicmpTask> japicmpTask = tasks.register("japiCmp", JapicmpTask.class, task -> {
@@ -105,9 +105,9 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                         }
                         task.getNewArchives().from(effectiveJar);
                         task.richReport(report ->
-                                report.addViolationTransformer(AcceptedApiChangesRule.class,
-                                        Collections.singletonMap(AcceptedApiChangesRule.CHANGES_FILE, changesFileRelativePath)
-                                )
+                            report.addViolationTransformer(AcceptedApiChangesRule.class,
+                                Collections.singletonMap(AcceptedApiChangesRule.CHANGES_FILE, changesFileRelativePath)
+                            )
                         );
                     });
                 });
@@ -115,7 +115,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
             project.getPluginManager().withPlugin("io.micronaut.build.internal.bom", alsoUnused -> {
                 TaskProvider<FindBaselineTask> baselineTask = registerFindBaselineTask(project, binaryCompatibility, tasks, providers);
                 Provider<String> baseline = createBaselineProvider(binaryCompatibility, providers, baselineTask);
-                Configuration baselineConfig = project.getConfigurations().detachedConfiguration();
+                Configuration baselineConfig = createDetachedConfigurationWithWorkaroundGradleResolutionError(project);
                 baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(findGroupOf(project) + ":" + moduleNameOf(project.getName()) + ":" + version + "@toml")));
                 TaskProvider<VersionCatalogCompatibilityCheck> compatibilityCheckTaskProvider = tasks.register("checkVersionCatalogCompatibility", VersionCatalogCompatibilityCheck.class, task -> {
                     task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
@@ -136,6 +136,21 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
         });
     }
 
+    /**
+     * This makes use of an internal Gradle API, to workaround the fact that when we use
+     * a detached configuration, the root of the dependency graph is the current project,
+     * which makes it impossble to resolve a previous version of the same project.
+     * @param project the current project
+     * @return a detached configuration which is isolated from the current project
+     */
+    private static Configuration createDetachedConfigurationWithWorkaroundGradleResolutionError(Project project) {
+        var detachedResolver = ((ProjectInternal) project).newDetachedResolver();
+        project.getRepositories().forEach(r ->
+            detachedResolver.getRepositories().add(r)
+        );
+        return detachedResolver.getConfigurations().detachedConfiguration();
+    }
+
     private static String findGroupOf(Project project) {
         ProviderFactory providers = project.getProviders();
         return providers.gradleProperty("projectGroupId").orElse(providers.gradleProperty("projectGroup")).getOrElse(project.getGroup().toString());
@@ -143,8 +158,8 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
 
     private Provider<String> createBaselineProvider(BinaryCompatibibilityExtension binaryCompatibility, ProviderFactory providers, TaskProvider<FindBaselineTask> baselineTask) {
         return binaryCompatibility.getBaselineVersion().orElse(
-                providers.fileContents(baselineTask.flatMap(FindBaselineTask::getPreviousVersion))
-                        .getAsText().map(MicronautBinaryCompatibilityPlugin::readBaseline)
+            providers.fileContents(baselineTask.flatMap(FindBaselineTask::getPreviousVersion))
+                .getAsText().map(MicronautBinaryCompatibilityPlugin::readBaseline)
         );
     }
 
