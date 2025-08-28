@@ -189,7 +189,7 @@ gradlePlugin {
         }
         parentPlugin {
             id = 'io.micronaut.build.internal.parent'
-            implementationClass = 'io.micronaut.build.MicronautParentPublishingPlugin'
+            implementationClass = 'io.micronaut.build.MicronautParentPlugin'
         }
     }
 }
