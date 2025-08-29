@@ -20,6 +20,17 @@ sourceSets {
     functionalTest {
     }
 }
+configurations {
+    functionalTestImplementation {
+        extendsFrom(testImplementation)
+    }
+    functionalTestRuntimeClasspath {
+        extendsFrom(testRuntimeOnly)
+        resolutionStrategy {
+            exclude group: 'org.codehaus.groovy'
+        }
+    }
+}
 
 gradlePlugin.testSourceSets(sourceSets.functionalTest)
 configurations {
@@ -83,7 +94,10 @@ dependencies {
 
     testImplementation(libs.mockserver.netty)
     testImplementation(libs.mockserver.client)
-
+    testImplementation "org.spockframework:spock-core:2.4-M6-groovy-4.0"
+    testImplementation "org.junit.jupiter:junit-jupiter-api"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 configurations.all {
@@ -95,9 +109,10 @@ configurations.all {
         }
 
         eachDependency { details ->
-            if (details.requested.group == 'org.codehaus.groovy') {
+            if (details.requested.group == 'org.codehaus.groovy'|| details.requested.group == 'org.codehaus.groovy') {
                 details.useVersion groovyVersion
-                details.because 'Groovy 2.5.x not supported by Gradle 7.0+'
+                details.useTarget group: 'org.apache.groovy', name: details.requested.name, version: groovyVersion
+                details.because 'Force consistent Groovy version/group'
             }
         }
     }
