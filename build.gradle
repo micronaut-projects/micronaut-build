@@ -159,10 +159,6 @@ gradlePlugin {
             id = 'io.micronaut.build.internal.docs'
             implementationClass = 'io.micronaut.build.MicronautDocsPlugin'
         }
-        gradleEnterprise {
-            id = 'io.micronaut.build.internal.gradle-enterprise'
-            implementationClass = 'io.micronaut.build.MicronautGradleEnterprisePlugin'
-        }
         develocity {
             id = 'io.micronaut.build.internal.develocity'
             implementationClass = 'io.micronaut.build.MicronautDevelocityPlugin'
