@@ -6,7 +6,6 @@ plugins {
     id 'maven-publish'
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
     id 'signing'
-    id("com.adarshr.test-logger") version "4.0.0"
 }
 
 version = project.projectVersion
@@ -95,9 +94,7 @@ dependencies {
 
     testImplementation(libs.mockserver.netty)
     testImplementation(libs.mockserver.client)
-    testImplementation "org.junit.jupiter:junit-jupiter-api"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+
 }
 
 configurations.all {
@@ -111,8 +108,7 @@ configurations.all {
         eachDependency { details ->
             if (details.requested.group == 'org.codehaus.groovy') {
                 details.useVersion groovyVersion
-                details.useTarget group: 'org.apache.groovy', name: details.requested.name, version: groovyVersion
-                details.because 'Force consistent Groovy version/group'
+                details.because 'Groovy 2.5.x not supported by Gradle 7.0+'
             }
         }
     }
@@ -215,8 +211,8 @@ gradlePlugin {
 java {
     withJavadocJar()
     withSourcesJar()
-    sourceCompatibility = 21
-    targetCompatibility = 21
+    sourceCompatibility = 17
+    targetCompatibility = 17
 }
 
 def ossUser = System.getenv("SONATYPE_USERNAME") ?: project.hasProperty("sonatypeOssUsername") ? project.sonatypeOssUsername : ''
