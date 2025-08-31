@@ -19,7 +19,7 @@ bytebuddy = "1.17.7"
 objenesis = "3.4"
 maven-model-builder = "3.9.11"
 includegit = "0.3.0"
-sonatype-scan = "3.0.0"
+sonatype-scan = "3.1.3"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
