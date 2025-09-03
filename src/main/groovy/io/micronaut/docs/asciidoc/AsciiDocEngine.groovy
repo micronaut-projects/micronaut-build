@@ -31,8 +31,10 @@ class AsciiDocEngine extends DocEngine {
     @Override
     String render(String content, RenderContext context) {
         def optionsBuilder = Options.builder()
-                                        .headerFooter(false)
-                                        .attributes(Attributes.builder().attributes(attributes).build())
+                                        .standalone(false)
+        def attrsBuilder = Attributes.builder()
+        attributes.each { k, v -> attrsBuilder.attribute(k.toString(), v) }
+        optionsBuilder.attributes(attrsBuilder.build())
         if(attributes.containsKey('safe')) {
             optionsBuilder.safe(SafeMode.valueOf(attributes.get('safe').toString()))
         }

@@ -2,6 +2,7 @@ package io.micronaut.docs
 
 import org.asciidoctor.ast.ContentNode
 import org.asciidoctor.ast.StructuralNode
+import org.asciidoctor.ast.PhraseNode
 import org.asciidoctor.extension.InlineMacroProcessor
 /**
  * Inline macro which can be invoked in asciidoc with:
@@ -77,9 +78,9 @@ class BuildDependencyMacro extends InlineMacroProcessor implements ValueAtAttrib
     }
 
     @Override
-    Object process(ContentNode parent, String target, Map<String, Object> attributes) {
+    PhraseNode process(StructuralNode parent, String target, Map<String, Object> attributes) {
         String content = contentForTargetAndAttributes(target, attributes)
-        return createBlock(parent as StructuralNode, "pass", [content]).convert()
+        return createPhraseNode(parent, "quoted", content, [:], [type: ':pass'])
     }
 
     static String contentForTargetAndAttributes(String target, Map<String, Object> attributes) {

@@ -16,7 +16,8 @@
 package io.micronaut.docs
 
 
-import org.asciidoctor.ast.ContentNode
+import org.asciidoctor.ast.StructuralNode
+import org.asciidoctor.ast.PhraseNode
 import org.asciidoctor.extension.InlineMacroProcessor
 /**
  * @author graemerocher
@@ -32,7 +33,7 @@ class PackageMacro extends InlineMacroProcessor {
     }
 
     @Override
-    Object process(ContentNode parent, String target, Map<String, Object> attributes) {
+    PhraseNode process(StructuralNode parent, String target, Map<String, Object> attributes) {
         String defaultPackage = getDefaultPackagePrefix()
         if(defaultPackage != null && !target.startsWith(defaultPackage)) {
             target = "${defaultPackage}${target}" // allow excluding io.micronaut

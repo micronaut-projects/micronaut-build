@@ -33,7 +33,7 @@ class ApiMacro extends InlineMacroProcessor {
     }
 
     @Override
-    Object process(ContentNode parent, String target, Map<String, Object> attributes) {
+    PhraseNode process(StructuralNode parent, String target, Map<String, Object> attributes) {
         // is it a method reference
         int methodIndex = target.lastIndexOf('(')
         int propIndex = target.lastIndexOf('#')
