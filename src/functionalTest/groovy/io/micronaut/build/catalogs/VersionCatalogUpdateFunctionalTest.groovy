@@ -16,6 +16,7 @@
 package io.micronaut.build.catalogs
 
 import io.micronaut.build.AbstractFunctionalTest
+import org.mockserver.configuration.Configuration
 import org.mockserver.integration.ClientAndServer
 import org.mockserver.logging.MockServerLogger
 import org.mockserver.mock.action.ExpectationResponseCallback
@@ -23,26 +24,34 @@ import org.mockserver.model.HttpRequest
 import org.mockserver.model.HttpResponse
 import org.mockserver.model.MediaType
 import org.mockserver.socket.tls.KeyStoreFactory
-import org.mockserver.configuration.Configuration;
-import spock.lang.IgnoreIf
+import spock.lang.Shared
 
 import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLSocketFactory
 
 import static org.mockserver.integration.ClientAndServer.startClientAndServer
 import static org.mockserver.model.HttpRequest.request
 import static org.mockserver.model.HttpResponse.notFoundResponse
 import static org.mockserver.model.HttpResponse.response
 
-@IgnoreIf({
-    System.getenv("CI") != null
-})
 class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
 
     ClientAndServer repository
 
+    @Shared
+    private SSLSocketFactory sslFactory
+
+    def setupSpec() {
+        sslFactory = HttpsURLConnection.getDefaultSSLSocketFactory()
+        HttpsURLConnection.setDefaultSSLSocketFactory(new KeyStoreFactory(new Configuration(), new MockServerLogger()).sslContext().socketFactory)
+    }
+
+    def cleanupSpec() {
+        HttpsURLConnection.setDefaultSSLSocketFactory(sslFactory)
+    }
+
     def setup() {
         repository = startClientAndServer()
-        HttpsURLConnection.setDefaultSSLSocketFactory(new KeyStoreFactory(new Configuration(), new MockServerLogger()).sslContext().socketFactory)
         buildFile << """
             plugins {
                 id 'io.micronaut.build.internal.version-catalog-updates'            
