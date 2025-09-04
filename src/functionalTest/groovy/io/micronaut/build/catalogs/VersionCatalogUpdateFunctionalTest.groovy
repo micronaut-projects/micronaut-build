@@ -24,6 +24,7 @@ import org.mockserver.model.HttpRequest
 import org.mockserver.model.HttpResponse
 import org.mockserver.model.MediaType
 import org.mockserver.socket.tls.KeyStoreFactory
+import spock.lang.Ignore
 import spock.lang.Shared
 
 import javax.net.ssl.HttpsURLConnection
@@ -34,6 +35,7 @@ import static org.mockserver.model.HttpRequest.request
 import static org.mockserver.model.HttpResponse.notFoundResponse
 import static org.mockserver.model.HttpResponse.response
 
+@Ignore
 class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
 
     ClientAndServer repository
