@@ -47,6 +47,9 @@ tasks.register('functionalTest', Test) {
     if (System.getenv("CI") != null) {
         environment("CI", System.getenv("CI"))
     }
+    // Workaround for SSL context initializer
+    forkEvery = 1
+    maxParallelForks = 4
 }
 
 tasks.named('check') {
