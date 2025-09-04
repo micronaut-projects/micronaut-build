@@ -120,11 +120,15 @@ public abstract class MicronautPublishingPlugin implements Plugin<Project> {
                     maven.setUrl(externalRepoUri);
                     Provider<String> externalRepoUsername = providers.systemProperty("io.micronaut.publishing.username");
                     Provider<String> externalRepoPassword = providers.systemProperty("io.micronaut.publishing.password");
+                    Provider<String> externalRepoAllowInsecureProtocol = providers.systemProperty("io.micronaut.publishing.allowInsecureProtocol");
                     if (externalRepoUsername.isPresent() && externalRepoPassword.isPresent()) {
                         maven.credentials(credentials -> {
                             credentials.setUsername(externalRepoUsername.get());
                             credentials.setPassword(externalRepoPassword.get());
                         });
+                    }
+                    if (externalRepoAllowInsecureProtocol.isPresent()) {
+                        maven.setAllowInsecureProtocol(Boolean.parseBoolean(externalRepoAllowInsecureProtocol.get()));
                     }
                 });
             }
