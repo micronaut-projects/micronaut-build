@@ -60,7 +60,7 @@ tasks.register('functionalTest', Test) {
     }
     // Workaround for SSL context initializer
     forkEvery = 1
-    maxParallelForks = 4
+    maxParallelForks = 1
 }
 
 tasks.named('check') {
