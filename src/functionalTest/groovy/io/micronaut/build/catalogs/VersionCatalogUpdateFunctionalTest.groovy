@@ -52,7 +52,6 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
 
     def setup() {
         repository = startClientAndServer()
-        HttpsURLConnection.setDefaultSSLSocketFactory(new KeyStoreFactory(new Configuration(), new MockServerLogger()).sslContext().socketFactory)
         buildFile << """
             plugins {
                 id 'io.micronaut.build.internal.version-catalog-updates'            
