@@ -20,6 +20,7 @@ objenesis = "3.4"
 maven-model-builder = "3.9.11"
 includegit = "0.3.0"
 sonatype-scan = "3.0.0"
+errorprone="4.3.0"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
