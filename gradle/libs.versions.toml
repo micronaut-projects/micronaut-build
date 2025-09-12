@@ -20,7 +20,7 @@ objenesis = "3.4"
 maven-model-builder = "3.9.11"
 includegit = "0.3.0"
 sonatype-scan = "3.0.0"
-errorprone = "4.3.0"
+errorprone = "2.41.0"
 jspecify = "1.0.0"
 checkstyle = "11.0.1"
 
