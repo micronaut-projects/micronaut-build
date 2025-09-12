@@ -10,6 +10,6 @@ repositories {
 
 micronautBuild {
 	aot {
-		version = "1.0.0-M2"
+		version = "2.9.0"
 	}
 }
