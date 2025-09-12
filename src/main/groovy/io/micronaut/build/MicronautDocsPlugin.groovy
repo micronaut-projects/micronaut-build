@@ -126,7 +126,7 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                         'sourceDir': rootProject.projectDir.absolutePath,
                         'sourcedir': rootProject.projectDir.absolutePath,
                         'includedir': "${processConfigPropsOutputDir.get().asFile.parentFile}/",
-                        'javaee': 'https://docs.oracle.com/en/java/javase/17/docs/api/',
+                        'javaee': 'https://docs.oracle.com/en/java/javase/21/docs/api/',
                         'javase': 'https://jakarta.ee/specifications/platform/9/apidocs',
                         'groovyapi': 'http://docs.groovy-lang.org/latest/html/gapi/',
                         'grailsapi': 'http://docs.grails.org/latest/api/',

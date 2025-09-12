@@ -99,6 +99,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             dependencies.addProvider("testRuntimeOnly", logbackVersionProvider.map {
                 optionalDependency("ch.qos.logback:logback-classic", it)
             })
+            dependencies.add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
         }
 
         project.tasks.withType(Groovydoc).configureEach {

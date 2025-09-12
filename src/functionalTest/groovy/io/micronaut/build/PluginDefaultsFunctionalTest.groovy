@@ -2,7 +2,7 @@ package io.micronaut.build
 
 class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
 
-    void "defaults to Java 17"() {
+    void "defaults to Java 21"() {
         given:
         withSample("test-micronaut-module")
 
@@ -19,7 +19,7 @@ class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
         run 'printJavaVersion'
 
         then:
-        outputContains "Java version: 17"
+        outputContains "Java version: 21"
     }
 
     void "test java defaults to current JDK"() {
