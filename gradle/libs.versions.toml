@@ -20,7 +20,9 @@ objenesis = "3.4"
 maven-model-builder = "3.9.11"
 includegit = "0.3.0"
 sonatype-scan = "3.0.0"
-errorprone="4.3.0"
+errorprone = "4.3.0"
+jspecify = "1.0.0"
+checkstyle = "11.0.1"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
@@ -46,3 +48,8 @@ objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
 maven-model-builder = { module = "org.apache.maven:maven-model-builder", version.ref = "maven-model-builder" }
 includegit-plugin = { module = "me.champeau.gradle.includegit:plugin", version.ref = "includegit" }
 sonatype-scan-plugin = { module = "org.sonatype.gradle.plugins:scan-gradle-plugin", version.ref = "sonatype-scan" }
+
+# For automated dependency updates
+checkstyle = { module = "com.puppycrawl.tools:checkstyle", version.ref = "checkstyle" }
+errorprone = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }

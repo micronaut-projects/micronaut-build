@@ -92,4 +92,35 @@ You can do this directly in the project, or, better, in a convention plugin if i
             succeeded ':subproject2:compileTestJava' // overrides to JUnit5
         }
     }
+
+    def "adds JSpecify dependency by default"() {
+        withSample("test-micronaut-module")
+
+        when:
+        run 'subproject1:dependencies', '--configuration', configuration
+
+        then:
+        outputContains "org.jspecify:jspecify:${System.getProperty("jspecify.version")}"
+
+        where:
+        configuration << ["compileOnly", "testCompileOnly"]
+    }
+
+    def "can disable JSpecify addition"() {
+        withSample("test-micronaut-module")
+        file("subproject1/build.gradle") << """
+        micronautBuild {
+            useJSpecify = false
+        }
+        """
+
+        when:
+        run 'subproject1:dependencies', '--configuration', configuration
+
+        then:
+        outputDoesNotContain "org.jspecify:jspecify:${System.getProperty("jspecify.version")}"
+
+        where:
+        configuration << ["compileOnly", "testCompileOnly"]
+    }
 }
