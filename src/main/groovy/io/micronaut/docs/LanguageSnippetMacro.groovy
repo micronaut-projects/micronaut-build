@@ -48,7 +48,7 @@ class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttribu
     }
 
     @Override
-    Object process(StructuralNode parent, String target, Map<String, Object> attributes) {
+    StructuralNode process(StructuralNode parent, String target, Map<String, Object> attributes) {
         String[] tags = valueAtAttributes("tags", attributes)?.toString()?.split(",")
         String indent = valueAtAttributes("indent", attributes)
         String title = valueAtAttributes("title", attributes)
@@ -104,8 +104,9 @@ ${includes.join("\n\n")}
                     .safe(SafeMode.UNSAFE)
                     .build()
             String result = asciidoctor.convert(content.toString(), options)
-            createBlock(parent, "pass", result)
+            return createBlock(parent, "pass", result)
         }
+        return null
     }
 
 }
