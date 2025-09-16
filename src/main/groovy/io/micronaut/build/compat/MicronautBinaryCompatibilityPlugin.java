@@ -25,6 +25,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.attributes.Bundling;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.catalog.internal.TomlFileGenerator;
@@ -148,7 +149,14 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
         project.getRepositories().forEach(r ->
             detachedResolver.getRepositories().add(r)
         );
-        return detachedResolver.getConfigurations().detachedConfiguration();
+        Configuration configuration = detachedResolver.getConfigurations().detachedConfiguration();
+        configuration.setCanBeConsumed(false);
+        configuration.setCanBeResolved(true);
+        configuration.getAttributes().attribute(
+            Bundling.BUNDLING_ATTRIBUTE,
+            project.getObjects().named(Bundling.class, Bundling.EXTERNAL)
+        );
+        return configuration;
     }
 
     private static String findGroupOf(Project project) {
