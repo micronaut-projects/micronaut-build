@@ -26,6 +26,10 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.attributes.Bundling;
+import org.gradle.api.attributes.Usage;
+import org.gradle.api.attributes.Category;
+import org.gradle.api.attributes.LibraryElements;
+import org.gradle.api.attributes.java.TargetJvmEnvironment;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.catalog.internal.TomlFileGenerator;
@@ -146,9 +150,14 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
      */
     private static Configuration createDetachedConfigurationWithWorkaroundGradleResolutionError(Project project) {
         var detachedResolver = ((ProjectInternal) project).newDetachedResolver();
-        project.getRepositories().forEach(r ->
-            detachedResolver.getRepositories().add(r)
-        );
+        // Use a POM-only metadata repository to avoid Gradle Module Metadata variant negotiation issues
+        detachedResolver.getRepositories().mavenCentral(repo -> {
+            repo.metadataSources(ms -> {
+                ms.mavenPom();
+                ms.artifact();
+                ms.ignoreGradleMetadataRedirection();
+            });
+        });
         Configuration configuration = detachedResolver.getConfigurations().detachedConfiguration();
         configuration.setCanBeConsumed(false);
         configuration.setCanBeResolved(true);
@@ -156,6 +165,34 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 Bundling.BUNDLING_ATTRIBUTE,
                 project.getObjects().named(Bundling.class, Bundling.EXTERNAL)
         );
+        configuration.getAttributes().attribute(
+                Usage.USAGE_ATTRIBUTE,
+                project.getObjects().named(Usage.class, Usage.JAVA_RUNTIME)
+        );
+        configuration.getAttributes().attribute(
+                Category.CATEGORY_ATTRIBUTE,
+                project.getObjects().named(Category.class, Category.LIBRARY)
+        );
+        configuration.getAttributes().attribute(
+                LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+                project.getObjects().named(LibraryElements.class, LibraryElements.JAR)
+        );
+        configuration.getAttributes().attribute(
+                TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE,
+                project.getObjects().named(TargetJvmEnvironment.class, TargetJvmEnvironment.STANDARD_JVM)
+        );
+        configuration.getResolutionStrategy().eachDependency(details -> {
+            if ("com.google.guava".equals(details.getRequested().getGroup())
+                && "guava".equals(details.getRequested().getName())) {
+                String v = details.getRequested().getVersion();
+                if (v != null && v.endsWith("-android")) {
+                    details.useVersion(v.replace("-android", "-jre"));
+                    details.because("Prefer Guava JRE variant for JVM build and fix japicmp detached configuration resolution");
+                }
+            }
+        });
+        // Normalize version conflicts to a single JRE variant to avoid detached configuration variant mismatch
+        configuration.getResolutionStrategy().force("com.google.guava:guava:33.3.1-jre");
         return configuration;
     }
 
