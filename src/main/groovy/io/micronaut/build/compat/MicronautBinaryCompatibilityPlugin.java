@@ -176,16 +176,6 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE,
                 project.getObjects().named(TargetJvmEnvironment.class, TargetJvmEnvironment.STANDARD_JVM)
         );
-        configuration.getResolutionStrategy().eachDependency(details -> {
-            if ("com.google.guava".equals(details.getRequested().getGroup())
-                && "guava".equals(details.getRequested().getName())) {
-                String v = details.getRequested().getVersion();
-                if (v != null && v.endsWith("-android")) {
-                    details.useVersion(v.replace("-android", "-jre"));
-                    details.because("Prefer Guava JRE variant for JVM build and fix japicmp detached configuration resolution");
-                }
-            }
-        });
         return configuration;
     }
 
