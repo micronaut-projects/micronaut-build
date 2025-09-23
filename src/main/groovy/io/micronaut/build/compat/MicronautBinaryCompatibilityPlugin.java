@@ -150,14 +150,9 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
      */
     private static Configuration createDetachedConfigurationWithWorkaroundGradleResolutionError(Project project) {
         var detachedResolver = ((ProjectInternal) project).newDetachedResolver();
-        // Use a POM-only metadata repository to avoid Gradle Module Metadata variant negotiation issues
-        detachedResolver.getRepositories().mavenCentral(repo -> {
-            repo.metadataSources(ms -> {
-                ms.mavenPom();
-                ms.artifact();
-                ms.ignoreGradleMetadataRedirection();
-            });
-        });
+        project.getRepositories().forEach(r ->
+            detachedResolver.getRepositories().add(r)
+        );
         Configuration configuration = detachedResolver.getConfigurations().detachedConfiguration();
         configuration.setCanBeConsumed(false);
         configuration.setCanBeResolved(true);
