@@ -186,8 +186,6 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                 }
             }
         });
-        // Normalize version conflicts to a single JRE variant to avoid detached configuration variant mismatch
-        configuration.getResolutionStrategy().force("com.google.guava:guava:33.3.1-jre");
         return configuration;
     }
 
