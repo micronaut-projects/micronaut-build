@@ -48,6 +48,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         def byteBuddyVersionProvider = versionProviderOrDefault(project, 'bytebuddy', List.of("libs", "mnTest"), DefaultVersions.BYTEBUDDY_VERSION)
         def objenesisVersionProvider = versionProviderOrDefault(project, 'objenesis', List.of("libs", "mnTest"), DefaultVersions.OBJENESIS_VERSION)
         def logbackVersionProvider = versionProviderOrDefault(project, 'logback', List.of("libs", "mnLogging"), '')
+        def jspecifyVersionProvider = versionProviderOrDefault(project, 'jspecify', List.of("libs"), DefaultVersions.JSPECIFY_VERSION)
 
         project.configurations {
             documentation
@@ -100,6 +101,18 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                 optionalDependency("ch.qos.logback:logback-classic", it)
             })
             dependencies.add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+            project.configurations.compileOnly.dependencies.addAllLater(micronautBuild.useJSpecify.zip(jspecifyVersionProvider) { enabled, version ->
+                if (Boolean.TRUE == enabled) {
+                    return [dependencies.create("org.jspecify:jspecify:$version")]
+                }
+                return []
+            })
+            project.configurations.testCompileOnly.dependencies.addAllLater(micronautBuild.useJSpecify.zip(jspecifyVersionProvider) { enabled, version ->
+                if (Boolean.TRUE == enabled) {
+                    return [dependencies.create("org.jspecify:jspecify:$version")]
+                }
+                return []
+            })
         }
 
         project.tasks.withType(Groovydoc).configureEach {

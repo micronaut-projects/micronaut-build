@@ -47,6 +47,7 @@ configurations {
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
+    systemProperty("jspecify.version", libs.versions.jspecify.get())
 }
 
 tasks.register('functionalTest', Test) {
@@ -132,6 +133,9 @@ tasks.named('jar', Jar) {
 def generateVersions = tasks.register("generateVersions", VersionsWriterTask) {
     versions.put("bytebuddy", libs.versions.bytebuddy)
     versions.put("objenesis", libs.versions.objenesis)
+    versions.put("checkstyle", libs.versions.checkstyle)
+    versions.put("jspecify", libs.versions.jspecify)
+    versions.put("errorprone", libs.versions.errorprone)
     className = "io.micronaut.build.utils.DefaultVersions"
     outputDirectory = layout.buildDirectory.dir("generated/versions")
 }
