@@ -120,7 +120,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
             project.getPluginManager().withPlugin("io.micronaut.build.internal.bom", alsoUnused -> {
                 TaskProvider<FindBaselineTask> baselineTask = registerFindBaselineTask(project, binaryCompatibility, tasks, providers);
                 Provider<String> baseline = createBaselineProvider(binaryCompatibility, providers, baselineTask);
-                Configuration baselineConfig = createDetachedConfigurationWithWorkaroundGradleResolutionError(project);
+                Configuration baselineConfig = createVersionCatalogResolutionConfiguration(project);
                 baselineConfig.getDependencies().addLater(baseline.map(version -> project.getDependencies().create(findGroupOf(project) + ":" + moduleNameOf(project.getName()) + ":" + version + "@toml")));
                 TaskProvider<VersionCatalogCompatibilityCheck> compatibilityCheckTaskProvider = tasks.register("checkVersionCatalogCompatibility", VersionCatalogCompatibilityCheck.class, task -> {
                     task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
@@ -175,6 +175,25 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
         configuration.getAttributes().attribute(
                 TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE,
                 project.getObjects().named(TargetJvmEnvironment.class, TargetJvmEnvironment.STANDARD_JVM)
+        );
+        return configuration;
+    }
+
+    private static Configuration createVersionCatalogResolutionConfiguration(Project project) {
+        var detachedResolver = ((ProjectInternal) project).newDetachedResolver();
+        project.getRepositories().forEach(r ->
+            detachedResolver.getRepositories().add(r)
+        );
+        Configuration configuration = detachedResolver.getConfigurations().detachedConfiguration();
+        configuration.setCanBeConsumed(false);
+        configuration.setCanBeResolved(true);
+        configuration.getAttributes().attribute(
+                Category.CATEGORY_ATTRIBUTE,
+                project.getObjects().named(Category.class, "platform")
+        );
+        configuration.getAttributes().attribute(
+                Usage.USAGE_ATTRIBUTE,
+                project.getObjects().named(Usage.class, "version-catalog")
         );
         return configuration;
     }
