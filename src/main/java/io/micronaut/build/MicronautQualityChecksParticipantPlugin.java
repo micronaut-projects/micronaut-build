@@ -84,7 +84,6 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
                         // Alternatively we could eagerly resolve the checkstyle task,
                         // but we don't want to do this because it makes the build slower
                         sonarQubeExtension.properties(props -> {
-                            props.property("sonar.projectKey", System.getenv("SONAR_TOKEN"));
                             File checkstyleReport = project.getLayout().getBuildDirectory().file("reports/checkstyle/main.xml").get().getAsFile();
                             props.property("sonar.java.checkstyle.reportPaths", checkstyleReport.getAbsolutePath());
                         });
