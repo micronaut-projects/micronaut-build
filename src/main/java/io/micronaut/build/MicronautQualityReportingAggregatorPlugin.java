@@ -40,9 +40,9 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                 sonarQubeExtension.properties(p -> {
                     String githubSlug = rootProject.getProviders().gradleProperty("githubSlug").getOrNull();
                     if (githubSlug != null) {
-                        p.property("sonar.projectKey", githubSlug.replaceAll("/", "_"));
-                        p.property("sonar.organization", "micronaut-projects");
-                        p.property("sonar.host.url", "https://sonarcloud.io");
+                        p.property("sonar.projectKey", rootProject.getProviders().systemProperty("sonar.projectKey").getOrElse(githubSlug.replaceAll("/", "_")));
+                        p.property("sonar.organization", rootProject.getProviders().systemProperty("sonar.organization").getOrElse("micronaut-projects"));
+                        p.property("sonar.host.url", rootProject.getProviders().systemProperty("sonar.host.url").getOrElse("https://sonarcloud.io"));
                         MicronautBuildExtension micronautBuildExtension = rootProject.getExtensions().getByType(MicronautBuildExtension.class);
                         p.property("sonar.java.source", micronautBuildExtension.getJavaVersion().map(String::valueOf).get());
                         p.property("sonar.verbose", "true");
