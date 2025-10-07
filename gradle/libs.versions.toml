@@ -9,7 +9,7 @@ grails-gdoc = "1.0.1"
 mockserver = "5.15.0"
 nexus-publish-plugin = "2.0.0"
 snakeyaml = "2.5"
-sonar-plugin = "4.0.0.2929"
+sonar-plugin = "6.3.1.5724"
 spock = "2.4-M6-groovy-4.0"
 spotless-plugin = "7.2.1"
 testlogger-plugin = "4.0.0"
@@ -21,6 +21,7 @@ maven-model-builder = "3.9.11"
 includegit = "0.3.0"
 sonatype-scan = "3.0.0"
 errorprone="4.3.0"
+bouncycastle="1.82"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
@@ -46,3 +47,8 @@ objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
 maven-model-builder = { module = "org.apache.maven:maven-model-builder", version.ref = "maven-model-builder" }
 includegit-plugin = { module = "me.champeau.gradle.includegit:plugin", version.ref = "includegit" }
 sonatype-scan-plugin = { module = "org.sonatype.gradle.plugins:scan-gradle-plugin", version.ref = "sonatype-scan" }
+bc-prov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle"}
+bc-pkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle"}
+
+[bundles]
+bouncycastle = ["bc-prov", "bc-pkix"]

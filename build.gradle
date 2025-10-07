@@ -69,6 +69,11 @@ tasks.named('check') {
 }
 
 dependencies {
+    constraints {
+        implementation(libs.bundles.bouncycastle) {
+            because("Use latest Bouncycastle to avoid ClassNotFoundExceptions when running tests")
+        }
+    }
     implementation libs.commons.lang3
     implementation libs.snakeyaml
     implementation libs.grails.gdoc
