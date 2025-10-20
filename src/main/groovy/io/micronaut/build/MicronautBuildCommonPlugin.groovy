@@ -121,8 +121,13 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         def javaPluginExtension = project.extensions.findByType(JavaPluginExtension)
         JavaToolchainService toolchains = project.getExtensions().getByType(JavaToolchainService.class);
 
-        javaPluginExtension.toolchain.languageVersion.convention(micronautBuildExtension.javaVersion.map(JavaLanguageVersion::of))
         project.afterEvaluate {
+            if (micronautBuildExtension.getUseToolchains().getOrElse(false)) {
+                javaPluginExtension.toolchain.languageVersion.convention(micronautBuildExtension.javaVersion.map(JavaLanguageVersion::of))
+            } else {
+                javaPluginExtension.sourceCompatibility = micronautBuildExtension.javaVersion.map(JavaLanguageVersion::of).get()
+                javaPluginExtension.targetCompatibility = micronautBuildExtension.javaVersion.map(JavaLanguageVersion::of).get()
+            }
             if (micronautBuildExtension.sourceCompatibility.isPresent() || micronautBuildExtension.targetCompatibility.isPresent()) {
                 project.logger.warn """
 The "sourceCompatibility" and "targetCompatibility" properties are deprecated.
@@ -166,9 +171,15 @@ You can do this directly in the project, or, better, in a convention plugin if i
                     enabled = false
                 }
             }
-            javaLauncher.set(toolchains.launcherFor {
-                languageVersion.set(micronautBuildExtension.testJavaVersion.map { JavaLanguageVersion.of(it) })
-            })
+        }
+        project.afterEvaluate { unused ->
+            project.tasks.withType(Test).configureEach {
+                if (micronautBuildExtension.getUseToolchains().getOrElse(false)) {
+                    javaLauncher.set(toolchains.launcherFor {
+                        languageVersion.set(micronautBuildExtension.testJavaVersion.map { JavaLanguageVersion.of(it) })
+                    })
+                }
+            }
         }
 
         project.tasks.withType(GroovyCompile).configureEach {
