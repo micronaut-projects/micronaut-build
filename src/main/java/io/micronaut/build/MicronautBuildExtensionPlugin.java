@@ -32,5 +32,13 @@ public abstract class MicronautBuildExtensionPlugin implements Plugin<Project> {
         BuildEnvironment buildEnvironment = new BuildEnvironment(project.getProviders());
         var micronautBuild = project.getExtensions().create("micronautBuild", MicronautBuildExtension.class, buildEnvironment);
         micronautBuild.getTestFramework().convention(TestFramework.SPOCK);
+        micronautBuild.getUseToolchains().convention(
+            project.getProviders().environmentVariable("USE_GRADLE_TOOLCHAINS").map(use -> {
+                if (use.trim().isEmpty()) {
+                    return true;
+                }
+                return Boolean.parseBoolean(use);
+            }).orElse(false)
+        );
     }
 }
