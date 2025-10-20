@@ -116,6 +116,8 @@ public abstract class MicronautBuildExtension {
    */
   public abstract Property<TestFramework> getTestFramework();
 
+  public abstract Property<Boolean> getUseToolchains();
+
   void bomSuppressions(Action<? super BomSuppressions> spec) {
     spec.execute(getBomSuppressions());
   }

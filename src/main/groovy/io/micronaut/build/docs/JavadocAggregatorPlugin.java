@@ -69,7 +69,7 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
             });
         });
         JavaToolchainService toolchains = project.getExtensions().getByType(JavaToolchainService.class);
-        project.getTasks().register("javadoc", Javadoc.class, javadoc -> {
+        var javadocProvider = project.getTasks().register("javadoc", Javadoc.class, javadoc -> {
             javadoc.setDescription("Generate javadocs from all child projects as if it was a single project");
             javadoc.setGroup("Documentation");
 
@@ -78,8 +78,6 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
             StandardJavadocDocletOptions options = (StandardJavadocDocletOptions) javadoc.getOptions();
             options.author(true);
             javadoc.exclude("example/**");
-            // Use Java Toolchain to render consistent javadocs
-            javadoc.getJavadocTool().convention(toolchains.javadocToolFor(spec -> spec.getLanguageVersion().set(micronautBuildExtension.getJavaVersion().map(JavaLanguageVersion::of))));
             if (micronautBuildExtension.getSourceCompatibility().isPresent()) {
                 options.setSource(micronautBuildExtension.getSourceCompatibility().get());
             } else {
@@ -105,6 +103,12 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
             options.addBooleanOption("notimestamp", true);
             javadoc.setSource(javadocAggregator);
             javadoc.setClasspath(javadocAggregatorClasspath);
+        });
+        project.afterEvaluate(unused -> {
+            if (micronautBuildExtension.getUseToolchains().getOrElse(false)) {
+                javadocProvider.configure(javadoc -> // Use Java Toolchain to render consistent javadocs
+                    javadoc.getJavadocTool().convention(toolchains.javadocToolFor(spec -> spec.getLanguageVersion().set(micronautBuildExtension.getJavaVersion().map(JavaLanguageVersion::of)))));
+            }
         });
     }
 
