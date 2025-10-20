@@ -48,8 +48,8 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                         p.property("sonar.verbose", "true");
                         // Jacoco integration
                         final String jacocoReportPath = rootProject.getBuildDir().toPath()
-                                .resolve("reports/jacoco/" + COVERAGE_REPORT_TASK_NAME + "/" + COVERAGE_REPORT_TASK_NAME + ".xml")
-                                .toFile().getAbsolutePath();
+                            .resolve("reports/jacoco/" + COVERAGE_REPORT_TASK_NAME + "/" + COVERAGE_REPORT_TASK_NAME + ".xml")
+                            .toFile().getAbsolutePath();
                         p.property("sonar.coverage.jacoco.xmlReportPaths", jacocoReportPath);
                     }
                 });
@@ -72,14 +72,26 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
             rootProject.evaluationDependsOn(subproject.getPath());
             subproject.getPlugins().withType(MicronautQualityChecksParticipantPlugin.class, plugin -> {
                 jacocoAggregation.getDependencies().add(
-                        rootProject.getDependencies().create(subproject)
+                    rootProject.getDependencies().create(subproject)
                 );
             });
+        });
+        // Register a task on the root project, so that the workflows don't fail
+        // if jacocoReport is called on a BOM-only project
+        rootProject.afterEvaluate(unused -> {
+            if (!rootProject.getTasks().getNames().contains("jacocoTestReport")) {
+                rootProject.getTasks().register("jacocoTestReport", t ->  {
+                   t.setDescription("Placeholder task for Jacoco reports");
+                   t.doFirst(unused2 -> {
+                       System.out.println("Placeholder task for Jacoco reports");
+                   });
+                });
+            }
         });
     }
 
     private void configureReport(JacocoCoverageReport r) {
-        if (GradleVersion.current().compareTo(GradleVersion.version("8.13"))<0) {
+        if (GradleVersion.current().compareTo(GradleVersion.version("8.13")) < 0) {
             configureReportUsingReflection(r);
         } else {
             r.getTestSuiteName().set("test");
