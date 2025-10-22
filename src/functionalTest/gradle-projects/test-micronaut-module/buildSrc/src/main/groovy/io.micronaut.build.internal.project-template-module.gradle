@@ -2,15 +2,3 @@ plugins {
     id 'io.micronaut.build.internal.project-template-base'
     id "io.micronaut.build.internal.module"
 }
-
-dependencies {
-    // Gradle 9 requires the JUnit Platform launcher on the test runtime classpath
-    testImplementation(platform(libs.spock.bom))
-    testImplementation(libs.spock.core)
-    testRuntimeOnly(libs.junit.platform.launcher)
-}
-
-tasks.withType(Test).configureEach {
-    // Ensure tests run on the JUnit Platform (JUnit 5 + Spock 2)
-    useJUnitPlatform()
-}
