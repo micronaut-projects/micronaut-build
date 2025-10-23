@@ -1,7 +1,6 @@
 package io.micronaut.build
 
 import com.diffplug.gradle.spotless.SpotlessTask
-import io.micronaut.build.utils.DefaultVersions
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -45,8 +44,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     'org.codehaus.groovy' :
                     'org.apache.groovy'
         }
-        def byteBuddyVersionProvider = versionProviderOrDefault(project, 'bytebuddy', List.of("libs", "mnTest"), DefaultVersions.BYTEBUDDY_VERSION)
-        def objenesisVersionProvider = versionProviderOrDefault(project, 'objenesis', List.of("libs", "mnTest"), DefaultVersions.OBJENESIS_VERSION)
         def logbackVersionProvider = versionProviderOrDefault(project, 'logback', List.of("libs", "mnLogging"), '')
 
         project.configurations {
@@ -86,15 +83,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             })
             dependencies.addProvider("testCompileOnly", micronautVersionProvider.map { micronautVersion ->
                 "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
-            })
-            dependencies.addProvider("testImplementation", groovyGroupProvider.zip(groovyVersionProvider) { groovyGroup, groovyVersion ->
-                "$groovyGroup:groovy-test:$groovyVersion"
-            })
-            dependencies.addProvider("testImplementation", byteBuddyVersionProvider.map {
-                optionalDependency("net.bytebuddy:byte-buddy", it)
-            })
-            dependencies.addProvider("testImplementation", objenesisVersionProvider.map {
-                optionalDependency("org.objenesis:objenesis", it)
             })
             dependencies.addProvider("testRuntimeOnly", logbackVersionProvider.map {
                 optionalDependency("ch.qos.logback:logback-classic", it)
