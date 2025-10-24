@@ -156,6 +156,14 @@ gradlePlugin {
             id = 'io.micronaut.build.internal.base-module'
             implementationClass = 'io.micronaut.build.MicronautBaseModulePlugin'
         }
+        'java-base' {
+            id = 'io.micronaut.build.internal.java-base'
+            implementationClass = 'io.micronaut.build.MicronautBuildJavaBasePlugin'
+        }
+        'kotlin-base' {
+            id = 'io.micronaut.build.internal.kotlin-base'
+            implementationClass = 'io.micronaut.build.MicronautBuildKotlinBasePlugin'
+        }
         module {
             id = 'io.micronaut.build.internal.module'
             implementationClass = 'io.micronaut.build.MicronautModulePlugin'

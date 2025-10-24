@@ -7,15 +7,12 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ResolvableDependencies
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.result.ResolvedComponentResult
-import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.compile.GroovyCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.diagnostics.DependencyReportTask
 import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.jvm.toolchain.JavaToolchainService
 
 import static io.micronaut.build.BomSupport.coreBomArtifactId
 import static io.micronaut.build.utils.VersionHandling.versionProviderOrDefault
@@ -104,87 +101,25 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
 
     @SuppressWarnings('GrDeprecatedAPIUsage')
     private void configureJavaPlugin(Project project, MicronautBuildExtension micronautBuildExtension) {
+        project.pluginManager.apply(MicronautBuildJavaBasePlugin)
         project.apply plugin: "groovy"
         project.apply plugin: "java-library"
-
-        def javaPluginExtension = project.extensions.findByType(JavaPluginExtension)
-        JavaToolchainService toolchains = project.getExtensions().getByType(JavaToolchainService.class);
-
-        project.afterEvaluate {
-            if (micronautBuildExtension.getUseToolchains().getOrElse(false)) {
-                javaPluginExtension.toolchain.languageVersion.convention(micronautBuildExtension.javaVersion.map(JavaLanguageVersion::of))
-            } else {
-                javaPluginExtension.sourceCompatibility = micronautBuildExtension.javaVersion.map(JavaLanguageVersion::of).get()
-                javaPluginExtension.targetCompatibility = micronautBuildExtension.javaVersion.map(JavaLanguageVersion::of).get()
-            }
-            if (micronautBuildExtension.sourceCompatibility.isPresent() || micronautBuildExtension.targetCompatibility.isPresent()) {
-                project.logger.warn """
-The "sourceCompatibility" and "targetCompatibility" properties are deprecated.
-Please use "micronautBuild.javaVersion" instead.
-You can do this directly in the project, or, better, in a convention plugin if it exists.
-"""
-                // Remove convention or Gradle will complain that you can't use both
-                javaPluginExtension.toolchain.languageVersion.convention(null)
-                javaPluginExtension.with {
-                    // orElse makes it work even if only one of the 2 properties is set
-                    sourceCompatibility = micronautBuildExtension.sourceCompatibility.orElse(micronautBuildExtension.targetCompatibility).get()
-                    targetCompatibility = micronautBuildExtension.targetCompatibility.orElse(micronautBuildExtension.sourceCompatibility).get()
-                }
-            }
-        }
-
-        def useVendorAsInput = project.providers.environmentVariable("MICRONAUT_TEST_USE_VENDOR")
-                .map(Boolean::parseBoolean).getOrElse(false)
-        project.tasks.withType(Test).configureEach {
-            jvmArgs '-Duser.country=US'
-            jvmArgs '-Duser.language=en'
-            useJUnitPlatform()
-            if (useVendorAsInput) {
-                // This will have to be changed once we switch to toolchain support, since it will not be relevant anymore
-                def vendor = project.providers.systemProperty("java.vendor").getOrElse("unknown")
-                println("Configuring test task ${it.path} to execute specifically for vendor: $vendor")
-                inputs.property("java.vendor", vendor)
-            }
-            if (extensions.findByName('develocity')) {
-                develocity.testRetry {
-                    if (micronautBuildExtension.environment.isGithubAction().getOrElse(false)) {
-                        maxRetries.set(2)
-                        maxFailures.set(20)
-                    }
-                    failOnPassedAfterRetry.set(false)
-                }
-                develocity.predictiveTestSelection {
-                    enabled = micronautBuildExtension.environment.isTestSelectionEnabled()
-                }
-                develocity.testDistribution {
-                    enabled = false
-                }
-            }
-        }
-        project.afterEvaluate { unused ->
-            project.tasks.withType(Test).configureEach {
-                if (micronautBuildExtension.getUseToolchains().getOrElse(false)) {
-                    javaLauncher.set(toolchains.launcherFor {
-                        languageVersion.set(micronautBuildExtension.testJavaVersion.map { JavaLanguageVersion.of(it) })
-                    })
-                }
-            }
-        }
 
         project.tasks.withType(GroovyCompile).configureEach {
             groovyOptions.forkOptions.jvmArgs.add('-Dgroovy.parameters=true')
         }
 
+        project.tasks.withType(Test).configureEach {
+            useJUnitPlatform()
+        }
+
         project.afterEvaluate {
             def compileOptions = micronautBuildExtension.compileOptions
             project.tasks.withType(JavaCompile).configureEach {
-                options.encoding = "UTF-8"
-                options.compilerArgs.add('-parameters')
                 if (micronautBuildExtension.enableProcessing.get()) {
                     options.compilerArgs.add("-Amicronaut.processing.group=$project.group".toString())
                     options.compilerArgs.add("-Amicronaut.processing.module=micronaut-$project.name".toString())
                 }
-                compileOptions.applyTo(options)
             }
             project.tasks.withType(GroovyCompile).configureEach {
                 compileOptions.applyTo(options)
