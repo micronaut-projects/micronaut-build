@@ -1,6 +1,7 @@
 package io.micronaut.build
 
 import groovy.transform.CompileStatic
+import io.micronaut.build.utils.DefaultVersions
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -27,20 +28,25 @@ class MicronautModulePlugin implements Plugin<Project> {
         var deps = project.dependencies
         deps.with {
             add("annotationProcessor", "io.micronaut:micronaut-inject-java")
-            addProvider("annotationProcessor", versionProviderOrDefault(project, 'micronaut-docs', '').map { "io.micronaut.docs:micronaut-docs-asciidoc-config-props:$it" })
+            addProvider("annotationProcessor", versionProviderOrDefault(project, 'micronaut-docs', DefaultVersions.MICRONAUT_DOCS_VERSION).map { "io.micronaut.docs:micronaut-docs-asciidoc-config-props:$it" })
             add("api", "io.micronaut:micronaut-inject")
         }
         project.configurations.getByName("testImplementation").dependencies.addAllLater(
                 micronautBuild.testFramework.map {
                     if (it == TestFramework.SPOCK) {
                         return List.of(
-                                deps.create(versionProviderOrDefault(project, 'spock', '').map { "org.spockframework:spock-core:${it}" }.get()),
-                                deps.create(versionProviderOrDefault(project, 'micronaut-test', '').map { "io.micronaut.test:micronaut-test-spock:${it}" }.get())
+                                deps.create(versionProviderOrDefault(project, 'spock', DefaultVersions.SPOCK_VERSION).map { "org.spockframework:spock-core:${it}" }.get()),
+                                deps.create(versionProviderOrDefault(project, 'micronaut-test', DefaultVersions.MICRONAUT_TEST_VERSION).map { "io.micronaut.test:micronaut-test-spock:${it}" }.get())
                         )
                     } else if (it == TestFramework.JUNIT5) {
                         return List.of(
-                                deps.create(versionProviderOrDefault(project, 'junit5', 'unknown').map { "org.junit.jupiter:junit-jupiter-api:${it}" }.get()),
-                                deps.create(versionProviderOrDefault(project, 'micronaut-test', '').map { "io.micronaut.test:micronaut-test-junit5:${it}" }.get())
+                                deps.create(versionProviderOrDefault(project, 'junit5', DefaultVersions.JUNIT5_VERSION).map { "org.junit.jupiter:junit-jupiter-api:${it}" }.get()),
+                                deps.create(versionProviderOrDefault(project, 'micronaut-test', DefaultVersions.MICRONAUT_TEST_VERSION).map { "io.micronaut.test:micronaut-test-junit5:${it}" }.get())
+                        )
+                    } else if (it == TestFramework.JUNIT6) {
+                        return List.of(
+                                deps.create(versionProviderOrDefault(project, 'junit6', DefaultVersions.JUNIT6_VERSION).map { "org.junit.jupiter:junit-jupiter-api:${it}" }.get()),
+                                deps.create(versionProviderOrDefault(project, 'micronaut-test', DefaultVersions.MICRONAUT_TEST_VERSION).map { "io.micronaut.test:micronaut-test-junit5:${it}" }.get())
                         )
                     } else {
                         throw new GradleException("Unsupported test framework: $it")
@@ -53,8 +59,13 @@ class MicronautModulePlugin implements Plugin<Project> {
                         return List.<Dependency>of()
                     } else if (it == TestFramework.JUNIT5) {
                         return List.of(
-                                deps.create(versionProviderOrDefault(project, 'junit-platform-launcher', '1.12.0').map { "org.junit.platform:junit-platform-launcher:${it}" }.get()),
-                                deps.create(versionProviderOrDefault(project, 'junit5', 'unknown').map { "org.junit.jupiter:junit-jupiter-engine:${it}" }.get()),
+                                deps.create(versionProviderOrDefault(project, 'junit-platform-launcher', DefaultVersions.JUNIT5_PLATFORM_VERSION).map { "org.junit.platform:junit-platform-launcher:${it}" }.get()),
+                                deps.create(versionProviderOrDefault(project, 'junit5', DefaultVersions.JUNIT5_VERSION).map { "org.junit.jupiter:junit-jupiter-engine:${it}" }.get()),
+                        )
+                    } else if (it == TestFramework.JUNIT6) {
+                        return List.of(
+                                deps.create(versionProviderOrDefault(project, 'junit6', DefaultVersions.JUNIT6_VERSION).map { "org.junit.platform:junit-platform-launcher:${it}" }.get()),
+                                deps.create(versionProviderOrDefault(project, 'junit6', DefaultVersions.JUNIT6_VERSION).map { "org.junit.jupiter:junit-jupiter-engine:${it}" }.get()),
                         )
                     } else {
                         throw new GradleException("Unsupported test framework: $it")

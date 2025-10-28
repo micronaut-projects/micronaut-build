@@ -1,6 +1,7 @@
 package io.micronaut.build
 
 import com.diffplug.gradle.spotless.SpotlessTask
+import io.micronaut.build.utils.DefaultVersions
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -35,13 +36,13 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
     private void configureDependencies(Project project, MicronautBuildExtension micronautBuild) {
         def micronautVersionProvider = versionProviderOrDefault(project, 'micronaut', '')
         // The Groovy version comes from core if not defined locally
-        def groovyVersionProvider = versionProviderOrDefault(project, 'groovy', List.of("libs", "mn"), '')
+        def groovyVersionProvider = versionProviderOrDefault(project, 'groovy', List.of("libs", "mn"), DefaultVersions.GROOVY_VERSION)
         def groovyGroupProvider = groovyVersionProvider.map { groovyVersion ->
             groovyVersion.split("\\.").first().toInteger() <= 3 ?
                     'org.codehaus.groovy' :
                     'org.apache.groovy'
         }
-        def logbackVersionProvider = versionProviderOrDefault(project, 'logback', List.of("libs", "mnLogging"), '')
+        def logbackVersionProvider = versionProviderOrDefault(project, 'logback', List.of("libs", "mnLogging"), DefaultVersions.LOGBACK_VERSION)
 
         project.configurations {
             documentation

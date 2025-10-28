@@ -18,8 +18,17 @@ typesafe-config = "1.4.5"
 maven-model-builder = "3.9.11"
 includegit = "0.3.0"
 sonatype-scan = "3.0.0"
-errorprone="4.3.0"
-bouncycastle="1.82"
+errorprone = "4.3.0"
+bouncycastle = "1.82"
+micronaut-docs = "3.0.0"
+micronaut-test = "4.10.2"
+micronaut-logging = "1.7.1"
+groovy = "4.0.29"
+junit5 = "5.14.0"
+junit5-platform = "1.14.0"
+junit6 = "6.0.0"
+logback = "1.5.20"
+checkstyle = "12.1.0"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
@@ -43,8 +52,22 @@ typesafe-config = { module = "com.typesafe:config", version.ref = "typesafe-conf
 maven-model-builder = { module = "org.apache.maven:maven-model-builder", version.ref = "maven-model-builder" }
 includegit-plugin = { module = "me.champeau.gradle.includegit:plugin", version.ref = "includegit" }
 sonatype-scan-plugin = { module = "org.sonatype.gradle.plugins:scan-gradle-plugin", version.ref = "sonatype-scan" }
-bc-prov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle"}
-bc-pkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle"}
+bc-prov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+bc-pkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
+micronaut-docs = { module = "io.micronaut.docs:micronaut-docs-asciidoc-config-props", version.ref = "micronaut-docs" }
+micronaut-logging = { module = "io.micronaut.logging:micronaut-logging", version.ref = "micronaut-logging" }
+micronaut-test = { module = "io.micronaut.test:micronaut-test", version.ref = "micronaut-test" }
+groovy = { module = "org.codehaus.groovy:groovy-core", version.ref = "groovy" }
 
+junit5-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit5-platform" }
+junit5-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit5" }
+junit5-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
+
+junit6-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit6" }
+junit6-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit6" }
+junit6-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit6" }
+
+logback = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
+checkstyle = { module = "com.puppycrawl.tools:checkstyle", version.ref = "checkstyle"}
 [bundles]
 bouncycastle = ["bc-prov", "bc-pkix"]

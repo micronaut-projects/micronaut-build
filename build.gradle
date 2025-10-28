@@ -137,6 +137,16 @@ tasks.named('jar', Jar) {
 def generateVersions = tasks.register("generateVersions", VersionsWriterTask) {
     className = "io.micronaut.build.utils.DefaultVersions"
     outputDirectory = layout.buildDirectory.dir("generated/versions")
+    versions.put("micronaut_docs", libs.versions.micronaut.docs)
+    versions.put("micronaut_logging", libs.versions.micronaut.logging)
+    versions.put("micronaut_test", libs.versions.micronaut.test)
+    versions.put("groovy", libs.versions.groovy)
+    versions.put("spock", libs.versions.spock)
+    versions.put("junit5_platform", libs.versions.junit5.platform)
+    versions.put("junit5", libs.versions.junit5.asProvider())
+    versions.put("junit6", libs.versions.junit6)
+    versions.put("checkstyle", libs.versions.checkstyle)
+    versions.put("logback", libs.versions.logback)
 }
 
 sourceSets.main.java.srcDir(generateVersions)
