@@ -3,6 +3,7 @@ package io.micronaut.build;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import io.micronaut.build.pom.BomSuppressions;
+import io.micronaut.build.utils.DefaultVersions;
 import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.artifacts.ResolutionStrategy;
@@ -16,7 +17,6 @@ public abstract class MicronautBuildExtension {
 
   public static final String DEFAULT_DEPENDENCY_UPDATES_PATTERN = "(?i).+(-|\\.?)(b|M|RC|Dev)\\d?.*";
   public static final int DEFAULT_JAVA_VERSION = 21;
-  public static final String DEFAULT_CHECKSTYLE_VERSION = "11.0.1";
 
   private final BuildEnvironment environment;
 
@@ -34,7 +34,7 @@ public abstract class MicronautBuildExtension {
 
     getJavaVersion().convention(DEFAULT_JAVA_VERSION);
     getTestJavaVersion().convention(Integer.valueOf(JavaVersion.current().getMajorVersion()));
-    getCheckstyleVersion().convention(DEFAULT_CHECKSTYLE_VERSION);
+    getCheckstyleVersion().convention(DefaultVersions.CHECKSTYLE_VERSION);
     getDependencyUpdatesPattern().convention(DEFAULT_DEPENDENCY_UPDATES_PATTERN);
     getEnforcedPlatform().convention(false);
     getEnableProcessing().convention(false);

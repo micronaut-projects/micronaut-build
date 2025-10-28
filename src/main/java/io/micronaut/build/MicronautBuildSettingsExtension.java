@@ -19,6 +19,7 @@ import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
 import io.micronaut.build.catalogs.internal.RichVersion;
 import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
 import io.micronaut.build.catalogs.internal.VersionModel;
+import io.micronaut.build.utils.DefaultVersions;
 import io.micronaut.build.utils.IncludedBuildSupport;
 import me.champeau.gradle.igp.GitIncludeExtension;
 import org.apache.commons.lang3.StringUtils;
@@ -170,18 +171,18 @@ public abstract class MicronautBuildSettingsExtension {
     }
 
     private String determineMicronautVersion() {
-        return determineMicronautVersion("micronaut");
+        return determineMicronautVersion("micronaut", null);
     }
 
     private String determineMicronautTestVersion() {
-        return determineMicronautVersion("micronaut-test");
+        return determineMicronautVersion("micronaut-test", DefaultVersions.MICRONAUT_TEST_VERSION);
     }
 
     private String determineMicronautLoggingVersion() {
-        return determineMicronautVersion("micronaut-logging");
+        return determineMicronautVersion("micronaut-logging", DefaultVersions.MICRONAUT_LOGGING_VERSION);
     }
 
-    private String determineMicronautVersion(String moduleNameKebabCase) {
+    private String determineMicronautVersion(String moduleNameKebabCase, String defaultVersion) {
         Optional<String> micronautVersion = Optional.empty();
         if (versionCatalogTomlModel != null) {
             Optional<VersionModel> micronaut = versionCatalogTomlModel.findVersion(moduleNameKebabCase);
@@ -198,7 +199,7 @@ public abstract class MicronautBuildSettingsExtension {
                                      + "Version";
             micronautVersion = Optional.ofNullable(getProviders().gradleProperty(capitalizedName).getOrNull());
         }
-        return micronautVersion.orElse(null);
+        return micronautVersion.orElse(defaultVersion);
     }
 
     /**
