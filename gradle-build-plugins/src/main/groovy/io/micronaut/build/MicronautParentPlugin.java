@@ -27,6 +27,6 @@ public class MicronautParentPlugin implements Plugin<Project> {
         var pluginManager = p.getPluginManager();
         pluginManager.apply("io.micronaut.build.internal.docs");
         pluginManager.apply("io.micronaut.build.internal.quality-reporting");
-        pluginManager.apply("io.micronaut.build.internal.parent-pulishing");
+        pluginManager.apply("io.micronaut.build.internal.parent-publishing");
     }
 }
