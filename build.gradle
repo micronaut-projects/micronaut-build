@@ -135,6 +135,8 @@ tasks.named('jar', Jar) {
 }
 
 def generateVersions = tasks.register("generateVersions", VersionsWriterTask) {
+    versions.put("bytebuddy", libs.versions.bytebuddy)
+    versions.put("objenesis", libs.versions.objenesis)
     className = "io.micronaut.build.utils.DefaultVersions"
     outputDirectory = layout.buildDirectory.dir("generated/versions")
     versions.put("micronaut_docs", libs.versions.micronaut.docs)
