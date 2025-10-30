@@ -15,6 +15,8 @@ spotless-plugin = "7.2.1"
 testlogger-plugin = "4.0.0"
 tomlj = "1.1.1"
 typesafe-config = "1.4.5"
+bytebuddy = "1.17.8"
+objenesis = "3.4"
 maven-model-builder = "3.9.11"
 includegit = "0.3.0"
 sonatype-scan = "3.0.0"
@@ -32,6 +34,7 @@ checkstyle = "12.1.0"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
+bytebuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
 japicmp-plugin = { module = "me.champeau.gradle:japicmp-gradle-plugin", version.ref = "japicmp-plugin" }
 gradle-custom-userdata-plugin = { module = "com.gradle:common-custom-user-data-gradle-plugin", version.ref = "gradle-custom-userdata-plugin" }
@@ -49,6 +52,7 @@ spotless-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", ver
 testlogger-plugin = { module = "com.adarshr:gradle-test-logger-plugin", version.ref = "testlogger-plugin" }
 tomlj = { module = "org.tomlj:tomlj", version.ref = "tomlj" }
 typesafe-config = { module = "com.typesafe:config", version.ref = "typesafe-config" }
+objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
 maven-model-builder = { module = "org.apache.maven:maven-model-builder", version.ref = "maven-model-builder" }
 includegit-plugin = { module = "me.champeau.gradle.includegit:plugin", version.ref = "includegit" }
 sonatype-scan-plugin = { module = "org.sonatype.gradle.plugins:scan-gradle-plugin", version.ref = "sonatype-scan" }

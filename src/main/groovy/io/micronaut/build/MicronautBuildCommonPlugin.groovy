@@ -43,7 +43,8 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                     'org.apache.groovy'
         }
         def logbackVersionProvider = versionProviderOrDefault(project, 'logback', List.of("libs", "mnLogging"), DefaultVersions.LOGBACK_VERSION)
-
+        def byteBuddyVersionProvider = versionProviderOrDefault(project, 'bytebuddy', List.of("libs", "mnTest"), DefaultVersions.BYTEBUDDY_VERSION)
+        def objenesisVersionProvider = versionProviderOrDefault(project, 'objenesis', List.of("libs", "mnTest"), DefaultVersions.OBJENESIS_VERSION)
         project.configurations {
             documentation
             globalBoms {
@@ -81,6 +82,12 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             })
             dependencies.addProvider("testCompileOnly", micronautVersionProvider.map { micronautVersion ->
                 "io.micronaut:micronaut-inject-groovy:${micronautVersion}"
+            })
+            dependencies.addProvider("testImplementation", byteBuddyVersionProvider.map {
+                optionalDependency("net.bytebuddy:byte-buddy", it)
+            })
+            dependencies.addProvider("testImplementation", objenesisVersionProvider.map {
+                optionalDependency("org.objenesis:objenesis", it)
             })
             dependencies.addProvider("testRuntimeOnly", logbackVersionProvider.map {
                 optionalDependency("ch.qos.logback:logback-classic", it)
