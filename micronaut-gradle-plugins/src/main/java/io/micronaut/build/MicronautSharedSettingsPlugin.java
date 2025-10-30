@@ -16,6 +16,7 @@
 package io.micronaut.build;
 
 import io.github.gradlenexus.publishplugin.NexusPublishExtension;
+import io.micronaut.build.utils.DefaultVersions;
 import io.micronaut.build.utils.ProviderUtils;
 import org.gradle.api.InvalidUserCodeException;
 import org.gradle.api.Project;
@@ -29,13 +30,18 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import static io.micronaut.build.utils.ProviderUtils.envOrSystemProperty;
@@ -73,6 +79,32 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
                 extraProperties.set("micronautVersion", buildSettingsExtension.getMicronautVersion());
             }
         });
+        var rootDir = settings.getRootDir().toPath();
+        var buildSrc = rootDir.resolve("buildSrc");
+        if (Files.isDirectory(buildSrc)) {
+            writeMicronautBuildVersion(buildSrc);
+        }
+    }
+
+    private static void writeMicronautBuildVersion(Path buildSrc) {
+        var gradleProperties = buildSrc.resolve("gradle.properties");
+        var props = new Properties();
+        if (Files.exists(gradleProperties)) {
+            try (var reader = Files.newBufferedReader(gradleProperties)) {
+                props.load(reader);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            if (DefaultVersions.MICRONAUT_BUILD_VERSION.equals(props.getProperty("micronaut-build-version"))) {
+                return;
+            }
+        }
+        props.put("micronaut-build-version", DefaultVersions.MICRONAUT_BUILD_VERSION);
+        try (var writer = Files.newBufferedWriter(gradleProperties, StandardCharsets.ISO_8859_1)) {
+            props.store(writer, "");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void configureProjectNames(Settings settings, MicronautBuildSettingsExtension buildSettings) {

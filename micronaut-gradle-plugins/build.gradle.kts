@@ -52,10 +52,11 @@ tasks.named<Jar>("jar") {
 }
 
 micronautBuildPlugin {
-    // Backwards compatibility
-    artifactId = "micronaut-gradle-plugins"
     versionsFullyQualifiedClassName = "io.micronaut.build.utils.DefaultVersions"
 
+    versionsMap.put("bytebuddy", libs.versions.bytebuddy)
+    versionsMap.put("objenesis", libs.versions.objenesis)
+    versionsMap.put("micronaut_build", version.toString())
     versionsMap.put("micronaut_docs", libs.versions.micronaut.docs)
     versionsMap.put("micronaut_logging", libs.versions.micronaut.logging)
     versionsMap.put("micronaut_test", libs.versions.micronaut.test)

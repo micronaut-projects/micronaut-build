@@ -11,7 +11,7 @@ micronautBuildPlugin {
 }
 
 dependencies {
-    implementation(projects.gradleBuildPlugins)
+    implementation(projects.micronautGradlePlugins)
     testImplementation(platform(libs.spock.bom))
     testImplementation(libs.spock.core)
     implementation(libs.kotlin.jvm.plugin)

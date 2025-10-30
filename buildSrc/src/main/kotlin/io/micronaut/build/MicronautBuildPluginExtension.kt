@@ -8,8 +8,6 @@ import org.gradle.plugin.devel.PluginDeclaration
 
 abstract class MicronautBuildPluginExtension(val gradlePlugins: GradlePluginDevelopmentExtension) {
 
-    abstract val artifactId: Property<String>
-
     abstract val versionsFullyQualifiedClassName: Property<String>
 
     abstract val versionsMap: MapProperty<String, String>

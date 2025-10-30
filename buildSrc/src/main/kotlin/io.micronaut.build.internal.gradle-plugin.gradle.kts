@@ -65,7 +65,7 @@ signing {
 publishing.publications.withType<MavenPublication>().configureEach {
     if ("pluginMaven" == name) {
         groupId = project.group as String
-        artifactId = pluginExtension.artifactId.orElse(provider { "micronaut-${project.name}" }).get()
+        artifactId = project.name
         version = project.version as String
     }
     pom {
