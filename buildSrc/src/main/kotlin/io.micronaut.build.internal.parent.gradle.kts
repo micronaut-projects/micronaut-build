@@ -3,6 +3,9 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin")
 }
 
+version = project.extra.get("projectVersion") as String
+group = "io.micronaut.build.internal"
+
 val ossUser = providers.environmentVariableOrSystemProperty("SONATYPE_USERNAME", "sonatypeOssUsername").orElse("")
 val ossPass = providers.environmentVariableOrSystemProperty("SONATYPE_PASSWORD", "sonatypeOssPassword").orElse("")
 
