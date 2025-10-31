@@ -3,7 +3,7 @@ asciidoctorj = "3.0.0"
 commons-lang3 = "3.18.0"
 japicmp-plugin = "0.4.6"
 gradle-custom-userdata-plugin = "2.3"
-develocity-plugin = "4.1.1"
+develocity-plugin = "4.2.2"
 gradle-github-actions-plugin = "1.4.0"
 grails-gdoc = "1.0.1"
 mockserver = "5.15.0"
@@ -31,6 +31,8 @@ junit5-platform = "1.14.0"
 junit6 = "6.0.0"
 logback = "1.5.20"
 checkstyle = "12.1.0"
+kotlin = "2.2.21"
+kotlin-ksp = "2.2.21-2.0.4"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
@@ -73,5 +75,10 @@ junit6-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref
 
 logback = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
 checkstyle = { module = "com.puppycrawl.tools:checkstyle", version.ref = "checkstyle"}
+
+kotlin-jvm-plugin = { module = "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", version.ref = "kotlin" }
+kotlin-kapt-plugin = { module = "org.jetbrains.kotlin.kapt:org.jetbrains.kotlin.kapt.gradle.plugin", version.ref = "kotlin" }
+kotlin-ksp-plugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "kotlin-ksp" }
+
 [bundles]
 bouncycastle = ["bc-prov", "bc-pkix"]
