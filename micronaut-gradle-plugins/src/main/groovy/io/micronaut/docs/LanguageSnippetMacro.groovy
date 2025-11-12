@@ -13,8 +13,10 @@ class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttribu
     private static final String LANG_JAVA = 'java'
     private static final String LANG_GROOVY = 'groovy'
     private static final String LANG_KOTLIN = 'kotlin'
-    private static final List<String> LANGS = [LANG_JAVA, LANG_GROOVY, LANG_KOTLIN]
+    private static final String LANG_PYTHON = 'python'
+    private static final List<String> LANGS = [LANG_JAVA, LANG_PYTHON, LANG_KOTLIN, LANG_GROOVY]
     private static final String DEFAULT_KOTLIN_PROJECT = 'test-suite-kotlin'
+    private static final String DEFAULT_PYTHON_PROJECT = 'test-suite-python'
     private static final String DEFAULT_JAVA_PROJECT = 'test-suite'
     private static final String DEFAULT_GROOVY_PROJECT = 'test-suite-groovy'
     private static final String ATTR_PROJECT = 'project'
@@ -39,6 +41,9 @@ class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttribu
             if (lang == LANG_KOTLIN) {
                 return DEFAULT_KOTLIN_PROJECT
             }
+            else if (lang == LANG_PYTHON) {
+                return DEFAULT_PYTHON_PROJECT
+            }
             if (lang == LANG_GROOVY) {
                 return DEFAULT_GROOVY_PROJECT
             } else {
@@ -60,7 +65,14 @@ class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttribu
                 content << ".$title\n\n"
             }
             String projectDir = projectDir(lang, attributes)
-            String ext = lang == LANG_KOTLIN ? 'kt' : lang
+            String ext 
+            
+            if(lang == LANG_KOTLIN)
+                ext = 'kt'
+            else if (lang == LANG_PYTHON)
+                ext = 'py'
+            else
+                ext = lang
             String sourceFolder = lang
             String sourceType = valueAtAttributes(ATTR_SOURCE, attributes) ?: 'test'
 
