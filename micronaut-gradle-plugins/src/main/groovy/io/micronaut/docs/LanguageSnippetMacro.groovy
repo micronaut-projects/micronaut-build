@@ -81,7 +81,7 @@ class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttribu
                 String baseName = fileName.replace(".", File.separator)
                 // io is an internal package for Python
                 if (lang == LANG_PYTHON && baseName.startsWith("io/")) {
-                    baseName = baseName.substring(3)
+//                    baseName = baseName.substring(3)
                 }
 
                 
