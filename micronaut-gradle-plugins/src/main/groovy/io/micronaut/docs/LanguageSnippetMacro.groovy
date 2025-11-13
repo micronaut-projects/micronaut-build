@@ -79,7 +79,14 @@ class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttribu
             List includes = []
             for (fileName in files) {
                 String baseName = fileName.replace(".", File.separator)
+                // io is an internal package for Python
+                if (lang == LANG_PYTHON && baseName.startsWith("io/")) {
+                    baseName = baseName.substring(3)
+                }
+
+                
                 String pathName = "$projectDir/src/$sourceType/$sourceFolder/${baseName}.$ext"
+                println("RESOLVED PATH $pathName")
                 if (System.getProperty("user.dir") != null) {
                     pathName = "${System.getProperty("user.dir")}${File.separator}${pathName}".toString()
                 }
