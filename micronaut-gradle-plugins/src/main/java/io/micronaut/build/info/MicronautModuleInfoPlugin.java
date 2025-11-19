@@ -117,13 +117,15 @@ public class MicronautModuleInfoPlugin implements Plugin<Project> {
                     }
 
                     throw new IllegalArgumentException("""
-                Unable to determine core project. You have to set the core project explicitly on the micronautBuild extension. For example:
+                Unable to determine the main subproject. You have to set the main subproject explicitly on the micronautBuild extension. For example:
                 
                 micronautBuild {
                    descriptor {
                        parentModuleId = "io.micronaut.foo:micronaut-foo-core"
                    }
                 }
+                
+                The main subproject corresponds, in the multiproject build, to the project which is the "main" one, typically the core module, but NOT the BOM.
                 """);
                 }));
                 var generator = project.getTasks().register("generateMicronautDescriptor", MicronautModuleInfoGeneratorTask.class, task -> {
