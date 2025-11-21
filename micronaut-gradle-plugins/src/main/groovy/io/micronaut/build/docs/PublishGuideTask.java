@@ -124,19 +124,6 @@ public abstract class PublishGuideTask extends DefaultTask {
         publisher.setStyle(getResourcesDir().dir("style").get().getAsFile());
         publisher.setVersion(String.valueOf(props.get("grails.version")));
 
-        // Override doc.properties properties with their language-specific counterparts (if
-        // those are defined). You just need to add entries like es.title or pt_PT.subtitle.
-        if (getLanguage().isPresent()) {
-            String language = getLanguage().get();
-            int pos = language.length() + 1;
-            props.entrySet().stream()
-                    .filter(e -> String.valueOf(e.getKey()).startsWith(language + "."))
-                    .forEach(e -> {
-                        String key = String.valueOf(e.getKey()).substring(pos);
-                        props.put(key, e.getValue());
-                    });
-        }
-
         // Aliases and other doc.properties entries are passed in as engine properties. This
         // is how the doc title, subtitle, etc. are set.
         publisher.setEngineProperties(props);
