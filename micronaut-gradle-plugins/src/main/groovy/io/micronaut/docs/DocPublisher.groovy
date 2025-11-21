@@ -68,7 +68,7 @@ class DocPublisher {
 
     FileOperations fileOperations
 
-    /** The language we're generating for (gets its own sub-directory). Defaults to '' */
+    /** The programming language we're generating for (gets its own sub-directory). Defaults to '' */
     String language = ""
     /** The encoding to use (default is UTF-8) */
     String encoding = "UTF-8"
@@ -224,7 +224,8 @@ class DocPublisher {
         File yamlTocFile = null
         if (language) {
             yamlTocFile = new File(guideSrcDir, "toc-${language}.yml")
-        } else if (yamlTocFile == null || !yamlTocFile.exists()) {
+        }
+        if (yamlTocFile == null || !yamlTocFile.exists()) {
             yamlTocFile = new File(guideSrcDir, TOC_FILENAME)
         }
         def guide
