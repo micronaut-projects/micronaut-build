@@ -107,16 +107,18 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                 t.inputs.files(processConfigPropsTask.map(Copy::getDestinationDir))
                 t.inputs.property("Project description", projectDesc)
                 t.inputs.property("Kafka version", kafkaVersion)
-                t.targetDir = layout.buildDirectory.dir("working/02-docs-raw")
+                // DocPublisher adds the language as a subdir if set.
+                t.language = lang
+                if (lang)
+                    t.targetDir = layout.buildDirectory.dir("working/02-docs-raw")
+                else
+                    t.targetDir = layout.buildDirectory.dir("working/02-docs-raw/all")
                 String githubBranch = 'git rev-parse --abbrev-ref HEAD'.execute()?.text?.trim() ?: 'master'
                 t.sourceRepo = "https://github.com/${githubSlug}/edit/${githubBranch}/src/main/docs"
                 t.sourceDir = layout.projectDirectory.dir("src/main/docs")
                 t.resourcesDir = prepareDocsResources.flatMap(PrepareDocResourcesTask::getOutputDirectory)
                 t.propertiesFiles.from(rootProject.file("gradle.properties"))
                 t.asciidoc = true
-                if (lang != "") {
-                    t.language = lang
-                }
                 t.properties.putAll([
                         'safe': 'UNSAFE',
                         'source-highlighter': 'highlightjs',
@@ -134,18 +136,16 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                         'grailsapi': 'http://docs.grails.org/latest/api/',
                         'gormapi': 'http://gorm.grails.org/latest/api/',
                         'springapi': 'https://docs.spring.io/spring/docs/current/javadoc-api/',
-                        'kafka-version': kafkaVersion
+                        'kafka-version': kafkaVersion,
+                        'default-language': lang ? lang : ''
                 ])
-                if (lang != "") {
-                    t.properties.put('default-language', lang)
-                }
             }
 
             // The empty language is the guide for all languages.
             def langs = [""] + LanguageSnippetMacro.LANGS
             def publishGuideByLang = langs.collectEntries { lang ->
                 [(lang): tasks.register("publishGuide${lang.capitalize()}", PublishGuideTask) {
-                    configureGuideTask(it as PublishGuideTask, lang)
+                    configureGuideTask(it as PublishGuideTask, lang ?: null)
                 }]
             }
             def publishGuide = publishGuideByLang[""]
