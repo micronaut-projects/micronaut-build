@@ -9,6 +9,7 @@ import io.micronaut.build.docs.ValidateAsciidocOutputTask
 import io.micronaut.build.docs.props.MergeConfigurationReferenceTask
 import io.micronaut.build.docs.props.PublishConfigurationReferenceTask
 import io.micronaut.build.utils.GitHubApiService
+import io.micronaut.docs.LanguageSnippetMacro
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.FileTreeElement
@@ -98,24 +99,27 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                 into(processConfigPropsOutputDir)
             }
 
-            def publishGuide = tasks.register('publishGuide', PublishGuideTask) {
-                group = DOCUMENTATION_GROUP
-                description = 'Generate Guide'
-
+            // Common configuration for PublishGuideTask, optionally per-language
+            def configureGuideTask = { PublishGuideTask t, String lang ->
+                t.group = DOCUMENTATION_GROUP
+                t.description = lang ? "Generate Guide (${lang})" : 'Generate Guide'
                 def kafkaVersion = rootProject.hasProperty('kafkaVersion') ? rootProject.properties['kafkaVersion'] : 'N/A'
-
-                inputs.files(processConfigPropsTask.map(Copy::getDestinationDir))
-                inputs.property("Project description", projectDesc)
-                inputs.property("Kafka version", kafkaVersion)
-
-                targetDir = layout.buildDirectory.dir("working/02-docs-raw")
+                t.inputs.files(processConfigPropsTask.map(Copy::getDestinationDir))
+                t.inputs.property("Project description", projectDesc)
+                t.inputs.property("Kafka version", kafkaVersion)
+                // DocPublisher adds the language as a subdir if set.
+                t.language = lang
+                if (lang)
+                    t.targetDir = layout.buildDirectory.dir("working/02-docs-raw")
+                else
+                    t.targetDir = layout.buildDirectory.dir("working/02-docs-raw/all")
                 String githubBranch = 'git rev-parse --abbrev-ref HEAD'.execute()?.text?.trim() ?: 'master'
-                sourceRepo = "https://github.com/${githubSlug}/edit/${githubBranch}/src/main/docs"
-                sourceDir = layout.projectDirectory.dir("src/main/docs")
-                resourcesDir = prepareDocsResources.flatMap(PrepareDocResourcesTask::getOutputDirectory)
-                propertiesFiles.from(rootProject.file("gradle.properties"))
-                asciidoc = true
-                properties.putAll([
+                t.sourceRepo = "https://github.com/${githubSlug}/edit/${githubBranch}/src/main/docs"
+                t.sourceDir = layout.projectDirectory.dir("src/main/docs")
+                t.resourcesDir = prepareDocsResources.flatMap(PrepareDocResourcesTask::getOutputDirectory)
+                t.propertiesFiles.from(rootProject.file("gradle.properties"))
+                t.asciidoc = true
+                t.properties.putAll([
                         'safe': 'UNSAFE',
                         'source-highlighter': 'highlightjs',
                         'version': projectVersion,
@@ -132,9 +136,19 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                         'grailsapi': 'http://docs.grails.org/latest/api/',
                         'gormapi': 'http://gorm.grails.org/latest/api/',
                         'springapi': 'https://docs.spring.io/spring/docs/current/javadoc-api/',
-                        'kafka-version': kafkaVersion
+                        'kafka-version': kafkaVersion,
+                        'default-language': lang ? lang : ''
                 ])
             }
+
+            // The empty language is the guide for all languages.
+            def langs = [""] + LanguageSnippetMacro.LANGS
+            def publishGuideByLang = langs.collectEntries { lang ->
+                [(lang): tasks.register("publishGuide${lang.capitalize()}", PublishGuideTask) {
+                    configureGuideTask(it as PublishGuideTask, lang ?: null)
+                }]
+            }
+            def publishGuide = publishGuideByLang[""]
 
             def mergeConfigurationReference = tasks.register('mergeConfigurationReference', MergeConfigurationReferenceTask) { task ->
                 inputFiles.from(incomingConfigProps)
@@ -149,6 +163,8 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                 pageTemplate.set(publishGuide.map { it.resourcesDir.file("style/page.html").get() })
             }
 
+            // TODO: For now, we don't include language specific guides into the final assembly. Language specific guides
+            //       are an experimental feature that needs more work before becoming the standard way docs are shipped.
             def assembleDocs = tasks.register("assembleDocs", Sync) {
                 description = "Assembles the documentation"
                 destinationDir = layout.buildDirectory.dir("working/04-assembled-docs").get().asFile

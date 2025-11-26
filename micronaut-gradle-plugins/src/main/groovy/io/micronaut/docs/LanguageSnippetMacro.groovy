@@ -7,14 +7,14 @@ import org.asciidoctor.SafeMode
 import org.asciidoctor.ast.StructuralNode
 import org.asciidoctor.extension.BlockMacroProcessor
 
-class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttributes {
+public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttributes {
     final Asciidoctor asciidoctor
 
     private static final String LANG_JAVA = 'java'
     private static final String LANG_GROOVY = 'groovy'
     private static final String LANG_KOTLIN = 'kotlin'
     private static final String LANG_PYTHON = 'python'
-    private static final List<String> LANGS = [LANG_JAVA, LANG_PYTHON, LANG_KOTLIN, LANG_GROOVY]
+    public static final List<String> LANGS = [LANG_JAVA, LANG_PYTHON, LANG_KOTLIN, LANG_GROOVY]
     private static final String DEFAULT_KOTLIN_PROJECT = 'test-suite-kotlin'
     private static final String DEFAULT_PYTHON_PROJECT = 'test-suite-python'
     private static final String DEFAULT_JAVA_PROJECT = 'test-suite'
@@ -59,14 +59,24 @@ class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttribu
         String title = valueAtAttributes("title", attributes)
         StringBuilder content = new StringBuilder()
 
+        // Determine the target guide language (if any) from the Asciidoctor document attributes.
+        // MicronautDocsPlugin sets 'default-language' as an engine property when generating
+        // language-specific guides, and AsciiDocEngine forwards engine properties as document attributes.
+        String defaultLanguage = parent.document.getAttribute('default-language')
+
+        // If a specific target language is requested and it is one of the known code languages,
+        // only render that language, and do NOT use the multi-language-sample selector class.
+        List<String> languagesToRender = LANGS
+        if (defaultLanguage && LANGS.contains(defaultLanguage)) {
+            languagesToRender = [defaultLanguage]
+        }
+
         String[] files = target.split(",")
-        for (lang in LANGS) {
-            if (title != null) {
-                content << ".$title\n\n"
-            }
+        for (lang in languagesToRender) {
+            if (title != null) content << ".$title\n\n"
             String projectDir = projectDir(lang, attributes)
-            String ext 
-            
+            String ext
+
             if(lang == LANG_KOTLIN)
                 ext = 'kt'
             else if (lang == LANG_PYTHON)

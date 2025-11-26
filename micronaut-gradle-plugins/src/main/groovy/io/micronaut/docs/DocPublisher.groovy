@@ -31,6 +31,7 @@ import org.radeox.engine.context.BaseInitialRenderContext
 import org.radeox.engine.context.BaseRenderContext
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.constructor.SafeConstructor
+
 /**
  * Coordinated the DocEngine the produce documentation based on the gdoc format.
  *
@@ -64,10 +65,10 @@ class DocPublisher {
      * The properties fie to populate the engine properties from
      */
     File propertiesFile
-    
+
     FileOperations fileOperations
 
-    /** The language we're generating for (gets its own sub-directory). Defaults to '' */
+    /** The programming language we're generating for (gets its own sub-directory). Defaults to '' */
     String language = ""
     /** The encoding to use (default is UTF-8) */
     String encoding = "UTF-8"
@@ -210,16 +211,23 @@ class DocPublisher {
 
 
         // Build the table of contents as a tree of nodes. We currently support
-        // two strategies for this:
+        // three strategies for this:
         //
-        //  1. From a toc.yml file
-        //  2. From the gdoc filenames
+        //  1. From a toc-<lang>.yml file if it exists otherwise...
+        //  2. From a toc.yml file
+        //  3. From the gdoc filenames
         //
-        // The first strategy is used if the TOC file exists, otherwise we call
+        // The first two strategies are used if the TOC files exist, otherwise we call
         // back to the old way of doing it, which means putting the section
         // numbers in the gdoc filenames.
         def guideSrcDir = new File(src, "guide")
-        def yamlTocFile = new File(guideSrcDir, TOC_FILENAME)
+        File yamlTocFile = null
+        if (language) {
+            yamlTocFile = new File(guideSrcDir, "toc-${language}.yml")
+        }
+        if (yamlTocFile == null || !yamlTocFile.exists()) {
+            yamlTocFile = new File(guideSrcDir, TOC_FILENAME)
+        }
         def guide
         def ext = asciidoc ? ".adoc" : ".gdoc"
         if (yamlTocFile.exists()) {
@@ -275,6 +283,18 @@ class DocPublisher {
                     sections: f.listFiles().findAll { it.name.endsWith(ext) }.sort())
         }
 
+        def extraCss = ""
+        for (final def l in LanguageSnippetMacro.LANGS) {
+            if (language) {
+                // Make everything invisible except the target language.
+                def display = l != language ? "none" : "block"
+                extraCss += ".lang-$l { display: $display }; "
+            } else {
+                // Make everything visible.
+                extraCss += ".lang-$l { display: block }; "
+            }
+        }
+
         def pathToRoot = ".."
         Map vars = new LinkedHashMap(engineProperties)
         vars.putAll(
@@ -298,6 +318,7 @@ class DocPublisher {
             next: null,
             legacyLinks: legacyLinks,
             sourceRepo: sourceRepo,
+            extraCss: extraCss
         )
 
         if(engine instanceof AsciiDocEngine) {
@@ -513,7 +534,10 @@ class DocPublisher {
 
     protected void initialize() {
         if (language) {
-            src = new File(src, language)
+            File langDir = new File(src, language)
+            if (langDir.exists()) {
+                src = langDir
+            }
         }
         if (!apiDir) {
             apiDir = target
