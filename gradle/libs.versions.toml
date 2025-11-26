@@ -1,6 +1,7 @@
 [versions]
 asciidoctorj = "3.0.0"
 commons-lang3 = "3.18.0"
+commons-text = "1.14.0"
 japicmp-plugin = "0.4.6"
 gradle-custom-userdata-plugin = "2.3"
 develocity-plugin = "4.2.2"
@@ -38,6 +39,7 @@ kotlin-ksp = "2.2.21-2.0.4"
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
 bytebuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons-text" }
 japicmp-plugin = { module = "me.champeau.gradle:japicmp-gradle-plugin", version.ref = "japicmp-plugin" }
 gradle-custom-userdata-plugin = { module = "com.gradle:common-custom-user-data-gradle-plugin", version.ref = "gradle-custom-userdata-plugin" }
 develocity-plugin = { module = "com.gradle:develocity-gradle-plugin", version.ref = "develocity-plugin" }

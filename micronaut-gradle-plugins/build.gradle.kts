@@ -10,6 +10,7 @@ dependencies {
         }
     }
     implementation(libs.commons.lang3)
+    implementation(libs.commons.text)
     implementation(libs.snakeyaml)
     implementation(libs.grails.gdoc)
     implementation(libs.asciidoctorj)
