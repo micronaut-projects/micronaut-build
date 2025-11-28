@@ -25,14 +25,27 @@ dependencies {
     implementation(libs.japicmp.plugin)
     implementation(libs.includegit.plugin)
     implementation(libs.sonatype.scan.plugin) {
-        exclude(group= "org.codehaus.groovy")
+        exclude(group = "org.codehaus.groovy")
     }
 
     implementation(libs.tomlj)
     implementation(libs.maven.model.builder)
 
-    testImplementation(platform(libs.spock.bom))
-    testImplementation(libs.spock.core)
+    // We must differentiate the version that we use HERE to test the build plugins, which
+    // should use a version of Spock which is compatible with what Gradle uses (Groovy 4)
+    // and the version that we will use in Micronaut projects, which is going to be Groovy 5
+    var localSpockVersion = libs.versions.spock.get().replace("groovy-5", "groovy-4")
+
+    testImplementation(platform(libs.spock.bom)) {
+        version {
+            require(localSpockVersion)
+        }
+    }
+    testImplementation(libs.spock.core) {
+        version {
+            require(localSpockVersion)
+        }
+    }
 
     testImplementation(libs.typesafe.config)
 
