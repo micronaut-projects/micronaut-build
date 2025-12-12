@@ -76,8 +76,6 @@ micronautBuildPlugin {
     versionsMap.put("micronaut_test", libs.versions.micronaut.test)
     versionsMap.put("groovy", libs.versions.groovy)
     versionsMap.put("spock", libs.versions.spock)
-    versionsMap.put("junit5_platform", libs.versions.junit5.platform)
-    versionsMap.put("junit5", libs.versions.junit5.asProvider())
     versionsMap.put("junit6", libs.versions.junit6)
     versionsMap.put("checkstyle", libs.versions.checkstyle)
     versionsMap.put("logback", libs.versions.logback)
