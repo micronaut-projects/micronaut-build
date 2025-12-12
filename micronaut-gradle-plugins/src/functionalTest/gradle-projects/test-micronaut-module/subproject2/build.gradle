@@ -5,5 +5,5 @@ plugins {
 }
 
 micronautBuild {
-    testFramework = TestFramework.JUNIT5
+    testFramework = TestFramework.JUNIT6
 }

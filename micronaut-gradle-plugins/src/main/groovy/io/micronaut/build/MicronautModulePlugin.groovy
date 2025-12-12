@@ -38,11 +38,6 @@ class MicronautModulePlugin implements Plugin<Project> {
                                 deps.create(versionProviderOrDefault(project, 'spock', DefaultVersions.SPOCK_VERSION).map { "org.spockframework:spock-core:${it}" }.get()),
                                 deps.create(versionProviderOrDefault(project, 'micronaut-test', DefaultVersions.MICRONAUT_TEST_VERSION).map { "io.micronaut.test:micronaut-test-spock:${it}" }.get())
                         )
-                    } else if (it == TestFramework.JUNIT5) {
-                        return List.of(
-                                deps.create(versionProviderOrDefault(project, 'junit5', DefaultVersions.JUNIT5_VERSION).map { "org.junit.jupiter:junit-jupiter-api:${it}" }.get()),
-                                deps.create(versionProviderOrDefault(project, 'micronaut-test', DefaultVersions.MICRONAUT_TEST_VERSION).map { "io.micronaut.test:micronaut-test-junit5:${it}" }.get())
-                        )
                     } else if (it == TestFramework.JUNIT6) {
                         return List.of(
                                 deps.create(versionProviderOrDefault(project, 'junit6', DefaultVersions.JUNIT6_VERSION).map { "org.junit.jupiter:junit-jupiter-api:${it}" }.get()),
@@ -57,11 +52,6 @@ class MicronautModulePlugin implements Plugin<Project> {
                 micronautBuild.testFramework.map {
                     if (it == TestFramework.SPOCK) {
                         return List.<Dependency>of()
-                    } else if (it == TestFramework.JUNIT5) {
-                        return List.of(
-                                deps.create(versionProviderOrDefault(project, 'junit-platform-launcher', DefaultVersions.JUNIT5_PLATFORM_VERSION).map { "org.junit.platform:junit-platform-launcher:${it}" }.get()),
-                                deps.create(versionProviderOrDefault(project, 'junit5', DefaultVersions.JUNIT5_VERSION).map { "org.junit.jupiter:junit-jupiter-engine:${it}" }.get()),
-                        )
                     } else if (it == TestFramework.JUNIT6) {
                         return List.of(
                                 deps.create(versionProviderOrDefault(project, 'junit6', DefaultVersions.JUNIT6_VERSION).map { "org.junit.platform:junit-platform-launcher:${it}" }.get()),

@@ -17,6 +17,5 @@ package io.micronaut.build;
 
 public enum TestFramework {
     SPOCK,
-    JUNIT5,
     JUNIT6
 }
