@@ -32,6 +32,7 @@ logback = "1.5.20"
 checkstyle = "12.1.0"
 kotlin = "2.3.0"
 kotlin-ksp = "2.3.4"
+pyinterfacegen = "25.1.0-SNAPSHOT"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
@@ -42,6 +43,7 @@ japicmp-plugin = { module = "me.champeau.gradle:japicmp-gradle-plugin", version.
 gradle-custom-userdata-plugin = { module = "com.gradle:common-custom-user-data-gradle-plugin", version.ref = "gradle-custom-userdata-plugin" }
 develocity-plugin = { module = "com.gradle:develocity-gradle-plugin", version.ref = "develocity-plugin" }
 gradle-github-actions-plugin = { module = "org.nosphere.gradle.github:gradle-github-actions-plugin", version.ref = "gradle-github-actions-plugin" }
+gradle-pyinterfacegen-plugin = { module = "org.graalvm.python.pyinterfacegen:org.graalvm.python.pyinterfacegen.gradle.plugin", version.ref = "pyinterfacegen" }
 grails-gdoc = { module = "org.grails:grails-gdoc-engine", version.ref = "grails-gdoc" }
 nexus-publish-plugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexus-publish-plugin" }
 mockserver-netty = { module = "org.mock-server:mockserver-netty", version.ref = "mockserver" }

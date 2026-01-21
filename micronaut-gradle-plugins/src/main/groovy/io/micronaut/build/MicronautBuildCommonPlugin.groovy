@@ -1,6 +1,7 @@
 package io.micronaut.build
 
 import com.diffplug.gradle.spotless.SpotlessTask
+import io.micronaut.build.graalpy.GraalPyModulePlugin
 import io.micronaut.build.utils.DefaultVersions
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
@@ -27,6 +28,7 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         def micronautBuild = project.extensions.findByType(MicronautBuildExtension)
         configureJavaPlugin(project, micronautBuild)
         configureDependencies(project, micronautBuild)
+        project.pluginManager.apply(GraalPyModulePlugin)
         configureTasks(project)
         configureIdeaPlugin(project)
         configureLicensePlugin(project)

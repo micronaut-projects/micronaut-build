@@ -3,6 +3,13 @@ plugins {
     id("groovy-gradle-plugin")
 }
 
+// FIXME: Remove this before merge.
+repositories {
+    mavenLocal()
+    mavenCentral()
+    gradlePluginPortal()
+}
+
 dependencies {
     constraints {
         implementation(libs.bundles.bouncycastle) {
@@ -30,6 +37,8 @@ dependencies {
 
     implementation(libs.tomlj)
     implementation(libs.maven.model.builder)
+
+    implementation(libs.gradle.pyinterfacegen.plugin)
 
     // We must differentiate the version that we use HERE to test the build plugins, which
     // should use a version of Spock which is compatible with what Gradle uses (Groovy 4)
@@ -87,6 +96,7 @@ micronautBuildPlugin {
     definePlugin("binary-compatibility-check", "io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin")
     definePlugin("bom", "io.micronaut.build.MicronautBomPlugin")
     definePlugin("common", "io.micronaut.build.MicronautBuildCommonPlugin")
+    definePlugin("graalpy-bindings", "io.micronaut.build.graalpy.GraalPyModulePlugin")
     definePlugin("dependency-updates", "io.micronaut.build.MicronautDependencyUpdatesPlugin")
     definePlugin("develocity", "io.micronaut.build.MicronautDevelocityPlugin")
     definePlugin("docs", "io.micronaut.build.MicronautDocsPlugin")
