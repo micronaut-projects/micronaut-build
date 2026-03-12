@@ -28,7 +28,6 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
         def micronautBuild = project.extensions.findByType(MicronautBuildExtension)
         configureJavaPlugin(project, micronautBuild)
         configureDependencies(project, micronautBuild)
-        project.pluginManager.apply(GraalPyModulePlugin)
         configureTasks(project)
         configureIdeaPlugin(project)
         configureLicensePlugin(project)

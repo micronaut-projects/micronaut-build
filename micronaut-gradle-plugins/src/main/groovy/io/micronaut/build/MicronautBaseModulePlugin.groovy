@@ -2,6 +2,7 @@ package io.micronaut.build
 
 import groovy.transform.CompileStatic
 import io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin
+import io.micronaut.build.graalpy.GraalPyModulePlugin
 import io.micronaut.build.info.MicronautModuleInfoPlugin
 import io.micronaut.build.pom.PomCheckerUtils
 import org.gradle.api.Plugin
@@ -14,6 +15,7 @@ import org.gradle.api.tasks.testing.Test
  *  - with dependency updates plugin
  *  - published on a Maven repository
  *  - with JUnit platform testing
+ *  - with Python type information generation
  */
 @CompileStatic
 class MicronautBaseModulePlugin implements Plugin<Project> {
@@ -26,6 +28,7 @@ class MicronautBaseModulePlugin implements Plugin<Project> {
         project.pluginManager.apply(MicronautBinaryCompatibilityPlugin)
         project.pluginManager.apply(SonatypeConfigurationPlugin)
         project.pluginManager.apply(MicronautModuleInfoPlugin)
+        project.pluginManager.apply(GraalPyModulePlugin)
         configureJUnit(project)
         assertSettingsPluginApplied(project)
         project.pluginManager.withPlugin("maven-publish") {
