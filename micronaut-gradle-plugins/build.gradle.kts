@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.snakeyaml)
     implementation(libs.grails.gdoc)
     implementation(libs.asciidoctorj)
+    implementation(libs.jsoup)
     implementation(libs.spotless.plugin)
     implementation(libs.testlogger.plugin)
     implementation(libs.nexus.publish.plugin)
