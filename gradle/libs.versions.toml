@@ -1,5 +1,6 @@
 [versions]
 asciidoctorj = "3.0.0"
+jsoup = "1.18.3"
 commons-lang3 = "3.18.0"
 commons-text = "1.14.0"
 japicmp-plugin = "0.4.6"
@@ -35,6 +36,7 @@ kotlin-ksp = "2.3.4"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 bytebuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
 commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons-text" }
