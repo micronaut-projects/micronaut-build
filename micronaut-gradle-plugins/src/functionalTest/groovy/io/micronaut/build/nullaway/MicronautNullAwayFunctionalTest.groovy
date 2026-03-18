@@ -1,4 +1,4 @@
-    package io.micronaut.build.nullaway
+package io.micronaut.build.nullaway
 
 import org.gradle.testkit.runner.GradleRunner
 import spock.lang.Specification
