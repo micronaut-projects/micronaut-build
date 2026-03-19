@@ -17,6 +17,10 @@ class MicronautNullAwayFunctionalTest extends Specification {
             id("io.micronaut.build.internal.base-module")
         }
 
+        micronautBuild {
+            enableProcessing.set(false)
+        }
+
         tasks.register("verifyNullAway") {
             doLast {
                 def compileJava = tasks.named("compileJava").get()
@@ -43,6 +47,10 @@ class MicronautNullAwayFunctionalTest extends Specification {
 
         plugins {
             id("io.micronaut.build.internal.base-module")
+        }
+
+        micronautBuild {
+            enableProcessing.set(false)
         }
 
         tasks.register("verifyTckNullAway") {
