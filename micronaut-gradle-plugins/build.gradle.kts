@@ -52,7 +52,7 @@ dependencies {
 
     testImplementation(libs.mockserver.netty)
     testImplementation(libs.mockserver.client)
-
+    testImplementation(gradleApi())
 }
 
 val docFilesJar = tasks.register<Jar>("docFilesJar") {

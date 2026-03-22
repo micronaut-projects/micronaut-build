@@ -130,14 +130,14 @@ public abstract class NativePropertiesWriter extends DefaultTask {
                     args.append(String.join(",", initializeAtBuildtime));
                 }
                 if (!initializeAtRuntime.isEmpty()) {
-                    if (args.length() > 0) {
+                    if (!args.isEmpty()) {
                         args.append(NEWLINE);
                     }
                     args.append("--initialize-at-run-time=");
                     args.append(String.join(",", initializeAtRuntime));
                 }
                 if (!features.isEmpty()) {
-                    if (args.length() > 0) {
+                    if (!args.isEmpty()) {
                         args.append(NEWLINE);
                     }
                     args.append("--features=");
@@ -145,7 +145,7 @@ public abstract class NativePropertiesWriter extends DefaultTask {
                 }
                 if (!extraArguments.isEmpty()) {
                     for (Map.Entry<String, List<String>> entry : extraArguments.entrySet()) {
-                        if (args.length() > 0) {
+                        if (!args.isEmpty()) {
                             args.append(NEWLINE);
                         }
                         args.append(entry.getKey()).append("=");

@@ -36,10 +36,13 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
@@ -69,7 +72,10 @@ import static java.util.Collections.reverseOrder;
  * A task which updates version catalog files and outputs a copy
  * of them.
  */
+@CacheableTask
 public abstract class VersionCatalogUpdate extends DefaultTask {
+
+    @PathSensitive(PathSensitivity.ABSOLUTE)
     @InputDirectory
     public abstract DirectoryProperty getCatalogsDirectory();
 
@@ -132,11 +138,11 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
 
     private static boolean supportsUpdate(RichVersion richVersion) {
         return richVersion != null
-               && richVersion.getRequire() != null
-               && richVersion.getStrictly() == null
-               && richVersion.getPrefer() == null
-               && !richVersion.isRejectAll()
-               && richVersion.getRejectedVersions() == null;
+            && richVersion.getRequire() != null
+            && richVersion.getStrictly() == null
+            && richVersion.getPrefer() == null
+            && !richVersion.isRejectAll()
+            && richVersion.getRejectedVersions() == null;
     }
 
     private void updateCatalog(File inputCatalog, File outputCatalog, File logFile) throws IOException, InterruptedException {
@@ -177,7 +183,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
             List<String> unresolved = new ArrayList<>();
             for (var details : allDetails) {
                 var latest = details.acceptedVersion != null ? details.acceptedVersion : details.fallbackVersion;
-                if (latest!=null) {
+                if (latest != null) {
                     var library = details.library;
                     VersionModel version = library.getVersion();
                     String reference = version.getReference();
@@ -336,7 +342,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
                 int minor = currentVersion.minor().orElse(0);
                 int candidateMinor = candidateVersion.minor().orElse(0);
                 if (minor != candidateMinor) {
-                    details.rejectCandidate("it's not the same minor version : "  + currentVersion + " (current) vs " + candidateVersion + " (candidate)");
+                    details.rejectCandidate("it's not the same minor version : " + currentVersion + " (current) vs " + candidateVersion + " (candidate)");
                 }
             }
         }
@@ -362,20 +368,24 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
      * perform custom selection.
      */
     protected interface CandidateDetails {
+
         /**
          * The candidate module, in the group:name format
+         *
          * @return the module id
          */
         String getModule();
 
         /**
          * The current version of a module, as found in the catalog
+         *
          * @return the current version
          */
         ComparableVersion getCurrentVersion();
 
         /**
          * A candidate version of the module, as found in a repository
+         *
          * @return the candidate version
          */
         ComparableVersion getCandidateVersion();
@@ -390,6 +400,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
 
         /**
          * Rejects a candidate with a reason.
+         *
          * @param reason the reason to reject the candidate
          */
         void rejectCandidate(String reason);
@@ -401,6 +412,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
     }
 
     private static class DefaultCandidateDetails implements CandidateDetails {
+
         private final Library library;
         private final PrintWriter log;
         private final String module;

@@ -5,16 +5,12 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.BasePlugin;
-import org.gradle.api.provider.Property;
 import org.gradle.api.reporting.ReportingExtension;
 import org.gradle.testing.jacoco.plugins.JacocoCoverageReport;
 import org.gradle.testing.jacoco.plugins.JacocoReportAggregationPlugin;
-import org.gradle.util.GradleVersion;
 import org.sonarqube.gradle.SonarExtension;
 import org.sonarqube.gradle.SonarQubePlugin;
 import org.sonarqube.gradle.SonarTask;
-
-import java.lang.reflect.InvocationTargetException;
 
 @SuppressWarnings("UnstableApiUsage")
 public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project> {
@@ -31,7 +27,6 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
         configureJacoco(rootProject);
     }
 
-
     private void configureSonar(final Project rootProject) {
         if (System.getenv("SONAR_TOKEN") != null) {
             rootProject.getPluginManager().apply(SonarQubePlugin.class);
@@ -47,7 +42,7 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                         p.property("sonar.java.source", micronautBuildExtension.getJavaVersion().map(String::valueOf).get());
                         p.property("sonar.verbose", "true");
                         // Jacoco integration
-                        final String jacocoReportPath = rootProject.getBuildDir().toPath()
+                        final String jacocoReportPath = rootProject.getLayout().getBuildDirectory().getAsFile().get().toPath()
                             .resolve("reports/jacoco/" + COVERAGE_REPORT_TASK_NAME + "/" + COVERAGE_REPORT_TASK_NAME + ".xml")
                             .toFile().getAbsolutePath();
                         p.property("sonar.coverage.jacoco.xmlReportPaths", jacocoReportPath);
@@ -55,7 +50,7 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                 });
                 rootProject.getTasks().withType(SonarTask.class).configureEach(t -> t.dependsOn(COVERAGE_REPORT_TASK_NAME));
             } else {
-                rootProject.getLogger().warn("Could not find the sonarqube extension");
+                rootProject.getLogger().warn("Could not find the SonarQube extension");
             }
         }
     }
@@ -80,34 +75,17 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
         // if jacocoReport is called on a BOM-only project
         rootProject.afterEvaluate(unused -> {
             if (!rootProject.getTasks().getNames().contains("jacocoTestReport")) {
-                rootProject.getTasks().register("jacocoTestReport", t ->  {
-                   t.setDescription("Placeholder task for Jacoco reports");
-                   t.doFirst(unused2 -> {
-                       System.out.println("Placeholder task for Jacoco reports");
-                   });
+                rootProject.getTasks().register("jacocoTestReport", t -> {
+                    t.setDescription("Placeholder task for JaCoCo reports");
+                    t.doFirst(unused2 -> {
+                        System.out.println("Placeholder task for JaCoCo reports");
+                    });
                 });
             }
         });
     }
 
     private void configureReport(JacocoCoverageReport r) {
-        if (GradleVersion.current().compareTo(GradleVersion.version("8.13")) < 0) {
-            configureReportUsingReflection(r);
-        } else {
-            r.getTestSuiteName().set("test");
-        }
+        r.getTestSuiteName().set("test");
     }
-
-    private void configureReportUsingReflection(JacocoCoverageReport r) {
-        try {
-            //  r.getTestType().set(TestSuiteType.UNIT_TEST)
-            Class<?> testSuiteType = Class.forName("org.gradle.api.attributes.TestSuiteType");
-            var junit = testSuiteType.getDeclaredField("UNIT_TEST").get(null);
-            var testType = (Property<Object>) JacocoCoverageReport.class.getDeclaredMethod("getTestType").invoke(r);
-            testType.set(junit);
-        } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-            throw new GradleException("Unable to configure Jacoco report", e);
-        }
-    }
-
 }
