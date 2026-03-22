@@ -11,11 +11,11 @@ class VersionCatalogCompatibilityCheckTest extends Specification {
         def project = ProjectBuilder.builder().build()
         def report = project.layout.buildDirectory.file("reports/report.txt")
         Files.createDirectories(report.get().asFile.parentFile.toPath())
-        def task = project.tasks.create("compat", VersionCatalogCompatibilityCheck) {
-            baseline.set(resource("/baseline.toml"))
-            current.set(resource("/current.toml"))
-            reportFile.set(report)
-        }
+        def task = project.tasks.register("compat", VersionCatalogCompatibilityCheck) {
+            it.baseline.set(resource("/baseline.toml"))
+            it.current.set(resource("/current.toml"))
+            it.reportFile.set(report)
+        }.get()
 
         when:
         task.checkCompatibility()
@@ -36,13 +36,13 @@ The following libraries were present in the baseline version but missing from th
         def project = ProjectBuilder.builder().build()
         def report = project.layout.buildDirectory.file("reports/report.txt")
         Files.createDirectories(report.get().asFile.parentFile.toPath())
-        def task = project.tasks.create("compat", VersionCatalogCompatibilityCheck) {
-            baseline.set(resource("/baseline.toml"))
-            current.set(resource("/current.toml"))
-            reportFile.set(report)
-            acceptedVersionRegressions.add("spring")
-            acceptedLibraryRegressions.add("commons-dbcp")
-        }
+        def task = project.tasks.register("compat", VersionCatalogCompatibilityCheck) {
+            it.baseline.set(resource("/baseline.toml"))
+            it.current.set(resource("/current.toml"))
+            it.reportFile.set(report)
+            it.acceptedVersionRegressions.add("spring")
+            it.acceptedLibraryRegressions.add("commons-dbcp")
+        }.get()
 
         when:
         task.checkCompatibility()

@@ -4,9 +4,12 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
@@ -23,6 +26,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.UUID;
 
+@CacheableTask
 public abstract class MavenCentralPublishTask extends DefaultTask {
 
     public enum PublishingType {
@@ -30,6 +34,7 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
         USER_MANAGED
     }
 
+    @PathSensitive(PathSensitivity.ABSOLUTE)
     @InputFile
     public abstract RegularFileProperty getBundle();
 
@@ -68,8 +73,8 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
         var boundary = UUID.randomUUID().toString();
 
         var bodyBuilder = "--" + boundary + "\r\n" +
-                          "Content-Disposition: form-data; name=\"bundle\"; filename=\"" + fileName + "\"\r\n" +
-                          "Content-Type: application/octet-stream\r\n\r\n";
+            "Content-Disposition: form-data; name=\"bundle\"; filename=\"" + fileName + "\"\r\n" +
+            "Content-Type: application/octet-stream\r\n\r\n";
 
         var prefix = bodyBuilder.getBytes(StandardCharsets.UTF_8);
         var suffix = ("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8);
