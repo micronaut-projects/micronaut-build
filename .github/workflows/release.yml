@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
           ref: ${{ github.head_ref }}
       - name: Set the current release version
         id: release_version
