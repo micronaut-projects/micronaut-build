@@ -44,9 +44,9 @@ import java.util.regex.Pattern;
 
 @CacheableTask
 public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
+
     private final static Pattern MICRONAUT_DOCS_URI_PATTERN = Pattern.compile("^(https?://micronaut-projects\\.github\\.io/micronaut-(?:[a-z-A-Z0-9]-?)+/latest/api/)(.*)$");
 
-    @SuppressWarnings("deprecation")
     @Override
     public void apply(Project project) {
         // todo: replace with a narrower plugin once
@@ -64,7 +64,7 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
             project.evaluationDependsOn(subproject.getPath());
             subproject.getPlugins().withType(AggregatedJavadocParticipantPlugin.class, plugin -> {
                 javadocAggregatorBase.getDependencies().add(
-                        project.getDependencies().create(subproject)
+                    project.getDependencies().create(subproject)
                 );
             });
         });
@@ -78,27 +78,23 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
             StandardJavadocDocletOptions options = (StandardJavadocDocletOptions) javadoc.getOptions();
             options.author(true);
             javadoc.exclude("example/**");
-            if (micronautBuildExtension.getSourceCompatibility().isPresent()) {
-                options.setSource(micronautBuildExtension.getSourceCompatibility().get());
-            } else {
-                options.setSource(micronautBuildExtension.getJavaVersion().map(String::valueOf).get());
-            }
+            options.setSource(micronautBuildExtension.getJavaVersion().map(String::valueOf).get());
             options.links(project.getProperties()
-                    .entrySet()
-                    .stream()
-                    .filter(entry -> entry.getKey().endsWith("api"))
-                    .map(Map.Entry::getValue)
-                    .map(String::valueOf)
-                    .filter(link -> link.startsWith("http"))
-                    .map(link -> {
-                        Matcher m = MICRONAUT_DOCS_URI_PATTERN.matcher(link);
-                        if (m.matches() && !m.group(2).isEmpty()) {
-                            project.getLogger().warn("[javadocs] gradle.properties file declares entry {} with should stop at /api. Automatically truncated to {}", link, m.group(1));
-                            return m.group(1);
-                        }
-                        return link;
-                    })
-                    .toArray(String[]::new));
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().endsWith("api"))
+                .map(Map.Entry::getValue)
+                .map(String::valueOf)
+                .filter(link -> link.startsWith("http"))
+                .map(link -> {
+                    Matcher m = MICRONAUT_DOCS_URI_PATTERN.matcher(link);
+                    if (m.matches() && !m.group(2).isEmpty()) {
+                        project.getLogger().warn("[javadocs] gradle.properties file declares entry {} with should stop at /api. Automatically truncated to {}", link, m.group(1));
+                        return m.group(1);
+                    }
+                    return link;
+                })
+                .toArray(String[]::new));
             options.addStringOption("Xdoclint:none", "-quiet");
             options.addBooleanOption("notimestamp", true);
             javadoc.setSource(javadocAggregator);
@@ -142,10 +138,12 @@ public abstract class JavadocAggregatorPlugin implements Plugin<Project> {
     }
 
     public static class AggregationCompatibilityRule implements AttributeCompatibilityRule<Usage> {
+
         private static final Set<String> COMPATIBLE_VALUES = Collections.unmodifiableSet(new HashSet<String>() {{
             add(Usage.JAVA_API);
             add(Usage.JAVA_RUNTIME);
         }});
+
         @Override
         public void execute(CompatibilityCheckDetails<Usage> details) {
             Usage consumerValue = details.getConsumerValue();

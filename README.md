@@ -52,8 +52,7 @@ Default values are:
 
 ```groovy
 micronautBuild {
-    sourceCompatibility = '1.8'
-    targetCompatibility = '1.8'
+    javaVersion = '25'
 
     checkstyleVersion = '8.33'
 
