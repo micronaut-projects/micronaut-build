@@ -33,6 +33,7 @@ logback = "1.5.32"
 checkstyle = "13.3.0"
 kotlin = "2.3.20"
 kotlin-ksp = "2.3.6"
+antlr = "4.11.1"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
@@ -66,13 +67,14 @@ micronaut-test = { module = "io.micronaut.test:micronaut-test", version.ref = "m
 groovy = { module = "org.codehaus.groovy:groovy-core", version.ref = "groovy" }
 mockserver-client = { module = "software.xdev.mockserver:client", version.ref = "mockserver" }
 mockserver-server = { module = "software.xdev.mockserver:server", version.ref = "mockserver" }
+antlr = { module = "org.antlr:antlr4-runtime", version.ref = "antlr" }
 
 junit6-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit6" }
 junit6-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit6" }
 junit6-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit6" }
 
 logback = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
-checkstyle = { module = "com.puppycrawl.tools:checkstyle", version.ref = "checkstyle"}
+checkstyle = { module = "com.puppycrawl.tools:checkstyle", version.ref = "checkstyle" }
 
 kotlin-jvm-plugin = { module = "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", version.ref = "kotlin" }
 kotlin-kapt-plugin = { module = "org.jetbrains.kotlin.kapt:org.jetbrains.kotlin.kapt.gradle.plugin", version.ref = "kotlin" }

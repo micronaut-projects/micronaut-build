@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.testlogger.plugin)
     implementation(libs.nexus.publish.plugin)
     implementation(libs.sonar.plugin)
+    implementation(libs.antlr)
 
     implementation(libs.develocity.plugin)
     implementation(libs.gradle.github.actions.plugin)

@@ -111,7 +111,7 @@ public class TomlGenerator extends AbstractModelVisitor {
         // We let the toml library handle the output, which is nicer
         // than what we produce ourselves
         TomlParseResult toml = Toml.parse(super.toString());
-        toml.errors().stream().forEach(System.err::println);
+        toml.errors().forEach(System.err::println);
         return toml.toToml();
     }
 
