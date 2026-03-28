@@ -8,6 +8,7 @@ import io.micronaut.build.docs.PublishGuideTask
 import io.micronaut.build.docs.ValidateAsciidocOutputTask
 import io.micronaut.build.docs.props.MergeConfigurationReferenceTask
 import io.micronaut.build.docs.props.PublishConfigurationReferenceTask
+import io.micronaut.build.graalpy.GraalPyModulePlugin
 import io.micronaut.build.utils.GitHubApiService
 import io.micronaut.docs.LanguageSnippetMacro
 import org.gradle.api.Plugin

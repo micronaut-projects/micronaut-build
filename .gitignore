@@ -1,10 +1,12 @@
 .gradle
-build/
 out/
 .settings/
 .classpath
 .project
 .factorypath
+
+build/
+!**/src/main/**/io/micronaut/build
 
 # Ignore Gradle GUI config
 gradle-app.setting

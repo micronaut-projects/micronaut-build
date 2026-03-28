@@ -1,6 +1,7 @@
 package io.micronaut.build
 
 import com.diffplug.gradle.spotless.SpotlessTask
+import io.micronaut.build.graalpy.GraalPyModulePlugin
 import io.micronaut.build.utils.DefaultVersions
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
