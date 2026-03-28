@@ -16,7 +16,7 @@ import javax.inject.Inject;
 public abstract class MicronautBuildExtension {
 
   public static final String DEFAULT_DEPENDENCY_UPDATES_PATTERN = "(?i).+(-|\\.?)(b|M|RC|Dev)\\d?.*";
-  public static final int DEFAULT_JAVA_VERSION = 21;
+  public static final int DEFAULT_JAVA_VERSION = 25;
 
   private final BuildEnvironment environment;
 
