@@ -8,7 +8,7 @@ gradle-custom-userdata-plugin = "2.3"
 develocity-plugin = "4.2.2"
 gradle-github-actions-plugin = "1.4.0"
 grails-gdoc = "1.0.1"
-mockserver = "5.15.0"
+mockserver = "2.0.4"
 nexus-publish-plugin = "2.0.0"
 snakeyaml = "2.5"
 sonar-plugin = "6.3.1.5724"
@@ -46,8 +46,6 @@ develocity-plugin = { module = "com.gradle:develocity-gradle-plugin", version.re
 gradle-github-actions-plugin = { module = "org.nosphere.gradle.github:gradle-github-actions-plugin", version.ref = "gradle-github-actions-plugin" }
 grails-gdoc = { module = "org.grails:grails-gdoc-engine", version.ref = "grails-gdoc" }
 nexus-publish-plugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexus-publish-plugin" }
-mockserver-netty = { module = "org.mock-server:mockserver-netty", version.ref = "mockserver" }
-mockserver-client = { module = "org.mock-server:mockserver-client-java", version.ref = "mockserver" }
 snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
 sonar-plugin = { module = "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin", version.ref = "sonar-plugin" }
 spock-bom = { module = "org.spockframework:spock-bom", version.ref = "spock" }
@@ -66,7 +64,8 @@ micronaut-docs = { module = "io.micronaut.docs:micronaut-docs-asciidoc-config-pr
 micronaut-logging = { module = "io.micronaut.logging:micronaut-logging", version.ref = "micronaut-logging" }
 micronaut-test = { module = "io.micronaut.test:micronaut-test", version.ref = "micronaut-test" }
 groovy = { module = "org.codehaus.groovy:groovy-core", version.ref = "groovy" }
-
+mockserver-client = { module = "software.xdev.mockserver:client", version.ref = "mockserver" }
+mockserver-server = { module = "software.xdev.mockserver:server", version.ref = "mockserver" }
 
 junit6-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit6" }
 junit6-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit6" }

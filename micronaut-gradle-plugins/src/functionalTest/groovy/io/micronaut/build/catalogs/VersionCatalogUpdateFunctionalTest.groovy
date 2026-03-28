@@ -16,42 +16,28 @@
 package io.micronaut.build.catalogs
 
 import io.micronaut.build.AbstractFunctionalTest
-import org.mockserver.configuration.Configuration
-import org.mockserver.integration.ClientAndServer
-import org.mockserver.logging.MockServerLogger
-import org.mockserver.mock.action.ExpectationResponseCallback
-import org.mockserver.model.HttpRequest
-import org.mockserver.model.HttpResponse
-import org.mockserver.model.MediaType
-import org.mockserver.socket.tls.KeyStoreFactory
+import software.xdev.mockserver.client.MockServerClient
+import software.xdev.mockserver.mock.action.ExpectationResponseCallback
+import software.xdev.mockserver.model.HttpRequest
+import software.xdev.mockserver.model.HttpResponse
+import software.xdev.mockserver.model.MediaType
+import software.xdev.mockserver.netty.MockServer
 import spock.lang.Shared
 
-import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLSocketFactory
-
-import static org.mockserver.integration.ClientAndServer.startClientAndServer
-import static org.mockserver.model.HttpRequest.request
-import static org.mockserver.model.HttpResponse.notFoundResponse
-import static org.mockserver.model.HttpResponse.response
+import static software.xdev.mockserver.model.HttpRequest.request
+import static software.xdev.mockserver.model.HttpResponse.notFoundResponse
+import static software.xdev.mockserver.model.HttpResponse.response
 
 class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
 
-    ClientAndServer repository
-
     @Shared
-    private SSLSocketFactory sslFactory
-
-    def setupSpec() {
-        sslFactory = HttpsURLConnection.getDefaultSSLSocketFactory()
-        HttpsURLConnection.setDefaultSSLSocketFactory(new KeyStoreFactory(new Configuration(), new MockServerLogger()).sslContext().socketFactory)
-    }
-
-    def cleanupSpec() {
-        HttpsURLConnection.setDefaultSSLSocketFactory(sslFactory)
-    }
+    private MockServer mockServer
+    @Shared
+    private MockServerClient repository
 
     def setup() {
-        repository = startClientAndServer()
+        mockServer = new MockServer()
+        repository = new MockServerClient("localhost", mockServer.localPort)
         buildFile << """
             plugins {
                 id 'io.micronaut.build.internal.version-catalog-updates'            
@@ -59,14 +45,16 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
             
             repositories {
                 maven {
-                    url "https://localhost:${repository.port}"
+                    url "http://localhost:${mockServer.localPort}"
+                    allowInsecureProtocol = true
                 }        
             }
         """
     }
 
     def cleanup() {
-        repository.stop()
+        repository.close()
+        mockServer.close()
     }
 
     def "can update a version catalog"() {
@@ -108,6 +96,7 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
     }
 
     static class LoggingCallback implements ExpectationResponseCallback {
+
         @Override
         HttpResponse handle(HttpRequest httpRequest) throws Exception {
             String path = "/repository${httpRequest.path}"
@@ -124,5 +113,4 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
             }
         }
     }
-
 }
