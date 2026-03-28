@@ -2,23 +2,28 @@ package io.micronaut.build.compat
 
 import io.micronaut.build.utils.ExternalURLService
 import org.gradle.testfixtures.ProjectBuilder
-import org.mockserver.integration.ClientAndServer
-import org.mockserver.model.MediaType
+import software.xdev.mockserver.client.MockServerClient
+import software.xdev.mockserver.model.MediaType
+import software.xdev.mockserver.netty.MockServer
 import spock.lang.Shared
 import spock.lang.Specification
 
 import java.nio.file.Files
 
-import static org.mockserver.model.HttpRequest.request
-import static org.mockserver.model.HttpResponse.response
+import static software.xdev.mockserver.model.HttpRequest.request
+import static software.xdev.mockserver.model.HttpResponse.response
 
 class FindBaselineTaskTest extends Specification {
+
     @Shared
-    private ClientAndServer mockServer
+    private MockServer mockServer
+    @Shared
+    private MockServerClient mockServerClient
 
     def setupSpec() {
-        mockServer = ClientAndServer.startClientAndServer()
-        mockServer.when(
+        mockServer = new MockServer()
+        mockServerClient = new MockServerClient("localhost", mockServer.localPort)
+        mockServerClient.when(
                 request()
                         .withMethod("GET")
                         .withPath("/io/micronaut/micronaut-core/maven-metadata.xml")
@@ -31,7 +36,8 @@ class FindBaselineTaskTest extends Specification {
     }
 
     def cleanupSpec() {
-        mockServer.stop()
+        mockServerClient.close()
+        mockServer.close()
     }
 
     def "parses releases from Maven Central"() {
