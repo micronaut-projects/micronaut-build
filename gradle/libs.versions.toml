@@ -32,7 +32,7 @@ junit6 = "6.0.1"
 logback = "1.5.20"
 checkstyle = "12.1.0"
 kotlin = "2.3.0"
-kotlin-ksp = "2.3.4"
+kotlin-ksp = "2.3.6"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
