@@ -84,14 +84,14 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
         writeMicronautBuildVersionIfPresent(rootDir.resolve("build-logic"));
     }
 
-    private static void writeMicronautBuildVersionIfPresent(Path buildLogicDirectory) {
-        if (Files.isDirectory(buildLogicDirectory)) {
-            writeMicronautBuildVersion(buildLogicDirectory);
+    private static void writeMicronautBuildVersionIfPresent(Path candidateDirectory) {
+        if (Files.isDirectory(candidateDirectory)) {
+            writeMicronautBuildVersion(candidateDirectory);
         }
     }
 
-    private static void writeMicronautBuildVersion(Path buildLogicDirectory) {
-        var gradleProperties = buildLogicDirectory.resolve("gradle.properties");
+    private static void writeMicronautBuildVersion(Path directory) {
+        var gradleProperties = directory.resolve("gradle.properties");
         var props = new Properties();
         if (Files.exists(gradleProperties)) {
             try (var reader = Files.newBufferedReader(gradleProperties)) {
