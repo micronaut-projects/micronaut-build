@@ -42,6 +42,15 @@ jobs:
           release_version="${DISPATCH_RELEASE_VERSION:-$RELEASE_TAG}"
           release_version="${release_version#v}"
           echo "release_version=$release_version" >> "$GITHUB_OUTPUT"
+      - name: Validate GraalVM reachability metadata token
+        env:
+          GRAALVM_REACHABILITY_METADATA_TOKEN: ${{ secrets.GRAALVM_REACHABILITY_METADATA_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          if [ -z "$GRAALVM_REACHABILITY_METADATA_TOKEN" ] && [ -z "$GH_TOKEN" ]; then
+            echo "GRAALVM_REACHABILITY_METADATA_TOKEN or GH_TOKEN is required to open a PR against oracle/graalvm-reachability-metadata." >&2
+            exit 1
+          fi
       - name: Generate Micronaut entries
         run: ./gradlew generateGraalVmReachabilityMetadata -PgraalVmReachabilityMetadataVersion="${{ steps.release_version.outputs.release_version }}"
       - name: Checkout GraalVM reachability metadata

@@ -54,7 +54,8 @@ public class MicronautParentPlugin implements Plugin<Project> {
         extension.getMetadataLocations().convention(List.of());
         extension.getTestsLocations().convention(project.getProviders()
             .gradleProperty("githubSlug")
-            .map(slug -> List.of("https://github.com/" + slug + "/actions/workflows/" + extension.getTestWorkflowName().get()))
+            .flatMap(slug -> extension.getTestWorkflowName()
+                .map(testWorkflowName -> List.of("https://github.com/" + slug + "/actions/workflows/" + testWorkflowName)))
             .orElse(List.of()));
         extension.getExcludedProjectNames().convention(List.of());
 
@@ -71,7 +72,10 @@ public class MicronautParentPlugin implements Plugin<Project> {
     private static Map<String, String> collectReachabilityMetadataModules(Project root, GraalVmReachabilityMetadataExtension extension) {
         var modules = new LinkedHashMap<String, String>();
         var excludedProjectNames = extension.getExcludedProjectNames().get();
-        for (Project project : root.getSubprojects()) {
+        for (Project project : root.getAllprojects()) {
+            if (project == root) {
+                continue;
+            }
             if (excludedProjectNames.contains(project.getName()) || isExcludedProject(project)) {
                 continue;
             }
