@@ -23,6 +23,15 @@ class VersionCatalogCompatibilityCheckTest extends Specification {
         then:
         RuntimeException ex = thrown()
         ex.message.startsWith("Version catalogs are not compatible:")
+        ex.message.contains("This indicates a potentially breaking change in the published version catalog.")
+        ex.message.contains("prefer releasing it in a new major version to follow semantic versioning.")
+        ex.message.contains('''micronautBom {
+    suppressions {
+        acceptedVersionRegressions.add("springboot")
+        acceptedVersionRegressions.add("spring")
+        acceptedLibraryRegressions.add("commons-dbcp")
+    }
+}''')
         def reportText = report.get().asFile.text
         reportText == '''The following versions were present in the baseline version but missing from this catalog:
   - springboot
@@ -50,6 +59,12 @@ The following libraries were present in the baseline version but missing from th
         then:
         RuntimeException ex = thrown()
         ex.message.startsWith("Version catalogs are not compatible:")
+        ex.message.contains("The release cannot proceed without an explicit compatibility decision.")
+        ex.message.contains('''micronautBom {
+    suppressions {
+        acceptedVersionRegressions.add("springboot")
+    }
+}''')
         def reportText = report.get().asFile.text
         reportText == '''The following versions were present in the baseline version but missing from this catalog:
   - springboot

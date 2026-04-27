@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -83,22 +84,41 @@ public abstract class VersionCatalogCompatibilityCheck extends DefaultTask {
         }
         Files.write(getReportFile().getAsFile().get().toPath(), report, StandardCharsets.UTF_8);
         if (fail) {
-            throw new RuntimeException("Version catalogs are not compatible:\n" + String.join("\n", report));
+            throw new RuntimeException("Version catalogs are not compatible:\n" +
+                String.join("\n", report) +
+                "\n\n" +
+                buildSuppressionAdvice(removedVersions, removedLibs));
         }
+    }
+
+    private static String buildSuppressionAdvice(Set<String> removedVersions, Set<String> removedLibs) {
+        List<String> advice = new ArrayList<>();
+        advice.add("This indicates a potentially breaking change in the published version catalog. " +
+            "The release cannot proceed without an explicit compatibility decision.");
+        advice.add("If the removal is intentional, prefer releasing it in a new major version to follow semantic versioning.");
+        advice.add("If the regression is accepted for this release, suppress it in the BOM build script:");
+        advice.add("");
+        advice.add("micronautBom {");
+        advice.add("    suppressions {");
+        removedVersions.forEach(version -> advice.add("        acceptedVersionRegressions.add(\"" + version + "\")"));
+        removedLibs.forEach(library -> advice.add("        acceptedLibraryRegressions.add(\"" + library + "\")"));
+        advice.add("    }");
+        advice.add("}");
+        return String.join("\n", advice);
     }
 
     private static Set<String> collectVersionsFrom(VersionCatalogTomlModel model) {
         return model.getVersionsTable()
                 .stream()
                 .map(VersionModel::getReference)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private static Set<String> collectLibrariesFrom(VersionCatalogTomlModel model) {
         return model.getLibrariesTable()
                 .stream()
                 .map(Library::getAlias)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private VersionCatalogTomlModel parse(RegularFileProperty file) {
