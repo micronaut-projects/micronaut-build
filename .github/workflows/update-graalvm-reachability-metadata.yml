@@ -1,0 +1,70 @@
+name: Update GraalVM Reachability Metadata
+on:
+  release:
+    types: [published]
+  workflow_call:
+    inputs:
+      release_version:
+        description: The Micronaut release version to publish in the GraalVM metadata list.
+        required: true
+        type: string
+    secrets:
+      GRAALVM_REACHABILITY_METADATA_TOKEN:
+        required: false
+      GH_TOKEN:
+        required: false
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: The Micronaut release version to publish in the GraalVM metadata list.
+        required: true
+permissions:
+  contents: read
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Micronaut Build
+        uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Determine release version
+        id: release_version
+        env:
+          DISPATCH_RELEASE_VERSION: ${{ inputs.release_version }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          release_version="${DISPATCH_RELEASE_VERSION:-$RELEASE_TAG}"
+          release_version="${release_version#v}"
+          echo "release_version=$release_version" >> "$GITHUB_OUTPUT"
+      - name: Generate Micronaut entries
+        run: ./gradlew generateGraalVmReachabilityMetadata -PgraalVmReachabilityMetadataVersion="${{ steps.release_version.outputs.release_version }}"
+      - name: Checkout GraalVM reachability metadata
+        uses: actions/checkout@v4
+        with:
+          repository: oracle/graalvm-reachability-metadata
+          token: ${{ secrets.GRAALVM_REACHABILITY_METADATA_TOKEN || secrets.GH_TOKEN }}
+          path: graalvm-reachability-metadata
+      - name: Merge Micronaut entries
+        run: |
+          jq -s '.[0] as $current | .[1] as $updates | ($updates | map(.artifact)) as $updatedArtifacts | (($current | map(select(.artifact as $artifact | ($updatedArtifacts | index($artifact)) == null))) + $updates | sort_by(.artifact))' \
+            graalvm-reachability-metadata/metadata/library-and-framework-list.json \
+            build/graalvm-reachability-metadata/library-and-framework-list.json \
+            > graalvm-reachability-metadata/metadata/library-and-framework-list.updated.json
+          mv graalvm-reachability-metadata/metadata/library-and-framework-list.updated.json graalvm-reachability-metadata/metadata/library-and-framework-list.json
+      - name: Create GraalVM reachability metadata pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GRAALVM_REACHABILITY_METADATA_TOKEN || secrets.GH_TOKEN }}
+          path: graalvm-reachability-metadata
+          branch: update-micronaut-build-${{ steps.release_version.outputs.release_version }}
+          delete-branch: true
+          title: Update Micronaut Build GraalVM support list for ${{ steps.release_version.outputs.release_version }}
+          commit-message: Update Micronaut Build GraalVM support list for ${{ steps.release_version.outputs.release_version }}
+          body: |
+            Updates the Micronaut Build entries in `metadata/library-and-framework-list.json` for release `${{ steps.release_version.outputs.release_version }}`.
