@@ -6,4 +6,11 @@ public class Dummy1 {
     return true;
   }
 
+  public final boolean isMapHelper(java.util.Map<?, ?> helper) {
+    if (helper == null) {
+      return false;
+    }
+    return true;
+  }
+
 }
