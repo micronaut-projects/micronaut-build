@@ -27,15 +27,15 @@ class VersionCatalogCompatibilityCheckTest extends Specification {
         ex.message.contains("prefer releasing it in a new major version to follow semantic versioning.")
         ex.message.contains('''micronautBom {
     suppressions {
-        acceptedVersionRegressions.add("springboot")
         acceptedVersionRegressions.add("spring")
+        acceptedVersionRegressions.add("springboot")
         acceptedLibraryRegressions.add("commons-dbcp")
     }
 }''')
         def reportText = report.get().asFile.text
         reportText == '''The following versions were present in the baseline version but missing from this catalog:
-  - springboot
   - spring
+  - springboot
 The following libraries were present in the baseline version but missing from this catalog:
   - commons-dbcp
 '''

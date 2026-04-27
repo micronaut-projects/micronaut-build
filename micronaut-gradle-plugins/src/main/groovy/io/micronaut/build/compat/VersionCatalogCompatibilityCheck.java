@@ -35,7 +35,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -132,7 +131,7 @@ public abstract class VersionCatalogCompatibilityCheck extends DefaultTask {
     }
 
     private static Set<String> diff(Set<String> baseline, Set<String> current, Set<String> acceptedRegressions) {
-        Set<String> removedVersions = new HashSet<>(baseline);
+        Set<String> removedVersions = new LinkedHashSet<>(baseline);
         removedVersions.removeAll(current);
         removedVersions.removeAll(acceptedRegressions);
         return removedVersions;
