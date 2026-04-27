@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.testlogger.plugin)
     implementation(libs.nexus.publish.plugin)
     implementation(libs.sonar.plugin)
+    implementation(libs.graalvm.native.gradle.plugin)
 
     implementation(libs.develocity.plugin)
     implementation(libs.gradle.github.actions.plugin)
@@ -74,6 +75,7 @@ micronautBuildPlugin {
     versionsMap.put("micronaut_docs", libs.versions.micronaut.docs)
     versionsMap.put("micronaut_logging", libs.versions.micronaut.logging)
     versionsMap.put("micronaut_test", libs.versions.micronaut.test)
+    versionsMap.put("graalvm_native_build_tools", libs.versions.graalvm.native.build.tools)
     versionsMap.put("groovy", libs.versions.groovy)
     versionsMap.put("spock", libs.versions.spock)
     versionsMap.put("junit6", libs.versions.junit6)
