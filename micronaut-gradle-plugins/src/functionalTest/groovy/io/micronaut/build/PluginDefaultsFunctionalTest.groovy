@@ -42,6 +42,55 @@ class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
         outputContains "Java version: ${System.getProperty('CURRENT_JDK')}"
     }
 
+    void "writes micronaut build version for build logic included builds"() {
+        given:
+        settingsFile << """
+            pluginManagement {
+                repositories {
+                    gradlePluginPortal()
+                    mavenCentral()
+                }
+            }
+
+            plugins {
+                id 'io.micronaut.build.shared.settings'
+            }
+
+            rootProject.name = 'test-build-logic'
+            includeBuild 'build-logic'
+        """
+        buildFile << ""
+        file("build-logic/settings.gradle") << """
+            pluginManagement {
+                repositories {
+                    gradlePluginPortal()
+                    mavenCentral()
+                }
+            }
+
+            rootProject.name = 'build-logic'
+        """
+        file("build-logic/build.gradle") << """
+            plugins {
+                id 'groovy-gradle-plugin'
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            dependencies {
+                implementation(providers.gradleProperty("micronaut-build-version").map { "io.micronaut.build.internal:micronaut-kotlin-build-plugins:\${it}" }.get())
+            }
+        """
+
+        when:
+        run 'help'
+
+        then:
+        file("build-logic/gradle.properties").text.contains("micronaut-build-version=")
+    }
+
    void "warns if using #property compatibility"() {
         given:
         withSample("test-micronaut-module")

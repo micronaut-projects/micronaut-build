@@ -80,14 +80,18 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
             }
         });
         var rootDir = settings.getRootDir().toPath();
-        var buildSrc = rootDir.resolve("buildSrc");
-        if (Files.isDirectory(buildSrc)) {
-            writeMicronautBuildVersion(buildSrc);
+        writeMicronautBuildVersionIfPresent(rootDir.resolve("buildSrc"));
+        writeMicronautBuildVersionIfPresent(rootDir.resolve("build-logic"));
+    }
+
+    private static void writeMicronautBuildVersionIfPresent(Path buildLogicDirectory) {
+        if (Files.isDirectory(buildLogicDirectory)) {
+            writeMicronautBuildVersion(buildLogicDirectory);
         }
     }
 
-    private static void writeMicronautBuildVersion(Path buildSrc) {
-        var gradleProperties = buildSrc.resolve("gradle.properties");
+    private static void writeMicronautBuildVersion(Path buildLogicDirectory) {
+        var gradleProperties = buildLogicDirectory.resolve("gradle.properties");
         var props = new Properties();
         if (Files.exists(gradleProperties)) {
             try (var reader = Files.newBufferedReader(gradleProperties)) {
