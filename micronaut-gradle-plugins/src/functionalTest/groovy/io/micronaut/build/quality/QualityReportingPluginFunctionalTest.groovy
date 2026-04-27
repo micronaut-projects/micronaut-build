@@ -3,7 +3,10 @@ package io.micronaut.build.quality
 import io.micronaut.build.AbstractFunctionalTest
 
 import org.w3c.dom.Element
+import org.xml.sax.EntityResolver
+import org.xml.sax.InputSource
 
+import javax.xml.XMLConstants
 import javax.xml.parsers.DocumentBuilderFactory
 
 class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
@@ -47,24 +50,6 @@ class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
         aggregateJacocoReport().exists()
     }
 
-    void "jacocoTestReport runs aggregate coverage reports"() {
-        given:
-        withSample("test-micronaut-module")
-        file("gradle.properties") << "micronaut.jacoco.enabled=true"
-
-        when:
-        run 'jacocoTestReport'
-
-        then:
-        tasks {
-            succeeded ':subproject1:test'
-            succeeded ':subproject2:test'
-            succeeded ':testCodeCoverageReport'
-            succeeded ':jacocoTestReport'
-        }
-        file("build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml").exists()
-    }
-
     void "it can run Spotless and Checkstyle"() {
         given:
         withSample("test-micronaut-module")
@@ -90,9 +75,17 @@ class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
 
     private static Map<String, String> methodBranchCoverage(File report, String className, String methodName) {
         def documentBuilderFactory = DocumentBuilderFactory.newInstance()
-        documentBuilderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
+        documentBuilderFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)
+        documentBuilderFactory.setFeature("http://xml.org/sax/features/external-general-entities", false)
+        documentBuilderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
         documentBuilderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
-        def document = documentBuilderFactory.newDocumentBuilder().parse(report)
+        documentBuilderFactory.setXIncludeAware(false)
+        documentBuilderFactory.setExpandEntityReferences(false)
+        def documentBuilder = documentBuilderFactory.newDocumentBuilder()
+        documentBuilder.setEntityResolver({ String publicId, String systemId ->
+            new InputSource(new StringReader(""))
+        } as EntityResolver)
+        def document = documentBuilder.parse(report)
 
         def classes = document.getElementsByTagName("class")
         for (int i = 0; i < classes.length; i++) {

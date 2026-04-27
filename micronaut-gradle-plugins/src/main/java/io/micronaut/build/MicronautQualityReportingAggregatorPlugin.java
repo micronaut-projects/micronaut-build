@@ -84,7 +84,7 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                    t.setDescription("Generates aggregate Jacoco reports");
                    t.dependsOn(COVERAGE_REPORT_TASK_NAME);
                    t.doFirst(unused2 -> {
-                       System.out.println("Generating aggregate Jacoco reports");
+                       rootProject.getLogger().lifecycle("Generating aggregate Jacoco reports");
                    });
                 });
             }
