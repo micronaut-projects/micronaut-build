@@ -15,41 +15,16 @@ public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAt
     private static final String LANG_KOTLIN = 'kotlin'
     private static final String LANG_PYTHON = 'python'
     public static final List<String> LANGS = [LANG_JAVA, LANG_PYTHON, LANG_KOTLIN, LANG_GROOVY]
-    private static final String DEFAULT_KOTLIN_PROJECT = 'test-suite-kotlin'
-    private static final String DEFAULT_PYTHON_PROJECT = 'test-suite-python'
-    private static final String DEFAULT_JAVA_PROJECT = 'test-suite'
-    private static final String DEFAULT_GROOVY_PROJECT = 'test-suite-groovy'
-    private static final String ATTR_PROJECT = 'project'
-    private static final String ATTR_SOURCE = 'source'
-    private static final String ATTR_PROJECT_BASE = 'project-base'
 
     LanguageSnippetMacro(String macroName, Map<String, Object> config, Asciidoctor asciidoctor) {
         super(macroName, config)
         this.asciidoctor = asciidoctor
     }
 
-    private String projectDir(String lang, Map<String, Object> attributes) {
-        String projectBase = valueAtAttributes(ATTR_PROJECT_BASE, attributes)
-        if (projectBase) {
-            return "$projectBase-$lang"
-        }
-
-        String project = valueAtAttributes(ATTR_PROJECT, attributes)
-        if (project) {
-            return project
-        } else {
-            if (lang == LANG_KOTLIN) {
-                return DEFAULT_KOTLIN_PROJECT
-            }
-            else if (lang == LANG_PYTHON) {
-                return DEFAULT_PYTHON_PROJECT
-            }
-            if (lang == LANG_GROOVY) {
-                return DEFAULT_GROOVY_PROJECT
-            } else {
-                return DEFAULT_JAVA_PROJECT
-            }
-        }
+    private File snippetFile(StructuralNode parent, String lang, String fileName, Map<String, Object> attributes) {
+        String sourceDir = parent.document.getAttribute('sourcedir') ?: parent.document.getAttribute('sourceDir')
+        File baseDir = sourceDir ? new File(sourceDir) : System.getProperty("user.dir") ? new File(System.getProperty("user.dir")) : new File("")
+        SnippetSourceResolver.resolveSnippetFile(baseDir, lang, fileName, attributes)
     }
 
     @Override
@@ -74,31 +49,10 @@ public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAt
         String[] files = target.split(",")
         for (lang in languagesToRender) {
             if (title != null) content << ".$title\n\n"
-            String projectDir = projectDir(lang, attributes)
-            String ext
-
-            if(lang == LANG_KOTLIN)
-                ext = 'kt'
-            else if (lang == LANG_PYTHON)
-                ext = 'py'
-            else
-                ext = lang
-            String sourceFolder = lang
-            String sourceType = valueAtAttributes(ATTR_SOURCE, attributes) ?: 'test'
 
             List includes = []
             for (fileName in files) {
-                String baseName = fileName.replace(".", File.separator)
-                // io is an internal package for Python
-                if (lang == LANG_PYTHON && baseName.startsWith("io/")) {
-                    baseName = baseName.substring(3)
-                }
-
-                String pathName = "$projectDir/src/$sourceType/$sourceFolder/${baseName}.$ext"
-                if (System.getProperty("user.dir") != null) {
-                    pathName = "${System.getProperty("user.dir")}${File.separator}${pathName}".toString()
-                }
-                File file = new File(pathName)
+                File file = snippetFile(parent, lang, fileName, attributes)
                 if (!file.exists()) {
                     println "!!!! WARNING: NO FILE FOUND MATCHING TARGET PASSED IN AT PATH : $file.path"
                     continue
