@@ -8,7 +8,7 @@ class MicronautBuildExtensionSpec extends Specification {
 
     void "defines the GraalVM Native Build Tools version"() {
         expect:
-        DefaultVersions.GRAALVM_NATIVE_BUILD_TOOLS_VERSION == "0.11.5"
+        DefaultVersions.GRAALVM_NATIVE_BUILD_TOOLS_VERSION == "1.1.0"
     }
 
     @Unroll
