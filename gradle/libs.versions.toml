@@ -8,6 +8,7 @@ gradle-custom-userdata-plugin = "2.3"
 develocity-plugin = "4.2.2"
 gradle-github-actions-plugin = "1.4.0"
 grails-gdoc = "1.0.1"
+graalvm-native-build-tools = "1.1.0"
 mockserver = "2.0.4"
 nexus-publish-plugin = "2.0.0"
 snakeyaml = "2.5"
@@ -45,6 +46,7 @@ gradle-custom-userdata-plugin = { module = "com.gradle:common-custom-user-data-g
 develocity-plugin = { module = "com.gradle:develocity-gradle-plugin", version.ref = "develocity-plugin" }
 gradle-github-actions-plugin = { module = "org.nosphere.gradle.github:gradle-github-actions-plugin", version.ref = "gradle-github-actions-plugin" }
 grails-gdoc = { module = "org.grails:grails-gdoc-engine", version.ref = "grails-gdoc" }
+graalvm-native-gradle-plugin = { module = "org.graalvm.buildtools:native-gradle-plugin", version.ref = "graalvm-native-build-tools" }
 nexus-publish-plugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexus-publish-plugin" }
 snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
 sonar-plugin = { module = "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin", version.ref = "sonar-plugin" }
