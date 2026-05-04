@@ -60,7 +60,18 @@ class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
             includeBuild 'build-logic'
         """
         buildFile << ""
-        file("build-logic/settings.gradle") << """
+        writeIncludedBuild("build-logic")
+
+        when:
+        run 'help'
+
+        then:
+        file("build-logic/gradle.properties").text.contains("micronaut-build-version=")
+    }
+
+    void "writes micronaut build version for configured included build directory"() {
+        given:
+        settingsFile << """
             pluginManagement {
                 repositories {
                     gradlePluginPortal()
@@ -68,27 +79,47 @@ class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
                 }
             }
 
-            rootProject.name = 'build-logic'
-        """
-        file("build-logic/build.gradle") << """
             plugins {
-                id 'groovy-gradle-plugin'
+                id 'io.micronaut.build.shared.settings'
             }
 
-            repositories {
-                mavenCentral()
+            micronautBuild {
+                micronautBuildVersionDirectories.add('custom-build-logic')
             }
 
-            dependencies {
-                implementation(providers.gradleProperty("micronaut-build-version").map { "io.micronaut.build.internal:micronaut-kotlin-build-plugins:\${it}" }.get())
-            }
+            rootProject.name = 'test-custom-build-logic'
+            includeBuild 'custom-build-logic'
         """
+        buildFile << ""
+        writeIncludedBuild("custom-build-logic")
+        file("other-build-logic/settings.gradle") << "rootProject.name = 'other-build-logic'"
 
         when:
         run 'help'
 
         then:
-        file("build-logic/gradle.properties").text.contains("micronaut-build-version=")
+        file("custom-build-logic/gradle.properties").text.contains("micronaut-build-version=")
+        !file("other-build-logic/gradle.properties").exists()
+    }
+
+    void "rejects unsafe micronaut build version directory"() {
+        given:
+        settingsFile << """
+            plugins {
+                id 'io.micronaut.build.shared.settings'
+            }
+
+            micronautBuild {
+                micronautBuildVersionDirectories.add('../outside')
+            }
+        """
+        buildFile << ""
+
+        when:
+        fails 'help'
+
+        then:
+        errorOutputContains "Micronaut build version directory must stay under the settings root: ../outside"
     }
 
    void "warns if using #property compatibility"() {
@@ -140,5 +171,31 @@ You can do this directly in the project, or, better, in a convention plugin if i
             succeeded ':subproject1:compileTestGroovy' // uses Spock by default
             succeeded ':subproject2:compileTestJava' // overrides to JUnit5
         }
+    }
+
+    private void writeIncludedBuild(String name) {
+        file("${name}/settings.gradle") << """
+            pluginManagement {
+                repositories {
+                    gradlePluginPortal()
+                    mavenCentral()
+                }
+            }
+
+            rootProject.name = '${name}'
+        """
+        file("${name}/build.gradle") << """
+            plugins {
+                id 'groovy-gradle-plugin'
+            }
+
+            repositories {
+                mavenCentral()
+            }
+
+            dependencies {
+                implementation(providers.gradleProperty("micronaut-build-version").map { "io.micronaut.build.internal:micronaut-kotlin-build-plugins:\${it}" }.get())
+            }
+        """
     }
 }

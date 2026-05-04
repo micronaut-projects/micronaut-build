@@ -82,6 +82,25 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
         var rootDir = settings.getRootDir().toPath();
         writeMicronautBuildVersionIfPresent(rootDir.resolve("buildSrc"));
         writeMicronautBuildVersionIfPresent(rootDir.resolve("build-logic"));
+        settings.getGradle().settingsEvaluated(unused -> writeMicronautBuildVersions(rootDir, buildSettingsExtension.getMicronautBuildVersionDirectories().get()));
+    }
+
+    private static void writeMicronautBuildVersions(Path rootDirectory, List<String> directories) {
+        for (String directory : directories) {
+            writeMicronautBuildVersionIfPresent(resolveMicronautBuildVersionDirectory(rootDirectory, directory));
+        }
+    }
+
+    private static Path resolveMicronautBuildVersionDirectory(Path rootDirectory, String directory) {
+        Path directoryPath = Path.of(directory);
+        if (directoryPath.isAbsolute()) {
+            throw new InvalidUserCodeException("Micronaut build version directory must be root-relative: " + directory);
+        }
+        Path candidateDirectory = rootDirectory.resolve(directoryPath).normalize();
+        if (!candidateDirectory.startsWith(rootDirectory)) {
+            throw new InvalidUserCodeException("Micronaut build version directory must stay under the settings root: " + directory);
+        }
+        return candidateDirectory;
     }
 
     private static void writeMicronautBuildVersionIfPresent(Path candidateDirectory) {
@@ -94,7 +113,7 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
         var gradleProperties = directory.resolve("gradle.properties");
         var props = new Properties();
         if (Files.exists(gradleProperties)) {
-            try (var reader = Files.newBufferedReader(gradleProperties)) {
+            try (var reader = Files.newBufferedReader(gradleProperties, StandardCharsets.ISO_8859_1)) {
                 props.load(reader);
             } catch (IOException e) {
                 throw new RuntimeException(e);
