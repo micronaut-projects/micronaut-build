@@ -1,6 +1,6 @@
 {
   "extends": [
-    "config:base"
+    "config:recommended"
   ],
   "addLabels": ["dependency-upgrade"],
   "schedule": [
@@ -11,8 +11,10 @@
   "timezone": "Europe/Prague",
   "packageRules": [
     {
-      "matchPackagePatterns": ["actions.*"],
-      "dependencyDashboardApproval": true
+      "dependencyDashboardApproval": true,
+      "matchPackageNames": [
+        "/actions.*/"
+      ]
     }
   ],
   "ignorePaths": ["src/functionalTest/gradle-projects/**"]
