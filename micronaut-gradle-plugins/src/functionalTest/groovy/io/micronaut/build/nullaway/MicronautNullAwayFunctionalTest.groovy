@@ -1,16 +1,8 @@
 package io.micronaut.build.nullaway
 
-import org.gradle.testkit.runner.GradleRunner
-import spock.lang.Specification
-import spock.lang.TempDir
+import io.micronaut.build.AbstractFunctionalTest
 
-import java.nio.file.Files
-import java.nio.file.Path
-
-class MicronautNullAwayFunctionalTest extends Specification {
-
-    @TempDir
-    Path projectDir
+class MicronautNullAwayFunctionalTest extends AbstractFunctionalTest {
 
     private static final String BUILD_SCRIPT = '''
         import io.micronaut.build.utils.DefaultVersions
@@ -69,29 +61,27 @@ class MicronautNullAwayFunctionalTest extends Specification {
 
     void "nullaway plugin configures default checks and dependencies"() {
         given:
-        Files.writeString(projectDir.resolve("settings.gradle"), "rootProject.name = 'nullaway-default'")
-        Files.writeString(projectDir.resolve("gradle.properties"), "projectVersion=1.0.0\ntitle=Demo")
-        Files.writeString(projectDir.resolve("build.gradle"), BUILD_SCRIPT)
+        settingsFile.text = "rootProject.name = 'nullaway-default'"
+        gradlePropertiesFile.text = "projectVersion=1.0.0\ntitle=Demo"
+        buildFile.text = BUILD_SCRIPT
 
-        expect:
-        GradleRunner.create()
-                .withProjectDir(projectDir.toFile())
-                .withPluginClasspath()
-                .withArguments("verifyNullAway")
-                .build()
+        when:
+        run "verifyNullAway"
+
+        then:
+        noExceptionThrown()
     }
 
     void "nullaway plugin disables NullAway for tck projects"() {
         given:
-        Files.writeString(projectDir.resolve("settings.gradle"), "rootProject.name = 'demo-tck'")
-        Files.writeString(projectDir.resolve("gradle.properties"), "projectVersion=1.0.0\ntitle=Demo")
-        Files.writeString(projectDir.resolve("build.gradle"), TCK_BUILD_SCRIPT)
+        settingsFile.text = "rootProject.name = 'demo-tck'"
+        gradlePropertiesFile.text = "projectVersion=1.0.0\ntitle=Demo"
+        buildFile.text = TCK_BUILD_SCRIPT
 
-        expect:
-        GradleRunner.create()
-                .withProjectDir(projectDir.toFile())
-                .withPluginClasspath()
-                .withArguments("verifyTckNullAway")
-                .build()
+        when:
+        run "verifyTckNullAway"
+
+        then:
+        noExceptionThrown()
     }
 }
