@@ -1,5 +1,8 @@
 package io.micronaut.build
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
 
     void "defaults to Java 25"() {
@@ -120,6 +123,48 @@ class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
 
         then:
         errorOutputContains "Micronaut build version directory must stay under the settings root: ../outside"
+    }
+
+    void "rejects configured micronaut build version directory symlink outside settings root"() {
+        given:
+        settingsFile << """
+            plugins {
+                id 'io.micronaut.build.shared.settings'
+            }
+
+            micronautBuild {
+                micronautBuildVersionDirectories.add('custom-build-logic')
+            }
+        """
+        buildFile << ""
+        Path outsideDirectory = Files.createTempDirectory(testDirectory.parent, "outside-build-logic")
+        Files.createSymbolicLink(testDirectory.resolve("custom-build-logic"), outsideDirectory)
+
+        when:
+        fails 'help'
+
+        then:
+        errorOutputContains "Micronaut build version directory must stay under the settings root: custom-build-logic"
+        !outsideDirectory.resolve("gradle.properties").toFile().exists()
+    }
+
+    void "rejects default micronaut build version directory symlink outside settings root"() {
+        given:
+        settingsFile << """
+            plugins {
+                id 'io.micronaut.build.shared.settings'
+            }
+        """
+        buildFile << ""
+        Path outsideDirectory = Files.createTempDirectory(testDirectory.parent, "outside-build-logic")
+        Files.createSymbolicLink(testDirectory.resolve("build-logic"), outsideDirectory)
+
+        when:
+        fails 'help'
+
+        then:
+        errorOutputContains "Micronaut build version directory must stay under the settings root: build-logic"
+        !outsideDirectory.resolve("gradle.properties").toFile().exists()
     }
 
    void "warns if using #property compatibility"() {

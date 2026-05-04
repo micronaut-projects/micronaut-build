@@ -35,6 +35,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -79,15 +80,15 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
                 extraProperties.set("micronautVersion", buildSettingsExtension.getMicronautVersion());
             }
         });
-        var rootDir = settings.getRootDir().toPath();
-        writeMicronautBuildVersionIfPresent(rootDir.resolve("buildSrc"));
-        writeMicronautBuildVersionIfPresent(rootDir.resolve("build-logic"));
+        var rootDir = settings.getRootDir().toPath().toAbsolutePath().normalize();
+        writeMicronautBuildVersionIfPresent(rootDir, resolveMicronautBuildVersionDirectory(rootDir, "buildSrc"), "buildSrc");
+        writeMicronautBuildVersionIfPresent(rootDir, resolveMicronautBuildVersionDirectory(rootDir, "build-logic"), "build-logic");
         settings.getGradle().settingsEvaluated(unused -> writeMicronautBuildVersions(rootDir, buildSettingsExtension.getMicronautBuildVersionDirectories().get()));
     }
 
     private static void writeMicronautBuildVersions(Path rootDirectory, List<String> directories) {
         for (String directory : directories) {
-            writeMicronautBuildVersionIfPresent(resolveMicronautBuildVersionDirectory(rootDirectory, directory));
+            writeMicronautBuildVersionIfPresent(rootDirectory, resolveMicronautBuildVersionDirectory(rootDirectory, directory), directory);
         }
     }
 
@@ -103,9 +104,24 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
         return candidateDirectory;
     }
 
-    private static void writeMicronautBuildVersionIfPresent(Path candidateDirectory) {
-        if (Files.isDirectory(candidateDirectory)) {
-            writeMicronautBuildVersion(candidateDirectory);
+    private static void writeMicronautBuildVersionIfPresent(Path rootDirectory, Path candidateDirectory, String directory) {
+        if (Files.exists(candidateDirectory, LinkOption.NOFOLLOW_LINKS)) {
+            Path realRootDirectory = toRealPath(rootDirectory, "settings root");
+            Path realCandidateDirectory = toRealPath(candidateDirectory, "Micronaut build version directory " + directory);
+            if (!realCandidateDirectory.startsWith(realRootDirectory)) {
+                throw new InvalidUserCodeException("Micronaut build version directory must stay under the settings root: " + directory);
+            }
+            if (Files.isDirectory(realCandidateDirectory)) {
+                writeMicronautBuildVersion(realCandidateDirectory);
+            }
+        }
+    }
+
+    private static Path toRealPath(Path path, String description) {
+        try {
+            return path.toRealPath();
+        } catch (IOException e) {
+            throw new InvalidUserCodeException(description + " must resolve to an existing path: " + path, e);
         }
     }
 
