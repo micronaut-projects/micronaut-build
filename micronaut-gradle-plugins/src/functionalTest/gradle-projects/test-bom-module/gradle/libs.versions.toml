@@ -24,4 +24,4 @@ asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 [plugins]
 managed-ksp = { id = "com.google.devtools.ksp", version.ref = "managed-ksp" }
 managed-hard-versioned = { id = "some.other.id", version = "1.2.3" }
-shadow = { id = "com.github.johnrengelman.shadow", version = "7.1.2" }
+shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
