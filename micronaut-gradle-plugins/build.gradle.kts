@@ -29,6 +29,7 @@ dependencies {
     implementation(libs.sonatype.scan.plugin) {
         exclude(group = "org.codehaus.groovy")
     }
+    implementation(libs.gradle.errorprone)
 
     implementation(libs.tomlj)
     implementation(libs.maven.model.builder)
@@ -81,6 +82,8 @@ micronautBuildPlugin {
     versionsMap.put("junit6", libs.versions.junit6)
     versionsMap.put("checkstyle", libs.versions.checkstyle)
     versionsMap.put("logback", libs.versions.logback)
+    versionsMap.put("nullaway", libs.versions.nullaway)
+    versionsMap.put("error_prone_core", libs.versions.error.prone.core)
 
     // Project plugins
     definePlugin("aot-module", "io.micronaut.build.aot.MicronautAotModulePlugin")
@@ -95,6 +98,7 @@ micronautBuildPlugin {
     definePlugin("java-base", "io.micronaut.build.MicronautBuildJavaBasePlugin")
     definePlugin("kotlin-base", "io.micronaut.build.MicronautBuildKotlinBasePlugin")
     definePlugin("module", "io.micronaut.build.MicronautModulePlugin")
+    definePlugin("nullaway", "io.micronaut.build.MicronautNullAwayPlugin")
     definePlugin("parent", "io.micronaut.build.MicronautParentPlugin")
     definePlugin("parent-publishing", "io.micronaut.build.MicronautParentPublishingPlugin")
     definePlugin("publishing", "io.micronaut.build.MicronautPublishingPlugin")

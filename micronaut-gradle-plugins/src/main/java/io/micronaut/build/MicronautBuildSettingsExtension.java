@@ -89,6 +89,14 @@ public abstract class MicronautBuildSettingsExtension {
      */
     public abstract ListProperty<String> getNonStandardProjectNamePrefixes();
 
+    /**
+     * Configures root-relative directories whose {@code gradle.properties} should
+     * receive the current Micronaut Build version for included build dependency wiring.
+     *
+     * @return the list of directories
+     */
+    public abstract ListProperty<String> getMicronautBuildVersionDirectories();
+
     @Inject
     protected abstract ProviderFactory getProviders();
 
@@ -110,6 +118,7 @@ public abstract class MicronautBuildSettingsExtension {
         getUseStandardizedProjectNames().convention(false);
         getNonStandardProjectPathPrefixes().set(Collections.singletonList(":examples:"));
         getNonStandardProjectNamePrefixes().set(Arrays.asList(MICRONAUT_PROJECT_PREFIX, TEST_SUITE_PROJECT_PREFIX));
+        getMicronautBuildVersionDirectories().convention(Arrays.asList("buildSrc", "build-logic"));
         this.versionCatalogTomlModel = loadVersionCatalogTomlModel();
         this.micronautVersion = determineMicronautVersion();
         this.micronautTestVersion = determineMicronautTestVersion();

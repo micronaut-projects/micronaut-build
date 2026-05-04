@@ -35,6 +35,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -79,18 +80,56 @@ public class MicronautSharedSettingsPlugin implements MicronautPlugin<Settings> 
                 extraProperties.set("micronautVersion", buildSettingsExtension.getMicronautVersion());
             }
         });
-        var rootDir = settings.getRootDir().toPath();
-        var buildSrc = rootDir.resolve("buildSrc");
-        if (Files.isDirectory(buildSrc)) {
-            writeMicronautBuildVersion(buildSrc);
+        var rootDir = settings.getRootDir().toPath().toAbsolutePath().normalize();
+        writeMicronautBuildVersionIfPresent(rootDir, resolveMicronautBuildVersionDirectory(rootDir, "buildSrc"), "buildSrc");
+        writeMicronautBuildVersionIfPresent(rootDir, resolveMicronautBuildVersionDirectory(rootDir, "build-logic"), "build-logic");
+        settings.getGradle().settingsEvaluated(unused -> writeMicronautBuildVersions(rootDir, buildSettingsExtension.getMicronautBuildVersionDirectories().get()));
+    }
+
+    private static void writeMicronautBuildVersions(Path rootDirectory, List<String> directories) {
+        for (String directory : directories) {
+            writeMicronautBuildVersionIfPresent(rootDirectory, resolveMicronautBuildVersionDirectory(rootDirectory, directory), directory);
         }
     }
 
-    private static void writeMicronautBuildVersion(Path buildSrc) {
-        var gradleProperties = buildSrc.resolve("gradle.properties");
+    private static Path resolveMicronautBuildVersionDirectory(Path rootDirectory, String directory) {
+        Path directoryPath = Path.of(directory);
+        if (directoryPath.isAbsolute()) {
+            throw new InvalidUserCodeException("Micronaut build version directory must be root-relative: " + directory);
+        }
+        Path candidateDirectory = rootDirectory.resolve(directoryPath).normalize();
+        if (!candidateDirectory.startsWith(rootDirectory)) {
+            throw new InvalidUserCodeException("Micronaut build version directory must stay under the settings root: " + directory);
+        }
+        return candidateDirectory;
+    }
+
+    private static void writeMicronautBuildVersionIfPresent(Path rootDirectory, Path candidateDirectory, String directory) {
+        if (Files.exists(candidateDirectory, LinkOption.NOFOLLOW_LINKS)) {
+            Path realRootDirectory = toRealPath(rootDirectory, "settings root");
+            Path realCandidateDirectory = toRealPath(candidateDirectory, "Micronaut build version directory " + directory);
+            if (!realCandidateDirectory.startsWith(realRootDirectory)) {
+                throw new InvalidUserCodeException("Micronaut build version directory must stay under the settings root: " + directory);
+            }
+            if (Files.isDirectory(realCandidateDirectory)) {
+                writeMicronautBuildVersion(realCandidateDirectory);
+            }
+        }
+    }
+
+    private static Path toRealPath(Path path, String description) {
+        try {
+            return path.toRealPath();
+        } catch (IOException e) {
+            throw new InvalidUserCodeException(description + " must resolve to an existing path: " + path, e);
+        }
+    }
+
+    private static void writeMicronautBuildVersion(Path directory) {
+        var gradleProperties = directory.resolve("gradle.properties");
         var props = new Properties();
         if (Files.exists(gradleProperties)) {
-            try (var reader = Files.newBufferedReader(gradleProperties)) {
+            try (var reader = Files.newBufferedReader(gradleProperties, StandardCharsets.ISO_8859_1)) {
                 props.load(reader);
             } catch (IOException e) {
                 throw new RuntimeException(e);

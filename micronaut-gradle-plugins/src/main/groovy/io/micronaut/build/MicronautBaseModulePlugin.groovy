@@ -26,6 +26,7 @@ class MicronautBaseModulePlugin implements Plugin<Project> {
         project.pluginManager.apply(MicronautBinaryCompatibilityPlugin)
         project.pluginManager.apply(SonatypeConfigurationPlugin)
         project.pluginManager.apply(MicronautModuleInfoPlugin)
+        project.pluginManager.apply(MicronautNullAwayPlugin)
         configureJUnit(project)
         assertSettingsPluginApplied(project)
         project.pluginManager.withPlugin("maven-publish") {
