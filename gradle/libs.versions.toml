@@ -1,5 +1,5 @@
 [versions]
-asciidoctorj = "3.0.0"
+asciidoctorj = "3.0.1"
 jsoup = "1.18.3"
 commons-lang3 = "3.18.0"
 commons-text = "1.14.0"
