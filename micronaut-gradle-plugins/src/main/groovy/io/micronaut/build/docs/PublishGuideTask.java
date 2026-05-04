@@ -16,6 +16,7 @@
 package io.micronaut.build.docs;
 
 import io.micronaut.docs.DocPublisher;
+import io.micronaut.docs.SnippetSourceResolver;
 import io.micronaut.docs.macros.HiddenMacro;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -26,6 +27,7 @@ import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.IgnoreEmptyDirectories;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFiles;
@@ -40,6 +42,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.Set;
 
 @CacheableTask
 public abstract class PublishGuideTask extends DefaultTask {
@@ -59,6 +62,11 @@ public abstract class PublishGuideTask extends DefaultTask {
     @InputFiles
     @PathSensitive(PathSensitivity.NAME_ONLY)
     public abstract ConfigurableFileCollection getPropertiesFiles();
+
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    @IgnoreEmptyDirectories
+    public abstract ConfigurableFileCollection getSnippetSourceFiles();
 
     @Input
     @Optional
@@ -86,12 +94,21 @@ public abstract class PublishGuideTask extends DefaultTask {
         getTargetDir().convention(buildDirectory.dir("docs"));
         getResourcesDir().convention(projectDirectory.dir("resources"));
         getAsciidoc().convention(false);
+        getSnippetSourceFiles().from(getProject().provider(this::resolveSnippetSourceFiles));
     }
 
     private static void loadProperties(Properties into, File src) throws IOException {
         try (FileInputStream fis = new FileInputStream(src)) {
             into.load(fis);
         }
+    }
+
+    private Set<File> resolveSnippetSourceFiles() {
+        return SnippetSourceResolver.findSnippetSourceFiles(
+            getSourceDir().get().getAsFile(),
+            getProject().getProjectDir(),
+            getLanguage().getOrElse("")
+        );
     }
 
     @TaskAction

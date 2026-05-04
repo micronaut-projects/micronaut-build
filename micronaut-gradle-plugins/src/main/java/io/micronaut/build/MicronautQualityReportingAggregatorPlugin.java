@@ -81,9 +81,10 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
         rootProject.afterEvaluate(unused -> {
             if (!rootProject.getTasks().getNames().contains("jacocoTestReport")) {
                 rootProject.getTasks().register("jacocoTestReport", t ->  {
-                   t.setDescription("Placeholder task for Jacoco reports");
+                   t.setDescription("Generates aggregate Jacoco reports");
+                   t.dependsOn(COVERAGE_REPORT_TASK_NAME);
                    t.doFirst(unused2 -> {
-                       System.out.println("Placeholder task for Jacoco reports");
+                       System.out.println("Generating aggregate Jacoco reports");
                    });
                 });
             }

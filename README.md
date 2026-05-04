@@ -52,13 +52,22 @@ Default values are:
 
 ```groovy
 micronautBuild {
-    javaVersion = '25'
+    javaVersion = 25
+    testJavaVersion = JavaVersion.current().majorVersion as Integer
 
     checkstyleVersion = '8.33'
 
     dependencyUpdatesPattern = /.+(-|\.?)(b|M|RC)\d.*/
 }
 ```
+
+By default, the build uses Gradle's source and target compatibility settings so
+projects continue to work with only the current JDK installed. Gradle
+Toolchains remain opt-in: set `USE_GRADLE_TOOLCHAINS` to an empty value or
+`true` to use `micronautBuild.javaVersion` for compilation toolchains and
+`micronautBuild.testJavaVersion` for `Test` task launchers. Set
+`USE_GRADLE_TOOLCHAINS=false` or leave it unset to keep the default single-JDK
+behavior.
 
 Also, to pin a dependency to a particular version:
 

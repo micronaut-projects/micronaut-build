@@ -50,18 +50,6 @@ public class MicronautBuildJavaBasePlugin implements Plugin<Project> {
                 javaPluginExtension.setSourceCompatibility(javaVersion);
                 javaPluginExtension.setTargetCompatibility(javaVersion);
             }
-            if (micronautBuildExtension.getJavaVersion().isPresent()) {
-                project.getLogger().warn("""
-                    The "sourceCompatibility" and "targetCompatibility" properties are deprecated.
-                    Please use "micronautBuild.javaVersion" instead.
-                    You can do this directly in the project, or, better, in a convention plugin if it exists.
-                    """);
-                // Remove convention or Gradle will complain that you can't use both
-                javaPluginExtension.getToolchain().getLanguageVersion().convention((JavaLanguageVersion) null);
-                var javaVersion = micronautBuildExtension.getJavaVersion().orElse(micronautBuildExtension.getJavaVersion()).get();
-                javaPluginExtension.setSourceCompatibility(javaVersion);
-                javaPluginExtension.setTargetCompatibility(javaVersion);
-            }
         });
 
         var useVendorAsInput = project.getProviders().environmentVariable("MICRONAUT_TEST_USE_VENDOR")

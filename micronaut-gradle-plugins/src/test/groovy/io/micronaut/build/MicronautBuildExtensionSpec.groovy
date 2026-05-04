@@ -1,9 +1,15 @@
 package io.micronaut.build
 
+import io.micronaut.build.utils.DefaultVersions
 import spock.lang.Specification
 import spock.lang.Unroll
 
 class MicronautBuildExtensionSpec extends Specification {
+
+    void "defines the GraalVM Native Build Tools version"() {
+        expect:
+        DefaultVersions.GRAALVM_NATIVE_BUILD_TOOLS_VERSION
+    }
 
     @Unroll
     void "dependencyUpdatesPattern excludes non GA version: #version"(String version, boolean expectedMatch) {

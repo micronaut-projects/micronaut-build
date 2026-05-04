@@ -21,6 +21,24 @@ class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
         file("build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml").exists()
     }
 
+    void "jacocoTestReport runs aggregate coverage reports"() {
+        given:
+        withSample("test-micronaut-module")
+        file("gradle.properties") << "micronaut.jacoco.enabled=true"
+
+        when:
+        run 'jacocoTestReport'
+
+        then:
+        tasks {
+            succeeded ':subproject1:test'
+            succeeded ':subproject2:test'
+            succeeded ':testCodeCoverageReport'
+            succeeded ':jacocoTestReport'
+        }
+        file("build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml").exists()
+    }
+
     void "it can run Spotless and Checkstyle"() {
         given:
         withSample("test-micronaut-module")

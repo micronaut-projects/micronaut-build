@@ -31,6 +31,8 @@ abstract class AbstractFunctionalTest extends Specification {
 
     String gradleVersion
     boolean debug
+    Map<String, String> environment = [:]
+    Set<String> removedEnvironment = [] as Set
 
     private StringWriter outputWriter
     private StringWriter errorOutputWriter
@@ -121,6 +123,12 @@ abstract class AbstractFunctionalTest extends Specification {
                 .withPluginClasspath()
                 .withProjectDir(testDirectory.toFile())
                 .withArguments([*autoArgs, *args])
+        if (!environment.isEmpty() || !removedEnvironment.isEmpty()) {
+            def effectiveEnvironment = new LinkedHashMap<String, String>(System.getenv())
+            removedEnvironment.each { effectiveEnvironment.remove(it) }
+            effectiveEnvironment.putAll(environment)
+            runner.withEnvironment(effectiveEnvironment)
+        }
         if (gradleVersion) {
             runner.withGradleVersion(gradleVersion)
         }
