@@ -167,26 +167,6 @@ class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
         !outsideDirectory.resolve("gradle.properties").toFile().exists()
     }
 
-   void "warns if using #property compatibility"() {
-        given:
-        withSample("test-micronaut-module")
-
-        file("subproject1/build.gradle") << """
-            micronautBuild.$property = "8"
-        """
-
-        when:
-        run 'help'
-
-        then:
-        outputContains """The "sourceCompatibility" and "targetCompatibility" properties are deprecated.
-Please use "micronautBuild.javaVersion" instead.
-You can do this directly in the project, or, better, in a convention plugin if it exists."""
-
-       where:
-       property << ["sourceCompatibility", "targetCompatibility"]
-    }
-
     void "can detect accidental upgrade of Micronaut"() {
         given:
         withSample("test-micronaut-module")

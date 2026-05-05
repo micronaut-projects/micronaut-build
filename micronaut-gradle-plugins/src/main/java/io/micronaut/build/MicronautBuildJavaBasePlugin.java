@@ -26,6 +26,7 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 
 public class MicronautBuildJavaBasePlugin implements Plugin<Project> {
+
     @Override
     public void apply(Project project) {
         var pluginManager = project.getPluginManager();
@@ -48,17 +49,6 @@ public class MicronautBuildJavaBasePlugin implements Plugin<Project> {
                 var javaVersion = micronautBuildExtension.getJavaVersion().map(JavaLanguageVersion::of).get();
                 javaPluginExtension.setSourceCompatibility(javaVersion);
                 javaPluginExtension.setTargetCompatibility(javaVersion);
-            }
-            if (micronautBuildExtension.getSourceCompatibility().isPresent() || micronautBuildExtension.getTargetCompatibility().isPresent()) {
-                project.getLogger().warn("""
-                    The "sourceCompatibility" and "targetCompatibility" properties are deprecated.
-                    Please use "micronautBuild.javaVersion" instead.
-                    You can do this directly in the project, or, better, in a convention plugin if it exists.
-                    """);
-                // Remove convention or Gradle will complain that you can't use both
-                javaPluginExtension.getToolchain().getLanguageVersion().convention((JavaLanguageVersion) null);
-                javaPluginExtension.setSourceCompatibility(micronautBuildExtension.getSourceCompatibility().orElse(micronautBuildExtension.getTargetCompatibility()).get());
-                javaPluginExtension.setTargetCompatibility(micronautBuildExtension.getTargetCompatibility().orElse(micronautBuildExtension.getSourceCompatibility()).get());
             }
         });
 
@@ -88,7 +78,7 @@ public class MicronautBuildJavaBasePlugin implements Plugin<Project> {
             }
         });
         project.afterEvaluate(unused -> {
-                project.getTasks().withType(Test.class).configureEach(test -> {
+            project.getTasks().withType(Test.class).configureEach(test -> {
                 if (micronautBuildExtension.getUseToolchains().getOrElse(false)) {
                     test.getJavaLauncher().set(toolchains.launcherFor(spec -> spec.getLanguageVersion().set(micronautBuildExtension.getTestJavaVersion().map(JavaLanguageVersion::of))));
                 }

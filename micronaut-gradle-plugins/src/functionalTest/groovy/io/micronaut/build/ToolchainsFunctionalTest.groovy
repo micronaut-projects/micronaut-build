@@ -75,7 +75,7 @@ class ToolchainsFunctionalTest extends AbstractFunctionalTest {
         outputContains "testJavaLauncher=${currentJdk}"
     }
 
-    void "legacy compatibility overrides keep clearing toolchain language version"() {
+    void "legacy compatibility overrides are no longer accepted"() {
         given:
         withSample("test-micronaut-module")
         configureUseToolchainsEnvironment("true")
@@ -89,15 +89,10 @@ class ToolchainsFunctionalTest extends AbstractFunctionalTest {
         """
 
         when:
-        run ':subproject1:printJavaConfiguration'
+        fails ':subproject1:printJavaConfiguration'
 
         then:
-        outputContains """The "sourceCompatibility" and "targetCompatibility" properties are deprecated.
-Please use "micronautBuild.javaVersion" instead.
-You can do this directly in the project, or, better, in a convention plugin if it exists."""
-        outputContains "sourceCompatibility=11"
-        outputContains "targetCompatibility=11"
-        outputContains "toolchainLanguageVersion=unset"
+        errorOutputContains "Could not set unknown property 'sourceCompatibility' for extension 'micronautBuild'"
     }
 
     private void configureUseToolchainsEnvironment(String value) {
