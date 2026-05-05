@@ -9,4 +9,10 @@ class Dummy1Spec extends Specification {
         new Dummy1().itWorks()
     }
 
+    void "covers map helper branches"() {
+        expect:
+        new Dummy1().isMapHelper([:])
+        !new Dummy1().isMapHelper(null)
+    }
+
 }
