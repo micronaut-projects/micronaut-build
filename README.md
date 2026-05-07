@@ -9,16 +9,28 @@ The plugins are published in Maven Central:
 ```groovy
 buildscript {
     dependencies {
-        classpath "io.micronaut.build:micronaut-gradle-plugins:5.2.0"
+        classpath "io.micronaut.build.internal:micronaut-gradle-plugins:<version>"
     }
 }
 ```
 
-Then, apply the individual plugins as desired
+Kotlin-specific build plugins are published separately:
+
+```groovy
+buildscript {
+    dependencies {
+        classpath "io.micronaut.build.internal:micronaut-kotlin-build-plugins:<version>"
+    }
+}
+```
+
+Then apply the individual plugins as needed.
 
 ## Available plugins
 
-* `io.micronaut.build.internal.common`.
+### Core plugins
+
+* `io.micronaut.build.internal.common`
     * Configures the version to the `projectVersion` property (usually defined in `gradle.properties`).
     * Configures Java / Groovy compilation options.
     * Configures dependencies, enforcing the Micronaut BOM defined in `micronautVersion` property, as well as the version
@@ -27,37 +39,68 @@ Then, apply the individual plugins as desired
     * Configures Checkstyle.
     * Configures the Spotless plugin, to apply license headers.
     * Configures the test logger plugin.
-    
-* `io.micronaut.build.internal.dependency-updates`:
+* `io.micronaut.build.internal.aot-module`
+    * Configures a Micronaut AOT module project.
+* `io.micronaut.build.internal.base`
+    * Applies the common Micronaut build extension.
+* `io.micronaut.build.internal.base-module`
+    * Configures a base Micronaut module project.
+* `io.micronaut.build.internal.binary-compatibility-check`
+    * Configures binary compatibility checks for published APIs.
+* `io.micronaut.build.internal.bom`
+    * Configures a Micronaut BOM project.
+* `io.micronaut.build.internal.dependency-updates`
     * Configures the `com.github.ben-manes.versions` plugin to check for outdated dependencies.
-* 
-* `io.micronaut.build.internal.version-catalog-updates`:
-    * An alternative to `io.micronaut.build.internal.dependency-updates` which is usable on projects that make use of Gradle's version catalogs
-    
-* `io.micronaut.build.internal.publishing`:
+* `io.micronaut.build.internal.develocity`
+    * Configures Develocity build scan and build cache integration.
+* `io.micronaut.build.internal.docs`
+    * Configures Micronaut user guide, configuration reference, API documentation, and documentation archive tasks.
+* `io.micronaut.build.internal.java-base`
+    * Configures Java compilation defaults for Micronaut projects.
+* `io.micronaut.build.internal.kotlin-base`
+    * Configures Kotlin compilation defaults for Micronaut projects.
+* `io.micronaut.build.internal.module`
+    * Configures a standard Micronaut module project.
+* `io.micronaut.build.internal.parent`
+    * Configures root-project conventions for Micronaut builds.
+* `io.micronaut.build.internal.parent-publishing`
+    * Configures root-project publishing conventions.
+* `io.micronaut.build.internal.publishing`
     * Configures publishing to Sonatype OSSRH and Maven Central.
-
-* `io.micronaut.build.internal.docs`:
-    * Configures the guide publishing stuff.
-  
-* `io.micronaut.build.internal.quality-checks`:
+* `io.micronaut.build.internal.quality-checks`
     * Applied automatically by the `common` plugin; configures Checkstyle, Jacoco and Sonar.
-
-* `io.micronaut.build.internal.quality-reporting`:
+* `io.micronaut.build.internal.quality-reporting`
     * To be applied to the root project only; it consumes and aggregates the reports produced by the `quality-checks` plugin. 
-    
+* `io.micronaut.build.internal.version-catalog-updates`
+    * Configures dependency update checks for projects that use Gradle version catalogs.
+* `io.micronaut.build.shared.settings`
+    * Configures shared settings conventions for Micronaut builds.
+
+### Kotlin plugins
+
+* `io.micronaut.build.internal.kotlin`
+    * Configures Kotlin support for Micronaut projects.
+* `io.micronaut.build.internal.kotlin-kapt`
+    * Configures Kotlin annotation processing with KAPT.
+* `io.micronaut.build.internal.kotlin-ksp`
+    * Configures Kotlin symbol processing with KSP.
+
 ## Configuration options
 
 Default values are:
 
 ```groovy
 micronautBuild {
-    sourceCompatibility = '1.8'
-    targetCompatibility = '1.8'
+    javaVersion = 25
+    testJavaVersion = JavaVersion.current().majorVersion as Integer
 
-    checkstyleVersion = '8.33'
+    checkstyleVersion = '12.1.0'
 
-    dependencyUpdatesPattern = /.+(-|\.?)(b|M|RC)\d.*/
+    dependencyUpdatesPattern = /(?i).+(-|\.?)(b|M|RC|Dev)\d?.*/
+
+    enforcedPlatform = false
+    enableProcessing = false
+    enableBom = true
 }
 ```
 
