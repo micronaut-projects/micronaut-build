@@ -83,7 +83,7 @@ abstract class PomChecker extends DefaultTask {
         ErrorCollector errorCollector = new ErrorCollector(silencedDeps)
         def coordinates = pomCoordinates.get().split(':')
         if (coordinates.length != 3) {
-            String message = "Incorrect POM coordinates '${pomCoordinates.get()}': should be of the form group:artifact:version "
+            String message = "Incorrect POM coordinates '${pomCoordinates.get()}': should be of the form group:artifact:version"
             throw MicronautBuildProblems.throwing(problems, new GradleException(message), MicronautBuildProblems.INVALID_POM_COORDINATES) {
                 it.contextualLabel("Invalid POM coordinates")
                         .details("The configured POM coordinates do not use the expected group:artifact:version format.")

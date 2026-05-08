@@ -13,8 +13,10 @@ public final class MicronautBuildProblems {
     public static final String DOCUMENTATION_URL = "https://github.com/micronaut-projects/micronaut-build#gradle-problems-api-diagnostics";
 
     private static final int MAX_DIAGNOSTIC_LENGTH = 1_000;
+    private static final int SANITIZATION_INPUT_LENGTH = MAX_DIAGNOSTIC_LENGTH * 2;
     private static final String SENSITIVE_KEYS = "authorization|password|passwd|secret|token|api[-_ ]?key|access[-_ ]?key|username|user";
     private static final Pattern SENSITIVE_QUOTED_KEY_VALUE = Pattern.compile("(?i)([\"']?(?:" + SENSITIVE_KEYS + ")[\"']?\\s*[:=]\\s*)([\"'])(?:bearer|basic)?\\s*.*?\\2");
+    private static final Pattern SENSITIVE_UNTERMINATED_QUOTED_KEY_VALUE = Pattern.compile("(?i)([\"']?(?:" + SENSITIVE_KEYS + ")[\"']?\\s*[:=]\\s*)([\"'])(?:bearer|basic)?\\s*[^\"']*$");
     private static final Pattern SENSITIVE_KEY_VALUE = Pattern.compile("(?i)([\"']?(?:" + SENSITIVE_KEYS + ")[\"']?\\s*[:=]\\s*)(?:bearer|basic)?\\s*[^\"'\\s,;)}\\]]+");
     private static final Pattern BEARER_TOKEN = Pattern.compile("(?i)bearer\\s+[a-z0-9._~+/=-]+");
     private static final Pattern BASIC_TOKEN = Pattern.compile("(?i)basic\\s+[a-z0-9._~+/=-]+");
@@ -45,13 +47,18 @@ public final class MicronautBuildProblems {
         if (value == null || value.isBlank()) {
             return "";
         }
-        String sanitized = value.replaceAll("[\\r\\n\\t]+", " ");
+        boolean inputTruncated = value.length() > SANITIZATION_INPUT_LENGTH;
+        String sanitized = value.substring(0, Math.min(value.length(), SANITIZATION_INPUT_LENGTH))
+            .replaceAll("[\\r\\n\\t]+", " ");
         sanitized = SENSITIVE_QUOTED_KEY_VALUE.matcher(sanitized).replaceAll("$1$2<redacted>$2");
+        sanitized = SENSITIVE_UNTERMINATED_QUOTED_KEY_VALUE.matcher(sanitized).replaceAll("$1$2<redacted>$2");
         sanitized = SENSITIVE_KEY_VALUE.matcher(sanitized).replaceAll("$1<redacted>");
         sanitized = BEARER_TOKEN.matcher(sanitized).replaceAll("Bearer <redacted>");
         sanitized = BASIC_TOKEN.matcher(sanitized).replaceAll("Basic <redacted>");
-        if (sanitized.length() > MAX_DIAGNOSTIC_LENGTH) {
-            return sanitized.substring(0, MAX_DIAGNOSTIC_LENGTH) + "... (truncated)";
+        if (inputTruncated || sanitized.length() > MAX_DIAGNOSTIC_LENGTH) {
+            String suffix = "... (truncated)";
+            int prefixLength = Math.min(sanitized.length(), MAX_DIAGNOSTIC_LENGTH - suffix.length());
+            return sanitized.substring(0, prefixLength) + suffix;
         }
         return sanitized;
     }

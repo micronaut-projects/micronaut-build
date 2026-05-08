@@ -42,4 +42,17 @@ class MicronautBuildProblemsTest extends Specification {
         sanitized.length() < 1_100
         sanitized.endsWith('... (truncated)')
     }
+
+    void "bounds diagnostic values before sanitizing"() {
+        given:
+        def diagnostic = '{"password":"' + ('secret value ' * 200) + '","message":"' + ('a' * 5_000) + '"}'
+
+        when:
+        def sanitized = MicronautBuildProblems.sanitizeDiagnosticText(diagnostic)
+
+        then:
+        sanitized.length() <= 1_000
+        sanitized.endsWith('... (truncated)')
+        !sanitized.contains('secret value')
+    }
 }

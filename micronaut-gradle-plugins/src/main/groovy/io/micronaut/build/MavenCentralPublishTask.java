@@ -141,7 +141,7 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
                 if (body.contains("\"deploymentState\":\"FAILED\"")) {
                     throw deploymentFailure("Deployment " + deploymentId + " failed: " + sanitizedBody, "Maven Central reported a failed deployment state for deployment " + deploymentId + ".");
                 }
-            } else if (response.statusCode() < 200 || response.statusCode() > 300) {
+            } else if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 getLogger().warn("Status check for deployment " + deploymentId + " failed with: " + sanitizedBody + ". This doesn't necessarily mean that deployment failed, please check status on https://central.sonatype.com/publishing");
                 break;
             }
