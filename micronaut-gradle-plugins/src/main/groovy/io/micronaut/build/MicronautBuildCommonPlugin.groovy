@@ -1,6 +1,7 @@
 package io.micronaut.build
 
 import com.diffplug.gradle.spotless.SpotlessTask
+import io.micronaut.build.problems.MicronautBuildProblems
 import io.micronaut.build.utils.DefaultVersions
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
@@ -8,6 +9,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ResolvableDependencies
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.result.ResolvedComponentResult
+import org.gradle.api.problems.Problems
 import org.gradle.api.tasks.compile.GroovyCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.diagnostics.DependencyReportTask
@@ -15,12 +17,21 @@ import org.gradle.api.tasks.javadoc.Groovydoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 
+import javax.inject.Inject
+
 import static io.micronaut.build.BomSupport.coreBomArtifactId
 import static io.micronaut.build.utils.VersionHandling.versionProviderOrDefault
 /**
  * Micronaut internal Gradle plugin. Not intended to be used in user's projects.
  */
 class MicronautBuildCommonPlugin implements Plugin<Project> {
+    private final Problems problems
+
+    @Inject
+    MicronautBuildCommonPlugin(Problems problems) {
+        this.problems = problems
+    }
+
     void apply(Project project) {
         project.pluginManager.apply(MicronautBasePlugin)
         project.pluginManager.apply(MicronautQualityChecksParticipantPlugin)
@@ -63,7 +74,12 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
             project.configurations.globalBoms.dependencies.addAllLater(micronautBuild.enableBom.zip(micronautVersionProvider) { enabled, micronautVersion ->
                 if (enabled) {
                     if (micronautBuild.enforcedPlatform.get()) {
-                        throw new GradleException("Do not use enforcedPlatform. Please remove the micronautBuild.enforcedPlatform setting")
+                        String message = "Do not use enforcedPlatform. Please remove the micronautBuild.enforcedPlatform setting"
+                        throw MicronautBuildProblems.throwing(problems, new GradleException(message), MicronautBuildProblems.ENFORCED_PLATFORM_NOT_SUPPORTED) {
+                            it.contextualLabel(message)
+                                    .details("micronautBuild.enforcedPlatform is not supported by the Micronaut Build plugins.")
+                                    .solution("Remove the micronautBuild.enforcedPlatform setting and let Micronaut Build add the standard platform dependency.")
+                        }
                     }
                     String artifactId = coreBomArtifactId(micronautVersion)
                     [project.dependencies.platform("io.micronaut:$artifactId:$micronautVersion")]
@@ -154,7 +170,13 @@ class MicronautBuildCommonPlugin implements Plugin<Project> {
                             if (id.group == 'io.micronaut' && id.module == 'micronaut-core') {
                                 def (resolvedMajor, resolvedMinor, resolvedPatch) = id.version.tokenize('.')
                                 if (resolvedMajor != major || resolvedMinor != minor) {
-                                    throw new GradleException("Micronaut version mismatch: project declares $micronautVersion but resolved version is ${id.version}. You probably have a dependency which triggered an upgrade of micronaut-core. In order to determine where it comes from, you can run ./gradlew --dependencyInsight --configuration $configName --dependency io.micronaut:micronaut-core")
+                                    String dependencyInsight = "./gradlew --dependencyInsight --configuration $configName --dependency io.micronaut:micronaut-core"
+                                    String message = "Micronaut version mismatch: project declares $micronautVersion but resolved version is ${id.version}. You probably have a dependency which triggered an upgrade of micronaut-core. In order to determine where it comes from, you can run $dependencyInsight"
+                                    throw MicronautBuildProblems.throwing(problems, new GradleException(message), MicronautBuildProblems.MICRONAUT_VERSION_MISMATCH) {
+                                        it.contextualLabel("Micronaut version mismatch on $configName")
+                                                .details("Project declares Micronaut $micronautVersion but $configName resolved io.micronaut:micronaut-core:${id.version}.")
+                                                .solution("Run $dependencyInsight to determine which dependency selected the resolved micronaut-core version.")
+                                    }
                                 }
                             }
                         }

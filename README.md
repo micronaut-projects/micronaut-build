@@ -123,3 +123,25 @@ micronautBuild {
 ```
 
 You can use [the same DSL as in Gradle](https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.ResolutionStrategy.html).
+
+## Gradle Problems API diagnostics
+
+On the Gradle 9 line, Micronaut Build reports selected internal validation failures through Gradle's Problems API. No extra configuration is required. The build still fails at the same point and keeps the existing failure message, but Gradle also records a structured problem in the generated report at `build/reports/problems/problems-report.html`. Gradle prints a link to that report unless the build runs with `--no-problems-report`.
+
+The stable Micronaut Build problem group is `micronaut-build > validation`. Covered problem IDs include:
+
+* `enforced-platform-not-supported`
+* `micronaut-version-mismatch`
+* `unsupported-test-framework`
+* `invalid-pom-coordinates`
+* `pom-verification-failed`
+* `asciidoc-output-validation-failed`
+* `maven-central-deployment-failed`
+
+For example, if a dependency upgrades `io.micronaut:micronaut-core` away from the Micronaut version declared by the build, the failure remains actionable and includes the existing diagnostic command:
+
+```shell
+./gradlew --dependencyInsight --configuration compileClasspath --dependency io.micronaut:micronaut-core
+```
+
+Problem details are intentionally bounded to validation context such as versions, configurations, and report paths. Credentials, signing data, Maven Central bearer tokens, raw environment dumps, and unbounded HTTP responses must not be added to problem details or reports.
