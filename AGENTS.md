@@ -39,6 +39,17 @@ generation, and publishing.
   under `src/test/groovy/io/micronaut/build/catalogs/` or functional fixtures
   under `src/functionalTest/gradle-projects/` for changes in that area.
 
+## Contributing Guidelines
+
+- Before opening or updating a pull request, check whether this repository has a
+  `CONTRIBUTING.md` or other maintainer contribution guide and follow every
+  repo-specific PR requirement it names.
+- Treat contributor-checklist items as handoff requirements. If a requirement is
+  not applicable, state that explicitly in the PR description or handoff note.
+- For UI-visible changes, confirm whether screenshots or other visual evidence
+  are required and include them in the PR description; if screenshots cannot be
+  provided, explain why and describe the verification that was performed.
+
 ## Publishing And Release-Sensitive Areas
 
 - Publishing, signing, and Sonatype wiring is centralized in
