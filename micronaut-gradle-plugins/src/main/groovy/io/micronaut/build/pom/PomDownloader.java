@@ -191,12 +191,7 @@ public class PomDownloader {
         IOException lastException = null;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             HttpURLConnection connection = null;
-            try {
-                REMOTE_DOWNLOADS.acquire();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new GradleException("Interrupted while downloading POM at " + uri, e);
-            }
+            REMOTE_DOWNLOADS.acquireUninterruptibly();
             try {
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setConnectTimeout(connectTimeoutMillis);
