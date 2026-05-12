@@ -134,7 +134,7 @@ public class PomDownloader {
             }
             return Optional.of(pomFile);
         } catch (IOException e) {
-            throw new GradleException("Unable to store POM downloaded from " + uri, e);
+            return Optional.empty();
         } finally {
             lock.lock();
             try {
@@ -171,7 +171,7 @@ public class PomDownloader {
                 }
             }
         } catch (IOException e) {
-            throw new GradleException("Unable to read snapshot metadata downloaded from " + uri, e);
+            return Optional.empty();
         }
         return Optional.empty();
     }
@@ -190,11 +190,14 @@ public class PomDownloader {
         URL url = parsedUri.toURL();
         IOException lastException = null;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            boolean permitAcquired = false;
             HttpURLConnection connection = null;
             try {
                 REMOTE_DOWNLOADS.acquire();
-                permitAcquired = true;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new GradleException("Interrupted while downloading POM at " + uri, e);
+            }
+            try {
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setConnectTimeout(connectTimeoutMillis);
                 connection.setReadTimeout(readTimeoutMillis);
@@ -215,37 +218,32 @@ public class PomDownloader {
                     continue;
                 }
                 return DownloadResult.NOT_FOUND;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new GradleException("Interrupted while downloading POM at " + uri, e);
             } catch (IOException e) {
                 lastException = e;
-                try {
-                    sleepBeforeRetry(uri, attempt, Optional.empty(), e.getClass().getSimpleName() + ": " + e.getMessage());
-                } catch (InterruptedException interrupted) {
-                    Thread.currentThread().interrupt();
-                    throw new GradleException("Interrupted while downloading POM at " + uri, interrupted);
-                }
+                sleepBeforeRetry(uri, attempt, Optional.empty(), e.getClass().getSimpleName() + ": " + e.getMessage());
             } finally {
                 if (connection != null) {
                     connection.disconnect();
                 }
-                if (permitAcquired) {
-                    REMOTE_DOWNLOADS.release();
-                }
+                REMOTE_DOWNLOADS.release();
             }
         }
         throw new TransientDownloadException("Unable to download POM at " + uri + " after " + maxAttempts + " attempts" +
             (lastException == null ? "" : ": " + lastException.getMessage()), lastException);
     }
 
-    private void sleepBeforeRetry(String uri, int attempt, Optional<Long> retryAfterMillis, String reason) throws InterruptedException {
+    private void sleepBeforeRetry(String uri, int attempt, Optional<Long> retryAfterMillis, String reason) {
         if (attempt >= maxAttempts) {
             return;
         }
         long backoff = retryAfterMillis.orElseGet(() -> exponentialBackoffWithJitter(attempt));
         System.err.println("Retrying POM download after " + reason + " (attempt " + attempt + "/" + maxAttempts + "): " + uri);
-        Thread.sleep(backoff);
+        try {
+            Thread.sleep(backoff);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new GradleException("Interrupted while downloading POM at " + uri, e);
+        }
     }
 
     private static long exponentialBackoffWithJitter(int attempt) {
