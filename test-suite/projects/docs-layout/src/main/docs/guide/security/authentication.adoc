@@ -1,0 +1,14 @@
+Authentication verifies who is calling the service.
+
+[cols="1,2"]
+|===
+|Mechanism |Description
+
+|Basic auth
+|Simple credentials for examples.
+
+|JWT
+|Signed tokens for stateless services.
+|===
+
+NOTE: Real modules should document the expected token issuer and key rotation process.

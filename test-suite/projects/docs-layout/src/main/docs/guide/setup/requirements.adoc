@@ -1,0 +1,20 @@
+The generated docs should work with the same assumptions as a real Micronaut project.
+
+[cols="1,1,2"]
+|===
+|Requirement |Example |Purpose
+
+|JDK
+|25
+|Matches CI for this repository.
+
+|Gradle
+|Wrapper
+|Runs the same tasks as project builds.
+
+|Docs resources
+|grails-doc-files.jar
+|Provides CSS, JavaScript, images, and templates.
+|===
+
+TIP: Keep fixture snippets short so failures point at layout behavior instead of application logic.

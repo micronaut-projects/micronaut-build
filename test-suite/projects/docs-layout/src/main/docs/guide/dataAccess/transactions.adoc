@@ -1,0 +1,5 @@
+Transactions document consistency boundaries.
+
+TIP: Keep transaction examples focused on service methods instead of framework setup.
+
+External API links can still appear here, for example jdk:java.time.Instant[].

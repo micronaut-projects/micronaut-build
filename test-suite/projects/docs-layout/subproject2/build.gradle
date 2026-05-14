@@ -1,0 +1,9 @@
+plugins {
+    id 'io.micronaut.build.internal.module'
+}
+
+dependencies {
+    testImplementation libs.junit6.api
+    testRuntimeOnly libs.junit6.engine
+    testRuntimeOnly libs.junit6.launcher
+}

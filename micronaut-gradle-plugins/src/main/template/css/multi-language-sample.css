@@ -229,3 +229,106 @@
 .multi-language-sample {
     border-radius: 0 0 4px 4px;
 }
+
+body.docs-shell .exampleblock > .content {
+    background: transparent;
+}
+
+body.docs-shell .exampleblock > .content .title {
+    margin: 0 0 0.5rem;
+    padding: 0;
+    border: 0;
+    background-color: transparent;
+    color: var(--ring);
+    font-family: "Noto Serif", "DejaVu Serif", serif;
+    font-size: 1rem;
+    font-style: italic;
+}
+
+body.docs-shell .multi-language-selector {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+body.docs-shell .multi-language-selector .language-option {
+    display: inline-block;
+    min-width: 130px;
+    max-width: 320px;
+    min-height: 0;
+    margin: 0;
+    padding: 4px 20px;
+    border: 1px solid #f7f7f8;
+    border-bottom: 0;
+    border-radius: 4px 4px 0 0;
+    background-color: #ffffff;
+    color: var(--foreground);
+    font-family: Lato, Arial, sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.45;
+    text-align: center;
+    opacity: 0.7;
+    filter: grayscale(1);
+    -webkit-filter: grayscale(1);
+}
+
+body.docs-shell .multi-language-selector .language-option:hover {
+    color: var(--foreground);
+}
+
+body.docs-shell .multi-language-selector .language-option.selected {
+    border-color: #f7f7f8;
+    background-color: #f7f7f8;
+    color: #000000;
+    box-shadow: none;
+    font-weight: 700;
+    opacity: 1;
+    filter: none;
+    -webkit-filter: none;
+}
+
+html.dark-mode body.docs-shell .multi-language-selector .language-option,
+body.docs-shell.dark-mode .multi-language-selector .language-option {
+    border-color: #3a3a3a;
+    background-color: #4a4a4a;
+    color: #dddddd;
+}
+
+html.dark-mode body.docs-shell .multi-language-selector .language-option.selected,
+body.docs-shell.dark-mode .multi-language-selector .language-option.selected {
+    border-color: #222222;
+    background-color: #222222;
+    color: #dddddd;
+}
+
+body.docs-shell .multi-language-selector .language-option[data-lang] {
+    background-position: 20px center;
+    padding-left: 32px;
+}
+
+body.docs-shell .multi-language-selector .language-option[data-lang='maven'] {
+    background-position: 16px center;
+    padding-left: 56px;
+}
+
+body.docs-shell .multi-language-selector .language-option[data-lang='kotlin'],
+body.docs-shell .multi-language-selector .language-option[data-lang='gradle-groovy'],
+body.docs-shell .multi-language-selector .language-option[data-lang='gradle-kotlin'] {
+    background-position: 30px center;
+}
+
+body.docs-shell .multi-language-sample {
+    border-radius: 0 0 4px 4px;
+}
+
+body.docs-shell .multi-language-tab-panel {
+    margin-top: 0;
+}
+
+body.docs-shell .multi-language-tab-panel pre {
+    border-top-left-radius: 0;
+}

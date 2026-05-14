@@ -1,0 +1,6 @@
+Micronaut dependency injection is represented by local API and annotation links.
+
+Use api:context.ApplicationContext[] to create or run a context and ann:context.annotation.Requires[]
+to conditionally load beans.
+
+The package macro links to pkg:context.annotation[the annotation package].

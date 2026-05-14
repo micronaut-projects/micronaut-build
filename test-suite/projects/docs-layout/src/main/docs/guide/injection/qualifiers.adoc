@@ -1,0 +1,4 @@
+Qualifiers help choose one bean when multiple candidates exist.
+
+The same guide page can link to external Java APIs like jdk:java.util.Optional[] and local Micronaut APIs like
+api:inject.qualifiers.Qualifiers[].

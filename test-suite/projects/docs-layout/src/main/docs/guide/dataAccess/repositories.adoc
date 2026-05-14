@@ -1,0 +1,14 @@
+Repositories provide type-safe persistence operations.
+
+[cols="1,2"]
+|===
+|Repository type |Use case
+
+|CRUD
+|Basic create, read, update, and delete operations.
+
+|Query
+|Custom finder methods.
+|===
+
+NOTE: This fixture does not execute persistence code; it verifies docs rendering.

@@ -1,0 +1,3 @@
+Deployment sections make sure final guide chapters and nested subsections are present in the generated TOC.
+
+dependency:com.example:docs-layout-runtime:1.0.0[scope="compileOnly",title="External compile-only dependency"]

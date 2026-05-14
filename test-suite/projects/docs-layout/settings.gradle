@@ -1,0 +1,17 @@
+pluginManagement {
+    includeBuild('../../..')
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+plugins {
+    id 'io.micronaut.build.shared.settings'
+}
+
+rootProject.name = 'docs-layout-test-suite'
+
+include 'subproject1'
+include 'subproject2'
+include 'verification'

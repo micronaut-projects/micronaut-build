@@ -1,0 +1,3 @@
+Security docs combine configuration, annotation links, tables, and external documentation links.
+
+See link:https://docs.micronaut.io/latest/guide/#security[Micronaut Security documentation] for the complete guide.

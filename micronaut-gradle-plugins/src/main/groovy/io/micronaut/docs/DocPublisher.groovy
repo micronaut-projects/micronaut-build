@@ -161,18 +161,14 @@ class DocPublisher {
         fileOperations.mkdir( refDocsDir)
         fileOperations.mkdir( refGuideDir)
         fileOperations.mkdir( refPagesDir)
-        fileOperations.mkdir( "$refDocsDir/ref")
 
         File imgsDir = new File(refDocsDir, calculatePathToResources("img"))
         File fontsDir = new File(refDocsDir, calculatePathToResources("fonts"))
         File cssDir = new File(refDocsDir, calculatePathToResources("css"))
         File jsDir = new File(refDocsDir, calculatePathToResources("js"))
-        File styleDir = new File(refDocsDir, calculatePathToResources("style"))
         fileOperations.mkdir(imgsDir)
-        fileOperations.mkdir(fontsDir)
         fileOperations.mkdir(cssDir)
         fileOperations.mkdir(jsDir)
-        fileOperations.mkdir(styleDir)
 
         fileOperations.copy {
             it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
@@ -184,15 +180,18 @@ class DocPublisher {
         fileOperations.copy {
             it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
             it.into(cssDir)
-            it.from(new File(docResources, "css"))
+            it.from(new File(docResources, "css")) {
+                include "custom.css", "multi-language-sample.css"
+            }
             it.from(css)
         }
         fileOperations.copy {
             it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
             it.into(fontsDir)
-            it.from(new File(docResources, "fonts"))
-            it.from(fonts)
+            if (fonts) {
+                it.from(fonts)
+            }
         }
 
         fileOperations.copy {
@@ -202,13 +201,6 @@ class DocPublisher {
             it.from(new File(docResources, "js"))
             it.from(js)
         }
-        fileOperations.copy {
-            it.into(styleDir)
-            it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
-            it.from(new File(docResources, "style"))
-            it.from(style)
-        }
-
 
         // Build the table of contents as a tree of nodes. We currently support
         // three strategies for this:

@@ -1,0 +1,14 @@
+[versions]
+micronaut = "4.6.3"
+micronaut-test = "4.5.0"
+micronaut-docs = "2.0.0"
+groovy = "5.0.3"
+spock = "2.4-groovy-5.0"
+junit6 = "6.0.1"
+
+[libraries]
+spock-bom = { module = "org.spockframework:spock-bom", version.ref = "spock" }
+spock-core = { module = "org.spockframework:spock-core", version.ref = "spock" }
+junit6-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit6" }
+junit6-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit6" }
+junit6-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit6" }

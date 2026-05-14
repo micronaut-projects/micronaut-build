@@ -1,0 +1,3 @@
+The HTTP client section checks links to client APIs and reactive return types.
+
+The guide can link to rs:Publisher[], rx:Single[], and reactor:Flux[] depending on the client style.

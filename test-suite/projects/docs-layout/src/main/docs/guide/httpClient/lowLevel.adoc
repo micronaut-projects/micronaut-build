@@ -1,0 +1,5 @@
+Low-level clients are useful when request construction must be explicit.
+
+The JDK macro can link to jdk:java.net.URI[] while the Micronaut macro links to api:http.client.HttpClient[].
+
+TIP: Prefer declarative clients for stable service contracts.

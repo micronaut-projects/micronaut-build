@@ -1,0 +1,14 @@
+Health checks expose application readiness.
+
+[cols="1,1"]
+|===
+|Status |Meaning
+
+|UP
+|The service is healthy.
+
+|DOWN
+|The service is unhealthy.
+|===
+
+NOTE: Health endpoints often need separate public and internal exposure rules.

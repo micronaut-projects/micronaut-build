@@ -1,0 +1,39 @@
+title: Docs Layout Test Suite
+introduction:
+  title: Introduction
+setup:
+  title: Setup
+  requirements: Requirements
+  modules: Modules
+configuration:
+  title: Configuration
+  applicationConfig: Application Configuration
+  externalConfig: External Configuration
+injection:
+  title: Dependency Injection
+  factories: Factories
+  qualifiers: Qualifiers
+httpServer:
+  title: HTTP Server
+  controllers: Controllers
+  filters: Filters
+httpClient:
+  title: HTTP Client
+  declarative: Declarative Clients
+  lowLevel: Low-Level Clients
+dataAccess:
+  title: Data Access
+  repositories: Repositories
+  transactions: Transactions
+security:
+  title: Security
+  authentication: Authentication
+  authorization: Authorization
+observability:
+  title: Observability
+  health: Health
+  metrics: Metrics
+deployment:
+  title: Deployment
+  packaging: Packaging
+  nativeImage: Native Image

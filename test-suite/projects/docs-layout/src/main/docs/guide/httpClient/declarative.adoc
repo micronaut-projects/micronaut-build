@@ -1,0 +1,12 @@
+Declarative clients use interfaces and annotations.
+
+[source,java]
+----
+@Client("/hello")
+interface HelloClient {
+    @Get
+    String hello();
+}
+----
+
+The annotations resolve through local API links such as ann:http.client.annotation.Client[].

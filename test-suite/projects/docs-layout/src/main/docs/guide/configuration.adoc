@@ -1,0 +1,5 @@
+Configuration examples verify both inline configuration samples and the generated configuration reference.
+
+NOTE: The configuration reference is assembled from module metadata produced by the sample subprojects.
+
+The application examples below are rendered in every supported configuration format.

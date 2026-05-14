@@ -1,0 +1,5 @@
+Authorization verifies whether an authenticated principal can perform an action.
+
+Use ann:security.annotation.Secured[] on sensitive routes.
+
+TIP: Prefer named roles in docs examples so readers can map behavior to configuration.

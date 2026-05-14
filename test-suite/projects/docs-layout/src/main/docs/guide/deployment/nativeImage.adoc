@@ -1,0 +1,5 @@
+Native image documentation should highlight reflection-free behavior and build-time requirements.
+
+NOTE: This fixture only renders docs; it does not run a native image build.
+
+The Micronaut API macro can link to mnapi:io.micronaut.core.annotation.Introspected[] from the latest Micronaut API docs.

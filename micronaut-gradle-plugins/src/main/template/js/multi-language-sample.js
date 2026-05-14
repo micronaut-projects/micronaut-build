@@ -24,7 +24,6 @@ var LOCALSTORAGE_KEY_CONFIG = "preferred-micronaut-config";
 
 function addCopyToClipboardButtons() {
     var elements = document.getElementsByClassName("multi-language-sample");
-    console.log("multi-language-sample blocks" + elements.length);
     for (var y = 0; y < elements.length; y++) {
         elements[y].appendChild(createCopyToClipboardElement());
     }
@@ -106,7 +105,6 @@ function postProcessCodeBlocks() {
     function ensureAtLeastOneCodeBlockIsVisible(collectionOfSampleElements) {
         if (collectionOfSampleElements.length > 0 && collectionOfSampleElements.every(a => a.classList.contains("hidden"))) {
             const firstElement = collectionOfSampleElements[0];
-            console.info("No code snippet in default preferred language, showing first", firstElement)
             firstElement.classList.remove("hidden")
         }
     }
@@ -154,6 +152,11 @@ function postProcessCodeBlocks() {
         }
     }
 
+    function sampleLanguage(sampleEl) {
+        var codeEl = sampleEl.querySelector("code[data-lang]");
+        return codeEl == null ? "" : codeEl.getAttribute("data-lang");
+    }
+
     function switchSampleLanguage(languageId, buildId, configId) {
 
         // First make sure all the code sample sections are created
@@ -183,10 +186,18 @@ function postProcessCodeBlocks() {
         for (var i = 0; i < multiLanguageSampleElements.length; i++) {
             var currentCollection = [multiLanguageSampleElements[i]];
             var currentSampleElement = multiLanguageSampleElements[i];
+            var currentLanguages = {};
             processSampleEl(currentSampleElement, languageId, buildId, configId);
+            currentLanguages[sampleLanguage(currentSampleElement)] = true;
             while (currentSampleElement.nextElementSibling != null && currentSampleElement.nextElementSibling.classList.contains("multi-language-sample")) {
-                currentCollection.push(currentSampleElement.nextElementSibling);
-                currentSampleElement = currentSampleElement.nextElementSibling;
+                var nextSampleElement = currentSampleElement.nextElementSibling;
+                var nextLanguage = sampleLanguage(nextSampleElement);
+                if (currentLanguages[nextLanguage]) {
+                    break;
+                }
+                currentCollection.push(nextSampleElement);
+                currentSampleElement = nextSampleElement;
+                currentLanguages[nextLanguage] = true;
                 processSampleEl(currentSampleElement, languageId, buildId, configId);
                 i++;
             }
@@ -197,6 +208,9 @@ function postProcessCodeBlocks() {
         multiLanguageSets.forEach(function (sampleCollection) {
             // Create selector element if not existing
             if (sampleCollection.length > 1) {
+                sampleCollection.forEach(function(sampleEl) {
+                    sampleEl.classList.add("multi-language-tab-panel");
+                });
 
                 if (sampleCollection.every(function(element) {
                     return element.classList.contains("hidden");
@@ -252,6 +266,7 @@ function postProcessCodeBlocks() {
                         var titleFragment =  document.createDocumentFragment();
                         var titleContainerFragment = document.createElement("div");
                         titleContainerFragment.classList.add("paragraph");
+                        titleContainerFragment.classList.add("snippet-title");
                         titleFragment.appendChild(titleContainerFragment);
                         var titleEl = sampleCollection[0].getElementsByClassName("title")[0].cloneNode(true);
                         titleContainerFragment.appendChild(titleEl);
@@ -278,7 +293,7 @@ function createCopyToClipboardElement() {
     var copyToClipboardSpan = document.createElement("span");
     copyToClipboardSpan.setAttribute("class", "copytoclipboard");
     copyToClipboardSpan.setAttribute("onclick", "copyToClipboard(this);");
-    copyToClipboardSpan.innerText = "Copy to Clipboard";
+    copyToClipboardSpan.innerText = "Copy";
     copyToClipboardDiv.appendChild(copyToClipboardSpan);
     return copyToClipboardDiv;
 }

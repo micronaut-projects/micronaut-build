@@ -1,0 +1,79 @@
+The docs layout test-suite uses a small Micronaut-style project to exercise generated documentation.
+It includes a nested table of contents, source snippets, configuration samples, dependencies, API links,
+tables, notes, tips, and links to the https://docs.micronaut.io/latest/guide/[Micronaut user guide].
+
+TIP: The same sample is used by the `test-suite` Gradle task so generated output is validated by JUnit.
+
+NOTE: Source snippets live in the `test-suite` project and are consumed by the docs sample.
+
+WARNING: Warning blocks use the same generated docs layout as notes.
+
+IMPORTANT: Important blocks appear in Micronaut core docs and must keep platform styling.
+
+.Coverage table
+|===
+|Area |Coverage
+
+|Guide layout
+|Nested `toc.yml` sections and generated navigation
+
+|Macros
+|Snippet, configuration, dependency, and API reference macros
+
+|References
+|Generated API and configuration reference output
+|===
+
+.Open block title
+--
+Open block titles use the same generated title style as listing blocks.
+--
+
+== Code Pointer Examples
+
+This real section verifies that nested Asciidoc headings, source descriptions, and code pointers render
+correctly inside generated guide sections.
+
+=== Section
+
+.Code pointer example
+[source,java]
+----
+class PointerExample { // <1>
+    String message() { // <2>
+        return "docs"; // <3>
+    }
+}
+----
+<1> Declares the example type used by the docs fixture.
+<2> Marks the method that is referenced by the explanation.
+<3> Returns the sample value shown in the code block.
+
+snippet::example.Foo[project=.,tags=body,indent=0,title="Tagged sample"]
+
+snippet::example.Foo,example.Bar[project=.,tags=body,indent=0,title="Multiple source files"]
+
+[configuration,title="Server configuration"]
+----
+micronaut:
+  server:
+    port: 8080
+----
+
+dependency:micronaut-runtime[title="Runtime dependency"]
+
+dependency:micronaut-test-junit5[version="4.0.0",scope="testImplementation",classifier="tests",groupId="io.micronaut.test",title="Test dependency with classifier"]
+
+dependency:micronaut-inject-java[scope="annotationProcessor",title="Annotation processor dependency"]
+
+dependency:io.micronaut.serde:micronaut-serde-jackson:2.0.0[title="Explicit coordinate dependency"]
+
+Local API links include api:context.ApplicationContext[], ann:context.annotation.Requires[],
+pkg:context.annotation[], api:http.HttpRequest.GET(java.lang.String)[], and
+api:context.env.Environment#TEST[].
+
+The external Micronaut API macro links to mnapi:io.micronaut.context.ApplicationContext[] and custom text can
+be supplied with api:context.ApplicationContext[text="Micronaut context"].
+
+External API macros cover jdk:java.util.concurrent.CompletableFuture[], jdk:java.util.logging.ConsoleHandler[],
+jee:javax.inject.Inject[], rs:Publisher[], rx:Single[], and reactor:Flux[].

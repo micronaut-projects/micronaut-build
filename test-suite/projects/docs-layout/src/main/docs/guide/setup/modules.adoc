@@ -1,0 +1,8 @@
+The fixture mirrors a small multi-language test suite.
+
+* `test-suite` contains Java samples.
+* `test-suite-kotlin` contains Kotlin samples.
+* `test-suite-groovy` contains Groovy samples.
+* `test-suite-python` contains Python samples.
+
+The same snippet macro renders all of them in the aggregate guide and filters them in language-specific guides.

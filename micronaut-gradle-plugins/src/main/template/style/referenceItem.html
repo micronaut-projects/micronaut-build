@@ -2,19 +2,9 @@
                       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script src="/cdn-cgi/apps/head/3cOPSgo5Omz84ycX7CvigfX4cpw.js"></script><script async src="https://www.googletagmanager.com/gtag/js?id=UA-82213539-2"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-
-        gtag('config', 'UA-82213539-2');
-    </script>
     <title>${title.encodeAsHtml()} ${version}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <link rel="stylesheet" href="${resourcesPath}/css/main.css" type="text/css" media="screen, print" title="Style" charset="utf-8"/>
-    <link rel="stylesheet" href="${resourcesPath}/css/pdf.css" type="text/css" media="print" title="PDF" charset="utf-8"/>
+    <link rel="stylesheet" href="${resourcesPath}/css/custom.css" type="text/css" media="screen, print" title="Style" charset="utf-8"/>
     <script type="text/javascript">
 function addJsClass(el) {
     var classes = document.body.className.split(" ");
@@ -29,7 +19,7 @@ function addJsClass(el) {
     </style>
 </head>
 
-<body class="body" onload="addJsClass();">
+<body class="body docs-shell" onload="addJsClass();">
 
 <div id="navigation">
     <div class="navTitle">
@@ -70,7 +60,11 @@ function addJsClass(el) {
                 <% if(sourceRepo) { %>
                 <div class='contribute-btn'>
                     <button type='button' class='btn btn-default' onclick='window.location.href="${sourceRepo}/${sourcePath}"'>
-                        <i class='fa fa-pencil-square-o'></i> Improve this doc
+                        <svg class="button-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                        </svg>
+                        <span>Improve this doc</span>
                     </button>
                 </div>
                 <% } %>

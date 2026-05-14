@@ -1,0 +1,10 @@
+Factories document how a module can expose infrastructure beans.
+
+[source,java]
+----
+@Factory
+class ClientFactory {
+}
+----
+
+NOTE: This code block is plain Asciidoc source; snippet macros are covered in the introduction.

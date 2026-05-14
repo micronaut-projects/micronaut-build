@@ -1,55 +1,116 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<!doctype html>
+<html lang="en">
 <head>
     <title>@pagetitle@</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link rel="stylesheet" href="../css/main.css" type="text/css" media="screen, print" title="Style" charset="utf-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+        (function () {
+            try {
+                var theme = window.localStorage && localStorage.getItem("theme");
+                if (!theme || (theme !== "dark" && theme !== "light")) {
+                    theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+                }
+                if (theme === "dark") {
+                    document.documentElement.classList.add("dark-mode");
+                }
+            } catch (e) {
+                // Ignore storage access errors when the docs are opened from file://.
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="../css/custom.css" type="text/css" media="screen, print" title="Style" charset="utf-8" />
-    <link rel="stylesheet" href="../css/pdf.css" type="text/css" media="print" title="PDF" charset="utf-8" />
-    <link rel="stylesheet" href="../css/highlight/agate.css">
     <script src="../js/highlight.pack.js"></script>
     <script src="../js/guide.js"></script>
     <script>hljs.initHighlightingOnLoad();</script>
     <script src="../js/docs.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
 </head>
-<body class="body">
-    <div id="main">
-        <div id="navigation" class="no-print">
-            <div class="navTitle">
-                <span id="logo"><a href="http://micronaut.io" title="Go to Micronaut Website"><img src="../img/micronaut-logo-white.svg" alt="Micronaut"/></a></span>
+<body class="body docs-shell" id="docs" onload="addJsClass();">
+    <div class="app-shell">
+        <aside id="table-of-content" class="sidebar sidebar-nav no-print" aria-label="Documentation navigation">
+            <div class="sidebar-header">
+                <a class="sidebar-brand" href="index.html" aria-label="Micronaut Docs">
+                    <span class="sidebar-logo-wrap" aria-hidden="true">
+                        <img class="sidebar-logo" src="../img/micronaut-logo-white.svg" alt="" />
+                    </span>
+                    <span class="sidebar-brand-text">
+                        <strong>Micronaut Docs</strong>
+                        <small>Configuration reference</small>
+                    </span>
+                </a>
             </div>
-            <div class="navLinks">
-                <ul>
-                    <li id="table-of-content-nav-link-mobile" class="mobile">
-                        <a title="Scroll to Table of contents" href="javascript:scrollToTop();" class="button">Toc</a>
-                    </li>
-                    <li>
-                        <a title="Go to documentation" href="index.html" class="button">Docs</a>
-                    </li>
-                    <li class="desktop">
-                        <a title="Go to API documentation" href="../api/index.html" class="button">API Reference</a>
-                    </li>
-                    <li class="mobile">
-                        <a title="Go to API documentation" href="../api/index.html" class="button">API</a>
-                    </li>
-                    <li class="desktop">
-                        <a title="Go to Configuration Reference documentation" href="configurationreference.html" class="button">Configuration Reference</a>
-                    </li>
-                    <li class="mobile">
-                        <a title="Go to Configuration Reference documentation" href="configurationreference.html" class="button">Conf</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-        <div class="docs-content">
-            <div class="project">
-                <h1>Configuration Reference</h1>
-                <p><strong>Version:</strong>@projectVersion@</p>
-                <p></p>
-            </div>
+            <nav class="toc-content sidebar-content" aria-label="Reference pages">
+                <div class="sidebar-group-heading">
+                    <span class="sidebar-group-label">Reference</span>
+                </div>
+                <div class="toc-tree">
+                    <div class="toc-item">
+                        <a class="toc-link" title="Go to documentation" href="index.html"><span class="toc-number">01</span><span class="toc-title">Docs</span></a>
+                    </div>
+                    <div class="toc-item">
+                        <a class="toc-link" title="Go to API documentation" href="../api/index.html"><span class="toc-number">02</span><span class="toc-title">API Reference</span></a>
+                    </div>
+                    <div class="toc-item">
+                        <a class="toc-link active" title="Go to Configuration Reference documentation" href="configurationreference.html"><span class="toc-number">03</span><span class="toc-title">Configuration Reference</span></a>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+        <div class="app-main">
+            <header id="navigation" class="topbar no-print">
+                <button class="sidebar-toggle mobile" type="button" aria-controls="table-of-content" aria-expanded="false" title="Open sidebar" aria-label="Open sidebar" onclick="toggleSidebar();">
+                    <svg class="trigger-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <path d="M4 6h16" />
+                        <path d="M4 12h16" />
+                        <path d="M4 18h16" />
+                    </svg>
+                </button>
+                <button class="sidebar-collapse desktop" type="button" aria-controls="table-of-content" aria-expanded="true" title="Collapse sidebar" aria-label="Collapse sidebar" onclick="toggleTableOfContents();">
+                    <svg class="trigger-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <rect width="18" height="18" x="3" y="3" rx="2" />
+                        <path d="M9 3v18" />
+                    </svg>
+                </button>
+                <span class="topbar-separator desktop" aria-hidden="true"></span>
+                <nav class="topbar-title" aria-label="Breadcrumb">
+                    <a href="index.html">Micronaut Docs</a>
+                    <span aria-hidden="true">/</span>
+                    <span>Configuration Reference</span>
+                </nav>
+                <div class="topbar-actions">
+                    <a class="topbar-link desktop" title="Go to documentation" href="index.html">Docs</a>
+                    <a class="topbar-link desktop" title="Go to API documentation" href="../api/index.html">API</a>
+                    <button id="theme-switcher" class="theme-toggle" type="button" title="Switch to dark theme" aria-label="Switch to dark theme" aria-pressed="false" onclick="switchTheme(true);">
+                        <span class="theme-icon theme-icon-moon" aria-hidden="true">
+                            <svg class="theme-icon-svg" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                <path d="M20.99 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 20.99 12.79z" />
+                            </svg>
+                        </span>
+                        <span class="theme-icon theme-icon-sun" aria-hidden="true">
+                            <svg class="theme-icon-svg" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                <circle cx="12" cy="12" r="4" />
+                                <path d="M12 2v2" />
+                                <path d="M12 20v2" />
+                                <path d="m4.93 4.93 1.41 1.41" />
+                                <path d="m17.66 17.66 1.41 1.41" />
+                                <path d="M2 12h2" />
+                                <path d="M20 12h2" />
+                                <path d="m6.34 17.66-1.41 1.41" />
+                                <path d="m19.07 4.93-1.41 1.41" />
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+            </header>
+            <main id="main" class="content">
+                <article class="docs-content guide-document">
+                    <div class="project">
+                        <h1>Configuration Reference</h1>
+                        <p><strong>Version:</strong>@projectVersion@</p>
+                    </div>
 @docscontent@
+                </article>
+            </main>
         </div>
     </div>
 </body>

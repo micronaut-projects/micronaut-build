@@ -1,0 +1,5 @@
+Metrics help operators understand latency, throughput, and failures.
+
+TIP: Document metric names and tag cardinality before exposing a new metric.
+
+The Reactor macro can link to reactor:Mono[] when examples use reactive metrics publishers.

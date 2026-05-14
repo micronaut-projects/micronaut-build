@@ -1,0 +1,5 @@
+Filters can inspect or mutate requests and responses.
+
+Use ann:http.annotation.Filter[] for filter definitions and api:http.filter.ServerFilterChain[] to continue processing.
+
+NOTE: Filter order is part of the public behavior of an HTTP module.

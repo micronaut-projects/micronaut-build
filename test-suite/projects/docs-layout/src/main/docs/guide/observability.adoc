@@ -1,0 +1,3 @@
+Observability sections validate that operational documentation renders cleanly in the same guide.
+
+The health endpoint uses statuses like api:health.HealthStatus#UP[] and api:health.HealthStatus#DOWN[].

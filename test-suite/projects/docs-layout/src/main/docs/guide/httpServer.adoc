@@ -1,0 +1,4 @@
+The HTTP server section covers controller APIs, routes, filters, and request handling.
+
+The local API macro can point to methods such as api:http.HttpRequest.GET(java.lang.String)[] and members such as
+api:http.MediaType#APPLICATION_JSON[].

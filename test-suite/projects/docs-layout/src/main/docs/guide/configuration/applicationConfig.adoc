@@ -1,0 +1,13 @@
+[configuration,title="Application configuration"]
+----
+micronaut:
+  application:
+    name: docs-layout-sample
+  server:
+    port: 8081
+    netty:
+      access-logger:
+        enabled: true
+----
+
+The generated output must include properties, YAML, TOML, Groovy config, HOCON, and JSON variants.

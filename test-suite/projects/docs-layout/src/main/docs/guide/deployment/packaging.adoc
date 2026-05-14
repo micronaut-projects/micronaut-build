@@ -1,0 +1,14 @@
+Packaging docs should include the artifact type and target environment.
+
+[cols="1,2"]
+|===
+|Artifact |Target
+
+|JAR
+|JVM deployment.
+
+|Container image
+|Container orchestration platforms.
+|===
+
+TIP: Include enough packaging detail for users to reproduce the artifact locally.

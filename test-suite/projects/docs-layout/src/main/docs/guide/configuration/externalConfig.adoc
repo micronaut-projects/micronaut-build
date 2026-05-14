@@ -1,0 +1,17 @@
+External configuration is commonly used for environment-specific settings.
+
+[cols="1,2"]
+|===
+|Source |Example
+
+|System property
+|`-Dmicronaut.environments=dev`
+
+|Environment variable
+|`MICRONAUT_ENVIRONMENTS=dev`
+
+|Configuration file
+|`application-dev.yml`
+|===
+
+TIP: Prefer documented configuration keys over ad hoc environment lookups.

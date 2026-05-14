@@ -1,0 +1,6 @@
+The sample module follows the same broad shape as a Micronaut repository module: a root documentation project,
+subprojects with source, and snippets stored in test-suite projects.
+
+NOTE: The guide is intentionally small, but it includes enough sections to verify nested TOC numbering and anchors.
+
+See <<requirements, Requirements>> and <<modules, Modules>> for the sample structure.

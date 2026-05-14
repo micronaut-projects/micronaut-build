@@ -1,0 +1,16 @@
+Controllers map routes to methods.
+
+[cols="1,1,2"]
+|===
+|Route |Method |Description
+
+|`/hello`
+|GET
+|Returns a text response.
+
+|`/orders/{id}`
+|GET
+|Returns a domain object.
+|===
+
+TIP: Keep controller examples small and move reusable logic into injected beans.
