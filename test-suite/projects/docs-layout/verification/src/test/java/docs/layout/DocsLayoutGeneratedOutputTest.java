@@ -58,6 +58,10 @@ class DocsLayoutGeneratedOutputTest {
         assertContains(guideHtml, "Open block titles use the same generated title style as listing blocks.");
         assertContains(guideHtml, "<h2 id=\"_code_pointer_examples\">Code Pointer Examples</h2>");
         assertContains(guideHtml, "<h3 id=\"_section\">Section</h3>");
+        assertContains(guideHtml, "<h4 id=\"_deep_section\">Deep Section</h4>");
+        assertContains(guideHtml, "<h5 id=\"_detail_section\">Detail Section</h5>");
+        assertContains(guideHtml, "This fourth-level heading mirrors Micronaut Core appendix and configuration pages.");
+        assertContains(guideHtml, "This fifth-level heading mirrors fine-grained Micronaut Core migration notes.");
         assertContains(guideHtml, "<div class=\"title\">Code pointer example</div>");
         assertContains(guideHtml, "class PointerExample");
         assertContains(guideHtml, "<i class=\"conum\" data-value=\"1\"></i><b>(1)</b>");
@@ -65,6 +69,23 @@ class DocsLayoutGeneratedOutputTest {
         assertContains(guideHtml, "<td><i class=\"conum\" data-value=\"1\"></i><b>1</b></td>");
         assertContains(guideHtml, "Declares the example type used by the docs fixture.");
         assertContains(guideHtml, "Returns the sample value shown in the code block.");
+        assertContains(guideHtml, "<div class=\"title\">Block admonition title</div>");
+        assertContains(guideHtml, "Micronaut Core docs also use block-form admonitions with titles.");
+        assertContains(guideHtml, "<div class=\"ulist\">");
+        assertContains(guideHtml, "<div class=\"title\">List coverage</div>");
+        assertContains(guideHtml, "<p>First unordered item</p>");
+        assertContains(guideHtml, "<div class=\"olist arabic\">");
+        assertContains(guideHtml, "<div class=\"title\">Ordered coverage</div>");
+        assertContains(guideHtml, "<p>First ordered item</p>");
+        assertContains(guideHtml, "<div class=\"quoteblock\">");
+        assertContains(guideHtml, "<div class=\"title\">Quote coverage</div>");
+        assertContains(guideHtml, "Quote blocks appear in longer guide pages and should keep readable spacing.");
+        assertContains(guideHtml, "&#8212; Micronaut Docs");
+        assertContains(guideHtml, "<div class=\"literalblock\">");
+        assertContains(guideHtml, "<div class=\"title\">Literal coverage</div>");
+        assertContains(guideHtml, "<pre>literal block content</pre>");
+        assertContains(guideHtml, "<img src=\"../img/micronaut-logo-white.svg\" alt=\"Micronaut Logo\" width=\"120\" height=\"40\">");
+        assertContains(guideHtml, "<div class=\"title\">Figure 1. Image coverage</div>");
 
         assertContains(guideHtml, "<div class=\"listingblock multi-language-sample\">");
         assertContains(guideHtml, "<div class=\"title\">Tagged sample</div>");

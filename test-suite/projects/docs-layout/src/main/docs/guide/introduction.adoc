@@ -36,6 +36,14 @@ correctly inside generated guide sections.
 
 === Section
 
+==== Deep Section
+
+This fourth-level heading mirrors Micronaut Core appendix and configuration pages.
+
+===== Detail Section
+
+This fifth-level heading mirrors fine-grained Micronaut Core migration notes.
+
 .Code pointer example
 [source,java]
 ----
@@ -48,6 +56,32 @@ class PointerExample { // <1>
 <1> Declares the example type used by the docs fixture.
 <2> Marks the method that is referenced by the explanation.
 <3> Returns the sample value shown in the code block.
+
+[TIP]
+.Block admonition title
+Micronaut Core docs also use block-form admonitions with titles.
+
+.List coverage
+* First unordered item
+* Second unordered item
+
+.Ordered coverage
+. First ordered item
+. Second ordered item
+
+.Quote coverage
+[quote,Micronaut Docs]
+____
+Quote blocks appear in longer guide pages and should keep readable spacing.
+____
+
+.Literal coverage
+....
+literal block content
+....
+
+.Image coverage
+image::micronaut-logo-white.svg[Micronaut Logo,120,40]
 
 snippet::example.Foo[project=.,tags=body,indent=0,title="Tagged sample"]
 

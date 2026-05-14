@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    implementation(libs.commons.logging)
     implementation(libs.commons.text)
     implementation(libs.snakeyaml)
     implementation(libs.radeox)

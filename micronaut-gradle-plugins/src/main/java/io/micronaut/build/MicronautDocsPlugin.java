@@ -265,7 +265,7 @@ public abstract class MicronautDocsPlugin implements Plugin<Project> {
         properties.put("subtitle", projectDesc);
         properties.put("github", "https://github.com/micronaut-projects/micronaut-core");
         properties.put("api", "../api");
-        properties.put("micronautapi", "https://docs.micronaut.io/latest/api/io/micronaut/");
+        properties.put("micronautapi", "https://docs.micronaut.io/latest/api");
         properties.put("sourceDir", project.getRootProject().getProjectDir().getAbsolutePath());
         properties.put("sourcedir", project.getRootProject().getProjectDir().getAbsolutePath());
         properties.put("includedir", processConfigPropsOutputDir.get().getAsFile().getParentFile() + "/");

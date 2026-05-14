@@ -22,6 +22,7 @@ import org.asciidoctor.ast.PhraseNode;
 import org.asciidoctor.extension.InlineMacroProcessor;
 
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -165,8 +166,14 @@ public class ApiMacro extends InlineMacroProcessor {
     }
 
     public static String getBaseUri(Map<String, Object> attrs, String attributeKey, JvmLibrary jvmLibrary) {
-        if (attributeKey != null && attrs.get(attributeKey) != null) {
-            return attrs.get(attributeKey).toString();
+        if (attributeKey != null) {
+            Object baseUri = attrs.get(attributeKey);
+            if (baseUri == null) {
+                baseUri = attrs.get(attributeKey.toLowerCase(Locale.ROOT));
+            }
+            if (baseUri != null) {
+                return baseUri.toString();
+            }
         }
         return jvmLibrary.defaultUri();
     }
