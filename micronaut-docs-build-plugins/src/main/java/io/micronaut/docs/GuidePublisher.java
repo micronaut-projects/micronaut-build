@@ -15,14 +15,12 @@
  */
 package io.micronaut.docs;
 
-import org.gradle.api.internal.file.FileOperations;
-
 import java.io.File;
 import java.util.Properties;
 
 public interface GuidePublisher {
 
-    void setFileOperations(FileOperations fileOperations);
+    void setFileOperations(DocFileOperations fileOperations);
 
     void setAsciidoc(boolean asciidoc);
 

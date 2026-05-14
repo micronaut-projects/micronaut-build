@@ -136,7 +136,7 @@ public abstract class PublishGuideTask extends DefaultTask {
         File sourceDir = getSourceDir().getAsFile().get();
         File targetDir = getTargetDir().getAsFile().get();
         GuidePublisher publisher = newPublisher(sourceDir, targetDir);
-        publisher.setFileOperations(getFileOperations());
+        publisher.setFileOperations(new GradleDocFileOperations(getFileOperations()));
         publisher.setAsciidoc(getAsciidoc().get());
         publisher.setDocResources(getResourcesDir().getAsFile().get());
         publisher.setApiDir(targetDir);

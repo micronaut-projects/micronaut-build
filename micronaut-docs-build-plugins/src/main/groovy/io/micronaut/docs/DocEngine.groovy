@@ -17,6 +17,7 @@ package io.micronaut.docs
 import io.micronaut.docs.filters.HeaderFilter
 import io.micronaut.docs.filters.LinkTestFilter
 import io.micronaut.docs.filters.ListFilter
+import io.micronaut.docs.internal.StringEscapeCategory
 
 import java.util.regex.Pattern
 
@@ -43,12 +44,12 @@ import org.radeox.util.Encoder
  */
 class DocEngine extends BaseRenderEngine implements WikiRenderEngine {
 
-    static final CONTEXT_PATH = "contextPath"
-    static final SOURCE_FILE = "sourceFile"
-    static final BASE_DIR = "base.dir"
-    static final API_BASE_PATH = "apiBasePath"
-    static final API_CONTEXT_PATH = "apiContextPath"
-    static final RESOURCES_CONTEXT_PATH = "resourcesContextPath"
+    public static final String CONTEXT_PATH = "contextPath"
+    public static final String SOURCE_FILE = "sourceFile"
+    public static final String BASE_DIR = "base.dir"
+    public static final String API_BASE_PATH = "apiBasePath"
+    public static final String API_CONTEXT_PATH = "apiContextPath"
+    public static final String RESOURCES_CONTEXT_PATH = "resourcesContextPath"
 
     static EXTERNAL_DOCS = [:]
     static ALIAS = [:]
@@ -132,6 +133,7 @@ class DocEngine extends BaseRenderEngine implements WikiRenderEngine {
     boolean showCreate() { false }
 
     void addMacro(macro) {
+        init()
         macroLoader.add(macroFilter.macroRepository, macro)
     }
 
@@ -197,7 +199,7 @@ class DocEngine extends BaseRenderEngine implements WikiRenderEngine {
             def i = alias.lastIndexOf('/')
             if (i >= 0) alias = alias[(i + 1)..-1]
 
-            buffer << "<a href=\"$contextPath/guide/single.html#${alias.encodeAsUrlFragment()}\" class=\"guide\">$view</a>"
+            buffer << "<a href=\"$contextPath/guide/single.html#${StringEscapeCategory.encodeAsUrlFragment(alias)}\" class=\"guide\">$view</a>"
         }
         else if (name.startsWith("api:")) {
             def link = name[4..-1]

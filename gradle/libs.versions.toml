@@ -7,7 +7,7 @@ japicmp-plugin = "0.4.6"
 gradle-custom-userdata-plugin = "2.6.0"
 develocity-plugin = "4.4.1"
 gradle-github-actions-plugin = "1.4.0"
-grails-gdoc = "1.0.1"
+radeox = "1.0-b2"
 graalvm-native-build-tools = "1.1.0"
 handlebars = "4.5.0"
 mockserver = "2.50.8"
@@ -48,7 +48,7 @@ japicmp-plugin = { module = "me.champeau.gradle:japicmp-gradle-plugin", version.
 gradle-custom-userdata-plugin = { module = "com.gradle:common-custom-user-data-gradle-plugin", version.ref = "gradle-custom-userdata-plugin" }
 develocity-plugin = { module = "com.gradle:develocity-gradle-plugin", version.ref = "develocity-plugin" }
 gradle-github-actions-plugin = { module = "org.nosphere.gradle.github:gradle-github-actions-plugin", version.ref = "gradle-github-actions-plugin" }
-grails-gdoc = { module = "org.grails:grails-gdoc-engine", version.ref = "grails-gdoc" }
+radeox = { module = "radeox:radeox", version.ref = "radeox" }
 graalvm-native-gradle-plugin = { module = "org.graalvm.buildtools:native-gradle-plugin", version.ref = "graalvm-native-build-tools" }
 handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
 nexus-publish-plugin = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexus-publish-plugin" }
@@ -69,7 +69,7 @@ bc-pkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycas
 micronaut-docs = { module = "io.micronaut.docs:micronaut-docs-asciidoc-config-props", version.ref = "micronaut-docs" }
 micronaut-logging = { module = "io.micronaut.logging:micronaut-logging", version.ref = "micronaut-logging" }
 micronaut-test = { module = "io.micronaut.test:micronaut-test", version.ref = "micronaut-test" }
-groovy = { module = "org.codehaus.groovy:groovy-core", version.ref = "groovy" }
+groovy = { module = "org.apache.groovy:groovy", version.ref = "groovy" }
 mockserver-client = { module = "software.xdev.mockserver:client", version.ref = "mockserver" }
 mockserver-server = { module = "software.xdev.mockserver:server", version.ref = "mockserver" }
 

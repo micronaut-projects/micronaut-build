@@ -1,4 +1,5 @@
-/* Copyright 2004-2005 the original author or authors.
+/*
+ * Copyright 2004-2005 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,854 +13,1072 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.micronaut.docs;
 
-package io.micronaut.docs
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Template;
+import io.micronaut.docs.asciidoc.AsciiDocEngine;
+import io.micronaut.docs.internal.FileResourceChecker;
+import io.micronaut.docs.internal.LegacyTocStrategy;
+import io.micronaut.docs.internal.StringEscapeCategory;
+import io.micronaut.docs.internal.UserGuideNode;
+import io.micronaut.docs.internal.YamlTocStrategy;
+import io.micronaut.docs.macros.HiddenMacro;
+import org.radeox.engine.context.BaseInitialRenderContext;
+import org.radeox.engine.context.BaseRenderContext;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
-import groovy.io.FileType
-import com.github.jknack.handlebars.Handlebars
-import com.github.jknack.handlebars.Template
-import io.micronaut.docs.asciidoc.AsciiDocEngine
-import io.micronaut.docs.internal.FileResourceChecker
-import io.micronaut.docs.internal.LegacyTocStrategy
-import io.micronaut.docs.internal.StringEscapeCategory
-import io.micronaut.docs.internal.UserGuideNode
-import io.micronaut.docs.internal.YamlTocStrategy
-import io.micronaut.docs.macros.HiddenMacro
-import org.apache.commons.logging.LogFactory
-import org.gradle.api.file.DuplicatesStrategy
-import org.gradle.api.internal.file.FileOperations
-import org.radeox.api.engine.WikiRenderEngine
-import org.radeox.engine.context.BaseInitialRenderContext
-import org.radeox.engine.context.BaseRenderContext
-import org.yaml.snakeyaml.Yaml
-import org.yaml.snakeyaml.constructor.SafeConstructor
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.io.Writer;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
- * Coordinated the DocEngine the produce documentation based on the gdoc format.
- *
- * @see DocEngine
+ * Coordinates the {@link DocEngine} to produce documentation based on the gdoc format.
  *
  * @author Graeme Rocher
  * @since 1.2
  */
-class DocPublisher implements GuidePublisher {
-    static final String TOC_FILENAME = "toc.yml"
+public class DocPublisher implements GuidePublisher {
+    public static final String TOC_FILENAME = "toc.yml";
 
-    /** The source directory of the documentation */
-    File src
-    /** The target directory to publish to */
-    File target
-    /** The directory where resources used to generate docs are found */
-    File docResources
-    /** Directory containing the project's API documentation. */
-    File apiDir
-    /** The directory containing any images to use (will override defaults) **/
-    File images
-    /** The directory containing any CSS to use (will override defaults) **/
-    File css
-    /** The directory containing any fonts to use (will override defaults) **/
-    File fonts
-    /** The directory containing any Javascript to use (will override defaults) **/
-    File js
-    /** The directory cotnaining any templates to use (will override defaults) **/
-    File style
-    /**
-     * The properties fie to populate the engine properties from
-     */
-    File propertiesFile
+    private File src;
+    private File target;
+    private File docResources;
+    private File apiDir;
+    private File images;
+    private File css;
+    private File fonts;
+    private File js;
+    private File style;
+    private File propertiesFile;
+    private DocFileOperations fileOperations = new DefaultDocFileOperations();
+    private String language = "";
+    private String encoding = "UTF-8";
+    private String title;
+    private String subtitle = "";
+    private String version;
+    private String authors = "";
+    private String translators = "";
+    private String license = "";
+    private String copyright = "";
+    private String footer = "";
+    private String logo;
+    private String sponsorLogo;
+    private String sourceRepo;
+    private Properties engineProperties = new Properties();
+    private boolean asciidoc;
+    private BaseInitialRenderContext context;
+    private DocEngine engine;
+    private final List<Object> customMacros = new ArrayList<>();
 
-    FileOperations fileOperations
-
-    /** The programming language we're generating for (gets its own sub-directory). Defaults to '' */
-    String language = ""
-    /** The encoding to use (default is UTF-8) */
-    String encoding = "UTF-8"
-    /** The title of the documentation */
-    String title
-    /** The subtitle of the documentation */
-    String subtitle = ""
-    /** The version of the documentation */
-    String version
-    /** The authors of the documentation */
-    String authors = ""
-    /** The translators of the documentation (if any) */
-    String translators = ""
-    /** The documentation license */
-    String license = ""
-    /** The copyright message */
-    String copyright = ""
-    /** The footer to include */
-    String footer = ""
-    /** HTML markup that renders the left logo */
-    String logo
-    /** HTML markup that renders the right logo */
-    String sponsorLogo
-    /**
-     * The source repository
-     */
-    String sourceRepo
-
-    /** Properties used to configure the DocEngine */
-    Properties engineProperties
-
-    boolean asciidoc = false
-
-    def output
-    private BaseRenderContext context
-    private WikiRenderEngine engine
-    private customMacros = []
-
-    DocPublisher() {
-        this(null, null)
+    public DocPublisher() {
+        this(null, null);
     }
 
-    DocPublisher(File src, File target, out = LogFactory.getLog(DocPublisher)) {
-        this.src = src
-        this.target = target
-        this.output = out
-
-        try {
-            engineProperties.load(getClass().classLoader.getResourceAsStream("grails/doc/doc.properties"))
-        }
-        catch (e) {
-            // ignore
+    public DocPublisher(File src, File target) {
+        this.src = src;
+        this.target = target;
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("grails/doc/doc.properties")) {
+            if (input != null) {
+                engineProperties.load(input);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
-    /** Returns the engine properties. */
-    Properties getEngineProperties() { engineProperties }
-
-    /** Sets the engine properties. Allows clients to override the defaults. */
-    void setEngineProperties(Properties p) {
-        engineProperties = p
-    }
-
-    /**
-     * Registers a custom Radeox macro. If the macro has an 'initialContext'
-     * property, it is set to the render context before first use.
-     */
-    void registerMacro(macro) {
-        customMacros << macro
+    public Properties getEngineProperties() {
+        return engineProperties;
     }
 
     @Override
-    void registerHiddenMacro() {
-        registerMacro(new HiddenMacro())
+    public void setEngineProperties(Properties properties) {
+        engineProperties = properties;
     }
 
-    void publish() {
-        // Adds encodeAsUrlPath(), encodeAsUrlFragment() and encodeAsHtml()
-        // methods to String.
-        use(StringEscapeCategory) {
-            catPublish()
-        }
+    public void registerMacro(Object macro) {
+        customMacros.add(macro);
     }
 
-    private void catPublish() {
-        initialize()
-        if (!src?.exists()) {
-            return
+    @Override
+    public void registerHiddenMacro() {
+        registerMacro(new HiddenMacro());
+    }
+
+    @Override
+    public void publish() {
+        initialize();
+        if (src == null || !src.exists()) {
+            return;
+        }
+        publishInitialized();
+    }
+
+    private void publishInitialized() {
+        String refDocsDir = calculateLanguageDir(target == null ? "./docs" : target.getAbsolutePath(), "");
+        File refDocsDirectory = new File(refDocsDir);
+        File refGuideDir = new File(refDocsDirectory, "guide");
+        File refPagesDir = new File(refGuideDir, "pages");
+
+        fileOperations.mkdir(refDocsDirectory);
+        fileOperations.mkdir(refGuideDir);
+        fileOperations.mkdir(refPagesDir);
+
+        File imgsDir = new File(refDocsDirectory, calculatePathToResources("img"));
+        File fontsDir = new File(refDocsDirectory, calculatePathToResources("fonts"));
+        File cssDir = new File(refDocsDirectory, calculatePathToResources("css"));
+        File jsDir = new File(refDocsDirectory, calculatePathToResources("js"));
+        fileOperations.mkdir(imgsDir);
+        fileOperations.mkdir(cssDir);
+        fileOperations.mkdir(jsDir);
+
+        fileOperations.copy(
+            imgsDir,
+            DocFileOperations.CopySource.of(new File(docResources, "img")),
+            DocFileOperations.CopySource.of(images)
+        );
+        fileOperations.copy(
+            cssDir,
+            DocFileOperations.CopySource.including(new File(docResources, "css"), "custom.css", "multi-language-sample.css"),
+            DocFileOperations.CopySource.of(css)
+        );
+        fileOperations.copy(fontsDir, DocFileOperations.CopySource.of(fonts));
+        fileOperations.copy(
+            jsDir,
+            DocFileOperations.CopySource.of(new File(docResources, "js")),
+            DocFileOperations.CopySource.of(js)
+        );
+
+        File guideSrcDir = new File(src, "guide");
+        String ext = asciidoc ? ".adoc" : ".gdoc";
+        UserGuideNode guide = buildGuide(guideSrcDir, ext);
+        Map<?, ?> legacyLinks = readLegacyLinks(guideSrcDir);
+
+        Handlebars templateEngine = newTemplateEngine();
+        List<ReferenceCategory> refCategories = referenceCategories(ext);
+        String extraCss = extraCss();
+
+        String pathToRoot = "..";
+        Map<String, Object> vars = newVars();
+        vars.put("encoding", encoding);
+        vars.put("title", title);
+        vars.put("docTitle", title);
+        vars.put("subtitle", subtitle);
+        vars.put("footer", footer);
+        vars.put("authors", authors);
+        vars.put("translators", translators);
+        vars.put("version", version);
+        vars.put("refMenu", refCategories);
+        vars.put("toc", guide);
+        vars.put("copyright", copyright);
+        vars.put("logo", injectPath(logo, pathToRoot));
+        vars.put("sponsorLogo", injectPath(sponsorLogo, pathToRoot));
+        vars.put("single", false);
+        vars.put("path", pathToRoot);
+        vars.put("resourcesPath", calculatePathToResources(pathToRoot));
+        vars.put("prev", null);
+        vars.put("next", null);
+        vars.put("legacyLinks", legacyLinks);
+        vars.put("sourceRepo", sourceRepo);
+        vars.put("extraCss", extraCss);
+
+        configureAsciiDocEngine();
+
+        Template guideTemplate = compileTemplate(templateEngine, new File(docResources, "style/guideItem.html"));
+        Template sectionTemplate = compileTemplate(templateEngine, new File(docResources, "style/section.html"));
+        StringBuilder fullContents = new StringBuilder();
+        List<UserGuideNode> chapters = children(guide);
+        for (int i = 0; i < chapters.size(); i++) {
+            UserGuideNode chapter = chapters.get(i);
+            Map<String, Object> chapterVars = new LinkedHashMap<>(vars);
+            chapterVars.put("chapterNumber", i + 1);
+            chapterVars.put("prev", i == 0 ? null : chapters.get(i - 1));
+            chapterVars.put("next", i == chapters.size() - 1 ? null : chapters.get(i + 1));
+            chapterVars.put("sectionNumber", Integer.toString(i + 1));
+            writeChapter(chapter, guideTemplate, sectionTemplate, guideSrcDir, refGuideDir.getPath(), fullContents, chapterVars);
         }
 
-        def refDocsDir = calculateLanguageDir(target?.absolutePath ?: "./docs")
-        def refGuideDir = new File(refDocsDir, "guide")
-        def refPagesDir = "$refGuideDir/pages"
+        writeReferencePages(templateEngine, refDocsDirectory, pathToRoot, vars, ext);
+        writeGuideIndexes(templateEngine, refDocsDirectory, refGuideDir, fullContents, vars);
 
-        fileOperations.mkdir( refDocsDir)
-        fileOperations.mkdir( refGuideDir)
-        fileOperations.mkdir( refPagesDir)
+        writeRedirect(refDocsDirectory);
+        System.out.println("Built user manual at " + refDocsDir + "/index.html");
+    }
 
-        File imgsDir = new File(refDocsDir, calculatePathToResources("img"))
-        File fontsDir = new File(refDocsDir, calculatePathToResources("fonts"))
-        File cssDir = new File(refDocsDir, calculatePathToResources("css"))
-        File jsDir = new File(refDocsDir, calculatePathToResources("js"))
-        fileOperations.mkdir(imgsDir)
-        fileOperations.mkdir(cssDir)
-        fileOperations.mkdir(jsDir)
-
-        fileOperations.copy {
-            it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
-            it.into(imgsDir)
-            it.from(new File(docResources, "img"))
-            it.from(images)
-        }
-
-        fileOperations.copy {
-            it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
-            it.into(cssDir)
-            it.from(new File(docResources, "css")) {
-                include "custom.css", "multi-language-sample.css"
-            }
-            it.from(css)
-        }
-        fileOperations.copy {
-            it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
-
-            it.into(fontsDir)
-            if (fonts) {
-                it.from(fonts)
-            }
-        }
-
-        fileOperations.copy {
-            it.duplicatesStrategy = DuplicatesStrategy.INCLUDE
-
-            it.into(jsDir)
-            it.from(new File(docResources, "js"))
-            it.from(js)
-        }
-
-        // Build the table of contents as a tree of nodes. We currently support
-        // three strategies for this:
-        //
-        //  1. From a toc-<lang>.yml file if it exists otherwise...
-        //  2. From a toc.yml file
-        //  3. From the gdoc filenames
-        //
-        // The first two strategies are used if the TOC files exist, otherwise we call
-        // back to the old way of doing it, which means putting the section
-        // numbers in the gdoc filenames.
-        def guideSrcDir = new File(src, "guide")
-        File yamlTocFile = null
-        if (language) {
-            yamlTocFile = new File(guideSrcDir, "toc-${language}.yml")
+    private UserGuideNode buildGuide(File guideSrcDir, String ext) {
+        File yamlTocFile = null;
+        if (notBlank(language)) {
+            yamlTocFile = new File(guideSrcDir, "toc-" + language + ".yml");
         }
         if (yamlTocFile == null || !yamlTocFile.exists()) {
-            yamlTocFile = new File(guideSrcDir, TOC_FILENAME)
+            yamlTocFile = new File(guideSrcDir, TOC_FILENAME);
         }
-        def guide
-        def ext = asciidoc ? ".adoc" : ".gdoc"
+
         if (yamlTocFile.exists()) {
-            def tocStrategy = new YamlTocStrategy(new FileResourceChecker(guideSrcDir), ext)
-            guide = tocStrategy.generateToc(yamlTocFile)
-
-            // A set of all gdoc files.
-            def files = []
-            def pattern = asciidoc ? ~/^.+\.adoc$/ : ~/^.+\.gdoc$/
-            guideSrcDir.traverse(type: FileType.FILES, nameFilter: pattern) {
-                // We need relative file paths with '/' separators, since those
-                // are what are stored in the UserGuideNodes.
-                files << (it.absolutePath - guideSrcDir.absolutePath)[1..-1].
-                        replace(File.separator as char, '/' as char)
-            }
-
+            YamlTocStrategy tocStrategy = new YamlTocStrategy(new FileResourceChecker(guideSrcDir), ext);
+            UserGuideNode guide = tocStrategy.generateToc(yamlTocFile);
+            List<String> files = guideFiles(guideSrcDir, ext);
             if (!verifyToc(guideSrcDir, files, guide)) {
-                throw new RuntimeException("Encountered errors while building table of contents. Aborting.")
+                throw new IllegalStateException("Encountered errors while building table of contents. Aborting.");
             }
-
-            for (ch in guide.children) {
-                overrideAliasesFromToc(ch)
+            for (UserGuideNode chapter : children(guide)) {
+                overrideAliasesFromToc(chapter);
             }
-        }
-        else {
-
-            def files = guideSrcDir.listFiles()?.findAll { it.name.endsWith(ext) } ?: []
-            guide = new LegacyTocStrategy().generateToc(files)
+            return guide;
         }
 
-        // When migrating from the old style docs to the new style, existing
-        // external links that use URL fragment identifiers will break. To
-        // mitigate against this problem, the user can provide a list of mappings
-        // from the new fragment identifiers to the old ones. The docs will then
-        // include both.
-        def legacyLinksFile = new File(guideSrcDir, "links.yml")
-        def legacyLinks = [:]
-        if (legacyLinksFile.exists()) {
-            legacyLinksFile.withInputStream { input ->
-                legacyLinks = new Yaml(new SafeConstructor()).load(input)
-            }
+        List<File> files = filesMatching(guideSrcDir, file -> file.isFile() && file.getName().endsWith(ext));
+        return (UserGuideNode) new LegacyTocStrategy().generateToc(files);
+    }
+
+    private Map<?, ?> readLegacyLinks(File guideSrcDir) {
+        File legacyLinksFile = new File(guideSrcDir, "links.yml");
+        if (!legacyLinksFile.exists()) {
+            return Map.of();
         }
-
-        def templateEngine = newTemplateEngine()
-
-        // Reference menu items.
-        def sectionFilter = { it.directory && !it.name.startsWith('.') } as FileFilter
-        def files = new File(src, "ref").listFiles(sectionFilter)?.toList()?.sort() ?: []
-        def refCategories = files.collect { f ->
-            new Expando(
-                    name: f.name,
-                    usage: new File("${src}/ref/${f.name}$ext"),
-                    sections: f.listFiles().findAll { it.name.endsWith(ext) }.sort())
+        try (InputStream input = Files.newInputStream(legacyLinksFile.toPath())) {
+            Object loaded = newYaml().load(input);
+            return loaded instanceof Map<?, ?> map ? map : Map.of();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
+    }
 
-        def extraCss = ""
-        for (final def l in LanguageSnippetMacro.LANGS) {
-            if (language) {
-                // Make everything invisible except the target language.
-                def display = l != language ? "none" : "block"
-                extraCss += ".lang-$l { display: $display }; "
+    private List<ReferenceCategory> referenceCategories(String ext) {
+        File refDir = new File(src, "ref");
+        List<File> files = filesMatching(refDir, file -> file.isDirectory() && !file.getName().startsWith("."));
+        List<ReferenceCategory> categories = new ArrayList<>();
+        for (File file : files) {
+            List<File> sections = filesMatching(file, child -> child.isFile() && child.getName().endsWith(ext));
+            categories.add(new ReferenceCategory(file.getName(), new File(src, "ref/" + file.getName() + ext), sections));
+        }
+        return categories;
+    }
+
+    private String extraCss() {
+        StringBuilder extraCss = new StringBuilder();
+        for (String lang : LanguageSnippetMacro.LANGS) {
+            if (notBlank(language)) {
+                String display = Objects.equals(lang, language) ? "block" : "none";
+                extraCss.append(".lang-").append(lang).append(" { display: ").append(display).append(" }; ");
             } else {
-                // Make everything visible.
-                extraCss += ".lang-$l { display: block }; "
+                extraCss.append(".lang-").append(lang).append(" { display: block }; ");
             }
         }
+        return extraCss.toString();
+    }
 
-        def pathToRoot = ".."
-        Map vars = new LinkedHashMap(engineProperties)
-        vars.putAll(
-            encoding: encoding,
-            title: title,
-            docTitle: title,
-            subtitle: subtitle,
-            footer: footer, // TODO - add a way to specify footer
-            authors: authors,
-            translators: translators,
-            version: version,
-            refMenu: refCategories,
-            toc: guide,
-            copyright: copyright,
-            logo: injectPath(logo, pathToRoot),
-            sponsorLogo: injectPath(sponsorLogo, pathToRoot),
-            single: false,
-            path: pathToRoot,
-            resourcesPath: calculatePathToResources(pathToRoot),
-            prev: null,
-            next: null,
-            legacyLinks: legacyLinks,
-            sourceRepo: sourceRepo,
-            extraCss: extraCss
-        )
-
-        if(engine instanceof AsciiDocEngine) {
-            // pass attributes to asciidoc
-            ((AsciiDocEngine)engine).attributes.putAll(
-                    version: version,
-                    apiDocs: "http://docs.grails.org/${version}/api/",
-                    sourceRepo: sourceRepo
-            )
-            ((AsciiDocEngine)engine).attributes.putAll(
-                    engineProperties
-            )
+    private void configureAsciiDocEngine() {
+        if (engine instanceof AsciiDocEngine asciiDocEngine) {
+            asciiDocEngine.getAttributes().put("version", version);
+            asciiDocEngine.getAttributes().put("apiDocs", "http://docs.grails.org/" + version + "/api/");
+            asciiDocEngine.getAttributes().put("sourceRepo", sourceRepo);
+            asciiDocEngine.getAttributes().putAll(engineProperties);
         }
+    }
 
-        // Build the user guide sections first.
-        def template = compileTemplate(templateEngine, new File("${docResources}/style/guideItem.html"))
-        def sectionTemplate = compileTemplate(templateEngine, new File("${docResources}/style/section.html"))
-        def fullContents = new StringBuilder()
+    private void writeReferencePages(
+        Handlebars templateEngine,
+        File refDocsDirectory,
+        String pathToRoot,
+        Map<String, Object> vars,
+        String ext
+    ) {
+        List<File> files = filesMatching(new File(src, "ref"), file -> true);
+        Template template = compileTemplate(templateEngine, new File(docResources, "style/referenceItem.html"));
 
-        def chapterVars
-        def chapters = guide.children
-        chapters.eachWithIndex{ chapter, i ->
-            chapterVars = [*:vars, chapterNumber: i + 1]
-            if (i != 0) {
-                chapterVars['prev'] = chapters[i - 1]
-            }
-            if (i != (chapters.size() - 1)) {
-                chapterVars['next'] = chapters[i + 1]
-            }
-            chapterVars.sectionNumber = (i + 1).toString()
-            writeChapter(chapter, template, sectionTemplate, guideSrcDir, refGuideDir.path, fullContents, chapterVars)
-        }
+        pathToRoot = "../..";
+        vars.put("logo", injectPath(logo, pathToRoot));
+        vars.put("sponsorLogo", injectPath(sponsorLogo, pathToRoot));
+        vars.put("path", pathToRoot);
+        vars.put("resourcesPath", calculatePathToResources(pathToRoot));
 
-        files = new File("${src}/ref").listFiles()?.toList()?.sort() ?: []
-        template = compileTemplate(templateEngine, new File("${docResources}/style/referenceItem.html"))
+        for (File file : files) {
+            if (file.isDirectory() && !file.getName().startsWith(".")) {
+                String section = file.getName();
+                vars.put("section", section);
 
-        pathToRoot = "../.."
-        vars.logo = injectPath(logo, pathToRoot)
-        vars.sponsorLogo = injectPath(sponsorLogo, pathToRoot)
-        vars.path = pathToRoot
-        vars.resourcesPath = calculatePathToResources(pathToRoot)
-
-        // Generate the reference section of the guide.
-        for (f in files) {
-            if (f.directory && !f.name.startsWith(".")) {
-                def section = f.name
-                vars.section = section
-
-                new File("${refDocsDir}/ref/${section}").mkdirs()
-                def textiles = f.listFiles().findAll { it.name.endsWith(ext)}.sort()
-                def usageFile = new File("${src}/ref/${section}${ext}")
+                File sectionDir = new File(refDocsDirectory, "ref/" + section);
+                fileOperations.mkdir(sectionDir);
+                List<File> textiles = filesMatching(file, child -> child.isFile() && child.getName().endsWith(ext));
+                File usageFile = new File(src, "ref/" + section + ext);
                 if (usageFile.exists()) {
-                    def data = usageFile.getText("UTF-8")
-                    context.set(DocEngine.SOURCE_FILE, usageFile)
-                    context.set(DocEngine.CONTEXT_PATH, pathToRoot)
-                    context.set(DocEngine.API_CONTEXT_PATH, vars.resourcesPath)
-                    output.warn "Rendering document file $usageFile.name"
-                    vars.content = engine.render(data, context)
-                    vars.sourcePath = "ref/$usageFile.name"
-                    refreshRenderedTemplateFragments(vars)
-                    new File("${refDocsDir}/ref/${section}/Usage.html").withWriter(encoding) {out ->
-                        template.apply(vars, out)
-                    }
+                    renderReferenceFile(template, vars, usageFile, new File(sectionDir, "Usage.html"), pathToRoot, "ref/" + usageFile.getName());
                 }
-                for (txt in textiles) {
-                    def name = txt.name[0..-6]
-                    def data = txt.getText("UTF-8")
-                    context.set(DocEngine.SOURCE_FILE, txt.name)
-                    context.set(DocEngine.CONTEXT_PATH, pathToRoot)
-                    context.set(DocEngine.API_CONTEXT_PATH, vars.resourcesPath)
-                    output.warn "Rendering document file $txt.name"
-                    vars.content = engine.render(data, context)
-                    vars.sourcePath = "ref/${section}/$txt.name"
-                    refreshRenderedTemplateFragments(vars)
-                    new File("${refDocsDir}/ref/${section}/${name}.html").withWriter(encoding) {out ->
-                        template.apply(vars, out)
-                    }
+                for (File txt : textiles) {
+                    String name = withoutExtension(txt.getName());
+                    renderReferenceFile(template, vars, txt, new File(sectionDir, name + ".html"), pathToRoot, "ref/" + section + "/" + txt.getName());
                 }
             }
         }
-
-        vars.remove("section")
-        vars.content = fullContents.toString()
-        vars.single = true
-
-        pathToRoot = ".."
-        vars.logo = injectPath(logo, pathToRoot)
-        vars.sponsorLogo = injectPath(sponsorLogo, pathToRoot)
-        vars.path = pathToRoot
-        vars.resourcesPath = calculatePathToResources(pathToRoot)
-
-        template = compileTemplate(templateEngine, new File("${docResources}/style/layout.html"))
-        refreshRenderedTemplateFragments(vars)
-        new File("${refGuideDir}/single.html").withWriter(encoding) {out ->
-            template.apply(vars, out)
-        }
-
-        vars.content = ""
-        vars.single = false
-        refreshRenderedTemplateFragments(vars)
-        new File("${refGuideDir}/index.html").withWriter(encoding) {out ->
-            template.apply(vars, out)
-        }
-
-        pathToRoot = "."
-        vars.logo = injectPath(logo, pathToRoot)
-        vars.sponsorLogo = injectPath(sponsorLogo, pathToRoot)
-        vars.path = pathToRoot
-        vars.resourcesPath = calculatePathToResources(pathToRoot)
-        refreshRenderedTemplateFragments(vars)
-
-        new File("${refDocsDir}/index.html").withWriter(encoding) {out ->
-            template.apply(vars, out)
-        }
-
-        def singleFile = new File(refGuideDir, "single.html")
-        new File(refGuideDir, "index.html").bytes = singleFile.bytes
-        fileOperations.delete(singleFile)
-
-        new File(refDocsDir, "index.html").text = """
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html lang="en">
-<head>
-<meta http-equiv="refresh" content="0; url=guide/index.html" />
-</head>
-
-</body>
-</html>
-"""
-
-        println "Built user manual at ${refDocsDir}/index.html"
-
     }
 
-    void writeChapter(
-            section,
-            Template layoutTemplate,
-            Template sectionTemplate,
-            File guideSrcDir,
-            String targetDir,
-            fullContents,
-            vars) {
-        fullContents << writePage(section, layoutTemplate, sectionTemplate, guideSrcDir, targetDir, "", "..", 0, vars)
+    private void renderReferenceFile(
+        Template template,
+        Map<String, Object> vars,
+        File sourceFile,
+        File targetFile,
+        String pathToRoot,
+        String sourcePath
+    ) {
+        context.set(DocEngine.SOURCE_FILE, sourceFile.getName());
+        context.set(DocEngine.CONTEXT_PATH, pathToRoot);
+        context.set(DocEngine.API_CONTEXT_PATH, vars.get("resourcesPath"));
+        warn("Rendering document file " + sourceFile.getName());
+        vars.put("content", engine.render(readString(sourceFile), context));
+        vars.put("sourcePath", sourcePath);
+        refreshRenderedTemplateFragments(vars);
+        writeTemplate(targetFile, template, vars);
     }
 
-    String writePage(
-            section,
-            Template layoutTemplate,
-            Template sectionTemplate,
-            File guideSrcDir,
-            String targetDir,
-            String subDir,
-            path,
-            level,
-            vars) {
-        def sourceFile = new File(guideSrcDir, section.file)
-        context.set(DocEngine.SOURCE_FILE, sourceFile)
-        context.set(DocEngine.CONTEXT_PATH, path)
+    private void writeGuideIndexes(
+        Handlebars templateEngine,
+        File refDocsDirectory,
+        File refGuideDir,
+        StringBuilder fullContents,
+        Map<String, Object> vars
+    ) {
+        vars.remove("section");
+        vars.put("content", fullContents.toString());
+        vars.put("single", true);
 
-        def varsCopy = [*:vars]
-        varsCopy.putAll(engineProperties)
-        varsCopy.name = section.name
-        varsCopy.title = section.title
-        varsCopy.path = path
-        varsCopy.level = level
-        varsCopy.hLevel = level == 0 ? 1 : 2
-        varsCopy.sectionToc = section.children
-        varsCopy.sourcePath = section.file
-        varsCopy.prevChapterNumber = varsCopy.chapterNumber ? (varsCopy.chapterNumber as int) - 1 : null
-        varsCopy.nextChapterNumber = varsCopy.chapterNumber ? (varsCopy.chapterNumber as int) + 1 : null
-        output.warn "Rendering document file $sourceFile.name"
-        varsCopy.content = engine.render(sourceFile.getText("UTF-8"), context)
+        String pathToRoot = "..";
+        vars.put("logo", injectPath(logo, pathToRoot));
+        vars.put("sponsorLogo", injectPath(sponsorLogo, pathToRoot));
+        vars.put("path", pathToRoot);
+        vars.put("resourcesPath", calculatePathToResources(pathToRoot));
 
-        // First create the section content, which usually consists of a header
-        // and the translated gdoc content.
-        def sectionContent = new StringWriter()
-        templateApply(sectionTemplate, varsCopy, sectionContent)
+        Template template = compileTemplate(templateEngine, new File(docResources, "style/layout.html"));
+        refreshRenderedTemplateFragments(vars);
+        File singleFile = new File(refGuideDir, "single.html");
+        writeTemplate(singleFile, template, vars);
 
-        // Aggregate the section content and sub-sections.
-        def accumulatedContent = new StringBuilder()
-        accumulatedContent << sectionContent.toString()
+        vars.put("content", "");
+        vars.put("single", false);
+        refreshRenderedTemplateFragments(vars);
+        writeTemplate(new File(refGuideDir, "index.html"), template, vars);
 
-        // Create the sub-section pages.
-        level++
-        final sectionNumber = varsCopy.sectionNumber
-        int subSectionNumber = 1
-        for (s in section.children) {
-            varsCopy.sectionNumber = "$sectionNumber.$subSectionNumber"
-            accumulatedContent << writePage(s, layoutTemplate, sectionTemplate, guideSrcDir, targetDir, "pages", path, level, varsCopy)
-            subSectionNumber++
+        pathToRoot = ".";
+        vars.put("logo", injectPath(logo, pathToRoot));
+        vars.put("sponsorLogo", injectPath(sponsorLogo, pathToRoot));
+        vars.put("path", pathToRoot);
+        vars.put("resourcesPath", calculatePathToResources(pathToRoot));
+        refreshRenderedTemplateFragments(vars);
+        writeTemplate(new File(refDocsDirectory, "index.html"), template, vars);
+
+        copyFile(singleFile, new File(refGuideDir, "index.html"));
+        fileOperations.delete(singleFile);
+    }
+
+    private void writeRedirect(File refDocsDirectory) {
+        writeString(
+            new File(refDocsDirectory, "index.html"),
+            """
+                <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+                <html lang="en">
+                <head>
+                <meta http-equiv="refresh" content="0; url=guide/index.html" />
+                </head>
+
+                </body>
+                </html>
+                """
+        );
+    }
+
+    public void writeChapter(
+        UserGuideNode section,
+        Template layoutTemplate,
+        Template sectionTemplate,
+        File guideSrcDir,
+        String targetDir,
+        StringBuilder fullContents,
+        Map<String, Object> vars
+    ) {
+        fullContents.append(writePage(section, layoutTemplate, sectionTemplate, guideSrcDir, targetDir, "", "..", 0, vars));
+    }
+
+    public String writePage(
+        UserGuideNode section,
+        Template layoutTemplate,
+        Template sectionTemplate,
+        File guideSrcDir,
+        String targetDir,
+        String subDir,
+        String path,
+        int level,
+        Map<String, Object> vars
+    ) {
+        File sourceFile = new File(guideSrcDir, section.getFile());
+        context.set(DocEngine.SOURCE_FILE, sourceFile);
+        context.set(DocEngine.CONTEXT_PATH, path);
+
+        Map<String, Object> varsCopy = new LinkedHashMap<>(vars);
+        varsCopy.putAll(newVars());
+        varsCopy.put("name", section.getName());
+        varsCopy.put("title", section.getTitle());
+        varsCopy.put("path", path);
+        varsCopy.put("level", level);
+        varsCopy.put("hLevel", level == 0 ? 1 : 2);
+        varsCopy.put("sectionToc", section.getChildren());
+        varsCopy.put("sourcePath", section.getFile());
+        Object chapterNumber = varsCopy.get("chapterNumber");
+        if (chapterNumber instanceof Number number) {
+            varsCopy.put("prevChapterNumber", number.intValue() - 1);
+            varsCopy.put("nextChapterNumber", number.intValue() + 1);
+        } else {
+            varsCopy.put("prevChapterNumber", null);
+            varsCopy.put("nextChapterNumber", null);
         }
 
-        // Reset the section number in the template vars.
-        varsCopy.sectionNumber = sectionNumber
+        warn("Rendering document file " + sourceFile.getName());
+        varsCopy.put("content", engine.render(readString(sourceFile), context));
 
-        // TODO PAL - I don't see why these pages are necessary, plus there seems
-        // to be no way to get embedded images to display properly (since the path
-        // passed to the Wiki rendering engine is wrong for pages written to a
-        // 'pages' subdirectory). Keeping them in case someone, somewhere depends
-        // on them.
-        //
-        // Create the HTML page for this section, which includes the content
-        // from all the sub-sections too.
-        if (subDir) {
-            if (subDir.endsWith('/')) subDir = subDir[0..-2]
-            targetDir = "$targetDir/$subDir"
+        String sectionContent = applyTemplate(sectionTemplate, varsCopy);
+        StringBuilder accumulatedContent = new StringBuilder(sectionContent);
 
-            varsCopy.path = "../${path}"
-            varsCopy.logo = injectPath(logo, varsCopy.path)
-            varsCopy.sponsorLogo = injectPath(sponsorLogo, varsCopy.path)
+        int childLevel = level + 1;
+        String sectionNumber = stringValue(varsCopy.get("sectionNumber"));
+        int subSectionNumber = 1;
+        for (UserGuideNode child : children(section)) {
+            varsCopy.put("sectionNumber", sectionNumber + "." + subSectionNumber);
+            accumulatedContent.append(writePage(child, layoutTemplate, sectionTemplate, guideSrcDir, targetDir, "pages", path, childLevel, varsCopy));
+            subSectionNumber++;
+        }
+        varsCopy.put("sectionNumber", sectionNumber);
+
+        if (notBlank(subDir)) {
+            if (subDir.endsWith("/")) {
+                subDir = subDir.substring(0, subDir.length() - 1);
+            }
+            targetDir = targetDir + "/" + subDir;
+            varsCopy.put("path", "../" + path);
+            varsCopy.put("logo", injectPath(logo, stringValue(varsCopy.get("path"))));
+            varsCopy.put("sponsorLogo", injectPath(sponsorLogo, stringValue(varsCopy.get("path"))));
         }
 
-        new File("${targetDir}/${section.name}.html").withWriter(encoding) { writer ->
-            varsCopy.content = accumulatedContent.toString()
-            refreshRenderedTemplateFragments(varsCopy)
-            layoutTemplate.apply(varsCopy, writer)
-        }
-
-        return varsCopy.content
+        varsCopy.put("content", accumulatedContent.toString());
+        refreshRenderedTemplateFragments(varsCopy);
+        writeTemplate(new File(targetDir, section.getName() + ".html"), layoutTemplate, varsCopy);
+        return stringValue(varsCopy.get("content"));
     }
 
     protected void initialize() {
-        if (language) {
-            File langDir = new File(src, language)
+        if (notBlank(language) && src != null) {
+            File langDir = new File(src, language);
             if (langDir.exists()) {
-                src = langDir
+                src = langDir;
             }
         }
-        if (!apiDir) {
-            apiDir = target
+        if (apiDir == null) {
+            apiDir = target;
         }
-        def metaProps = DocPublisher.metaClass.properties
-        Properties props
-        if(engineProperties != null) {
-            props = engineProperties
-        }
-        else {
-            props = new Properties()
-            engineProperties = props
+        Properties props = engineProperties == null ? new Properties() : engineProperties;
+        engineProperties = props;
+
+        if (propertiesFile != null && propertiesFile.exists()) {
+            loadPropertiesFile(props);
         }
 
+        applyStringProperties(props);
 
-        if(propertiesFile != null && propertiesFile?.exists()) {
-            if(propertiesFile.name.endsWith('.properties')) {
-                propertiesFile.withInputStream {
-                    props.load(it)
-                }
+        context = new BaseInitialRenderContext();
+        initContext(context, "..");
+        engine = asciidoc ? new AsciiDocEngine(context) : new DocEngine(context);
+        engine.setEngineProperties(props);
+        context.setRenderEngine(engine);
+
+        for (Object macro : customMacros) {
+            setInitialContextIfSupported(macro, context);
+            engine.addMacro(macro);
+        }
+    }
+
+    private void loadPropertiesFile(Properties props) {
+        if (propertiesFile.getName().endsWith(".properties")) {
+            try (InputStream input = Files.newInputStream(propertiesFile.toPath())) {
+                props.load(input);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-            else if(propertiesFile.name.endsWith('.yml')) {
-                propertiesFile.withInputStream { input ->
-                    def ymls = new Yaml(new SafeConstructor()).loadAll(input)
-                    for(yml in ymls) {
-                        if(yml instanceof Map) {
-                            def config = yml.grails?.doc
-                            if(config instanceof Map) {
-                                flattenKeys(props, (Map) config,[], true)
+        } else if (propertiesFile.getName().endsWith(".yml")) {
+            try (InputStream input = Files.newInputStream(propertiesFile.toPath())) {
+                Iterable<Object> ymls = newYaml().loadAll(input);
+                for (Object yml : ymls) {
+                    if (yml instanceof Map<?, ?> ymlMap) {
+                        Object grails = ymlMap.get("grails");
+                        if (grails instanceof Map<?, ?> grailsMap) {
+                            Object config = grailsMap.get("doc");
+                            if (config instanceof Map<?, ?> configMap) {
+                                flattenKeys(props, configMap, List.of(), true);
                             }
                         }
                     }
                 }
-
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-
-        }
-
-
-        for (MetaProperty mp in metaProps) {
-            if (mp.type == String) {
-                def value = props[mp.name]
-                if (value) {
-                    this[mp.name] = value
-                }
-            }
-        }
-
-        context = new BaseInitialRenderContext()
-        initContext(context, "..")
-
-        if(asciidoc) {
-            engine = new AsciiDocEngine(context)
-        }
-        else {
-            engine = new DocEngine(context)
-        }
-
-        engine.engineProperties = props
-        context.renderEngine = engine
-
-        // Add any custom macros registered with this publisher to the engine.
-        for (m in customMacros) {
-            if (m.metaClass.hasProperty(m, "initialContext")) {
-                m.initialContext = context
-            }
-            engine.addMacro(m)
         }
     }
 
-    private void flattenKeys(Map<String, Object> flatConfig, Map currentMap, List<String> path, boolean forceStrings) {
-        currentMap.each { key, value ->
-            String stringKey = String.valueOf(key)
-            if(value != null) {
-                if(value instanceof Map) {
-                    flattenKeys(flatConfig, (Map)value, ((path + [stringKey]) as List<String>).asImmutable(), forceStrings)
+    private void flattenKeys(Map<Object, Object> flatConfig, Map<?, ?> currentMap, List<String> path, boolean forceStrings) {
+        for (Map.Entry<?, ?> entry : currentMap.entrySet()) {
+            Object value = entry.getValue();
+            if (value == null) {
+                continue;
+            }
+            String stringKey = String.valueOf(entry.getKey());
+            if (value instanceof Map<?, ?> nestedMap) {
+                List<String> nestedPath = new ArrayList<>(path);
+                nestedPath.add(stringKey);
+                flattenKeys(flatConfig, nestedMap, List.copyOf(nestedPath), forceStrings);
+            } else {
+                String fullKey = path.isEmpty() ? stringKey : String.join(".", path) + "." + stringKey;
+                if (value instanceof Collection<?> collection) {
+                    flatConfig.put(fullKey, forceStrings ? join(collection) : value);
+                    int index = 0;
+                    for (Object item : collection) {
+                        String collectionKey = fullKey + "[" + index + "]";
+                        flatConfig.put(collectionKey, forceStrings ? String.valueOf(item) : item);
+                        index++;
+                    }
                 } else {
-                    String fullKey
-                    if(path) {
-                        fullKey = path.join('.') + '.' + stringKey
-                    } else {
-                        fullKey = stringKey
-                    }
-                    if(value instanceof Collection) {
-                        if(forceStrings) {
-                            flatConfig.put(fullKey, ((Collection)value).join(","))
-                        } else {
-                            flatConfig.put(fullKey, value)
-                        }
-                        int index = 0
-                        for(Object item: (Collection)value) {
-                            String collectionKey = "${fullKey}[${index}]".toString()
-                            flatConfig.put(collectionKey, forceStrings ? String.valueOf(item) : item)
-                            index++
-                        }
-                    } else {
-                        flatConfig.put(fullKey, forceStrings ? String.valueOf(value) : value)
-                    }
+                    flatConfig.put(fullKey, forceStrings ? String.valueOf(value) : value);
                 }
             }
         }
     }
 
-    /**
-     * Checks the table of contents (a tree of {@link UserGuideNode}s) for
-     * duplicate section/alias names and invalid file paths.
-     * @return <code>false</code> if any errors are detected.
-     */
-    protected verifyToc(File baseDir, gdocFiles, toc) {
-        def hasErrors = false
-        def sectionsFound = [] as Set
-        def gdocsNotInToc = gdocFiles as Set
+    protected boolean verifyToc(File baseDir, Collection<String> gdocFiles, UserGuideNode toc) {
+        boolean hasErrors = false;
+        Set<String> sectionsFound = new HashSet<>();
+        Set<String> gdocsNotInToc = new LinkedHashSet<>(gdocFiles);
 
-        // Defensive copy
-        if (gdocsNotInToc.is(gdocFiles)) gdocsNotInToc = new HashSet(gdocFiles)
-
-        for (ch in toc.children) {
-            hasErrors |= verifyTocInternal(baseDir, ch, sectionsFound, gdocsNotInToc, [])
+        for (UserGuideNode chapter : children(toc)) {
+            hasErrors |= verifyTocInternal(baseDir, chapter, sectionsFound, gdocsNotInToc, List.of());
         }
 
-        if (gdocsNotInToc) {
-            for (gdoc in gdocsNotInToc) {
-                output.warn "No TOC entry found for '${gdoc}'"
+        if (!gdocsNotInToc.isEmpty()) {
+            for (String gdoc : gdocsNotInToc) {
+                warn("No TOC entry found for '" + gdoc + "'");
             }
         }
-
-        return !hasErrors
+        return !hasErrors;
     }
 
-    private verifyTocInternal(File baseDir, section, existing, gdocFiles, pathElements) {
-        def hasErrors = false
-        def fullName = pathElements ? "${pathElements.join('/')}/${section.name}" : section.name
+    private boolean verifyTocInternal(
+        File baseDir,
+        UserGuideNode section,
+        Set<String> existing,
+        Set<String> gdocFiles,
+        List<String> pathElements
+    ) {
+        boolean hasErrors = false;
+        String fullName = pathElements.isEmpty() ? section.getName() : String.join("/", pathElements) + "/" + section.getName();
 
-        // Has this section name already been used?
-        if (section.name in existing) {
-            hasErrors = true
-            output.error "Duplicate section name: ${fullName}"
+        if (existing.contains(section.getName())) {
+            hasErrors = true;
+            error("Duplicate section name: " + fullName);
         }
 
-        // Does the file path for the gdoc exist?
-        if (!section.file || !new File(baseDir, section.file).exists()) {
-            hasErrors = true
-            output.error "No file found for '${fullName}'"
-        }
-        else {
-            // Found this gdoc file in the TOC.
-            gdocFiles.remove section.file
+        String sectionFile = section.getFile();
+        if (sectionFile == null || !new File(baseDir, sectionFile).exists()) {
+            hasErrors = true;
+            error("No file found for '" + fullName + "'");
+        } else {
+            gdocFiles.remove(sectionFile);
         }
 
-        existing << section.name
-
-        for (s in section.children) {
-            hasErrors |= verifyTocInternal(baseDir, s, existing, gdocFiles, pathElements + section.name)
+        existing.add(section.getName());
+        List<String> childPathElements = new ArrayList<>(pathElements);
+        childPathElements.add(section.getName());
+        for (UserGuideNode child : children(section)) {
+            hasErrors |= verifyTocInternal(baseDir, child, existing, gdocFiles, List.copyOf(childPathElements));
         }
-
-        return hasErrors
+        return hasErrors;
     }
 
-    private String calculateLanguageDir(startPath, endPath = '') {
-        def elements = [startPath, language, endPath]
-        elements = elements.findAll { it }
-        return elements.join('/')
+    private String calculateLanguageDir(String startPath, String endPath) {
+        List<String> elements = new ArrayList<>();
+        if (notBlank(startPath)) {
+            elements.add(startPath);
+        }
+        if (notBlank(language)) {
+            elements.add(language);
+        }
+        if (notBlank(endPath)) {
+            elements.add(endPath);
+        }
+        return String.join("/", elements);
     }
 
     private String injectPath(String source, String path) {
-        if (!source) return source
-
-        def handlebars = newTemplateEngine()
-        def handlebarsSource = source.replace('${path}', '{{path}}')
-        return handlebars.compileInline(handlebarsSource).apply(path: calculatePathToResources(path))
+        if (source == null) {
+            return null;
+        }
+        Handlebars handlebars = newTemplateEngine();
+        String handlebarsSource = source.replace("${path}", "{{path}}");
+        try {
+            return handlebars.compileInline(handlebarsSource).apply(Map.of("path", calculatePathToResources(path)));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private String calculatePathToResources(String pathToRoot) {
-        return language ? '../' + pathToRoot : pathToRoot
+        return notBlank(language) ? "../" + pathToRoot : pathToRoot;
     }
 
     private Handlebars newTemplateEngine() {
-        return new Handlebars()
+        return new Handlebars();
     }
 
     private Template compileTemplate(Handlebars handlebars, File source) {
-        return handlebars.compileInline(source.getText(encoding))
-    }
-
-    private static void templateApply(Template template, Map vars, Writer writer) {
-        template.apply(vars, writer)
-    }
-
-    private void refreshRenderedTemplateFragments(Map vars) {
-        vars.prevPath = vars.prev ? StringEscapeCategory.encodeAsUrlPath(vars.prev.name) : null
-        vars.nextPath = vars.next ? StringEscapeCategory.encodeAsUrlPath(vars.next.name) : null
-        vars.tocTreeHtml = vars.toc ? renderTocTree(vars.toc, vars.single as boolean, vars.path as String) : ""
-        vars.guideSummaryItemsHtml = vars.toc ? renderGuideSummaryItems(vars.toc, vars.path as String) : ""
-        vars.sectionTocHtml = vars.sectionToc ? renderSectionToc(vars.sectionToc, vars.chapterNumber?.toString()) : ""
-        vars.refMenuHtml = renderReferenceMenu(vars.refMenu ?: [], vars.path as String, vars.section)
-    }
-
-    private String renderTocTree(toc, boolean single, String path) {
-        def html = new StringBuilder()
-        toc.children.eachWithIndex { topSection, i ->
-            renderTocSection(html, 0, topSection, topSection, (i + 1).toString(), single, path)
+        try {
+            return handlebars.compileInline(readString(source));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-        return html.toString()
     }
 
-    private void renderTocSection(StringBuilder html, int level, section, topSection, String prefix, boolean single, String path) {
-        def sectionId = StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlFragment(section.name))
-        def sectionHref = single ? "#${sectionId}" : "${path}/guide/${StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlPath(topSection.name))}${level == 0 ? '.html' : '.html#' + sectionId}"
-        def hasChildren = section.children && !section.children.empty
-        def title = StringEscapeCategory.encodeAsHtml(section.title ?: "")
+    private String applyTemplate(Template template, Map<String, Object> vars) {
+        try {
+            return template.apply(vars);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private void refreshRenderedTemplateFragments(Map<String, Object> vars) {
+        UserGuideNode prev = userGuideNode(vars.get("prev"));
+        UserGuideNode next = userGuideNode(vars.get("next"));
+        vars.put("prevPath", prev == null ? null : StringEscapeCategory.encodeAsUrlPath(prev.getName()));
+        vars.put("nextPath", next == null ? null : StringEscapeCategory.encodeAsUrlPath(next.getName()));
+        UserGuideNode toc = userGuideNode(vars.get("toc"));
+        vars.put("tocTreeHtml", toc == null ? "" : renderTocTree(toc, bool(vars.get("single")), stringValue(vars.get("path"))));
+        vars.put("guideSummaryItemsHtml", toc == null ? "" : renderGuideSummaryItems(toc, stringValue(vars.get("path"))));
+        vars.put("sectionTocHtml", renderSectionToc(nodeList(vars.get("sectionToc")), Objects.toString(vars.get("chapterNumber"), null)));
+        vars.put("refMenuHtml", renderReferenceMenu(refMenu(vars.get("refMenu")), stringValue(vars.get("path")), vars.get("section")));
+    }
+
+    private String renderTocTree(UserGuideNode toc, boolean single, String path) {
+        StringBuilder html = new StringBuilder();
+        List<UserGuideNode> children = children(toc);
+        for (int i = 0; i < children.size(); i++) {
+            UserGuideNode topSection = children.get(i);
+            renderTocSection(html, 0, topSection, topSection, Integer.toString(i + 1), single, path);
+        }
+        return html.toString();
+    }
+
+    private void renderTocSection(
+        StringBuilder html,
+        int level,
+        UserGuideNode section,
+        UserGuideNode topSection,
+        String prefix,
+        boolean single,
+        String path
+    ) {
+        String sectionId = html(StringEscapeCategory.encodeAsUrlFragment(section.getName()));
+        String sectionHref = single
+            ? "#" + sectionId
+            : path + "/guide/" + html(StringEscapeCategory.encodeAsUrlPath(topSection.getName())) + (level == 0 ? ".html" : ".html#" + sectionId);
+        boolean hasChildren = !children(section).isEmpty();
+        String title = html(Objects.toString(section.getTitle(), ""));
         if (hasChildren) {
-            html << """
-                <details class="toc-section" id="toc-item-${sectionId}" open>
-                    <summary><a href="${sectionHref}" data-section="${sectionId}"><span class="toc-number">${prefix}</span><span class="toc-title">${title}</span></a></summary>
+            html.append("""
+                <details class="toc-section" id="toc-item-%s" open>
+                    <summary><a href="%s" data-section="%s"><span class="toc-number">%s</span><span class="toc-title">%s</span></a></summary>
                     <div class="toc-children">
-"""
+                """.formatted(sectionId, sectionHref, sectionId, prefix, title));
         } else {
-            html << """
-                <div class="toc-item" id="toc-item-${sectionId}">
-                    <a class="toc-link" href="${sectionHref}" data-section="${sectionId}"><span class="toc-number">${prefix}</span><span class="toc-title">${title}</span></a>
+            html.append("""
+                <div class="toc-item" id="toc-item-%s">
+                    <a class="toc-link" href="%s" data-section="%s"><span class="toc-number">%s</span><span class="toc-title">%s</span></a>
                 </div>
-"""
+                """.formatted(sectionId, sectionHref, sectionId, prefix, title));
         }
 
-        int childLevel = level + 1
-        section.children.eachWithIndex { child, i ->
-            renderTocSection(html, childLevel, child, topSection, "${prefix}.${i + 1}".toString(), single, path)
+        List<UserGuideNode> children = children(section);
+        for (int i = 0; i < children.size(); i++) {
+            renderTocSection(html, level + 1, children.get(i), topSection, prefix + "." + (i + 1), single, path);
         }
         if (hasChildren) {
-            html << """
+            html.append("""
                     </div>
                 </details>
-"""
+                """);
         }
     }
 
-    private String renderGuideSummaryItems(toc, String path) {
-        def html = new StringBuilder()
-        toc.children.eachWithIndex { chapter, i ->
-            html << """                        <div class="toc-item" style="margin-left:0"><a href="${path}/guide/${StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlPath(chapter.name))}.html"><strong>${i + 1}</strong><span>${StringEscapeCategory.encodeAsHtml(chapter.title ?: "")}</span></a>
-                        </div>
-"""
+    private String renderGuideSummaryItems(UserGuideNode toc, String path) {
+        StringBuilder html = new StringBuilder();
+        List<UserGuideNode> children = children(toc);
+        for (int i = 0; i < children.size(); i++) {
+            UserGuideNode chapter = children.get(i);
+            html.append("""
+                                        <div class="toc-item" style="margin-left:0"><a href="%s/guide/%s.html"><strong>%s</strong><span>%s</span></a>
+                                        </div>
+                """.formatted(path, html(StringEscapeCategory.encodeAsUrlPath(chapter.getName())), i + 1, html(Objects.toString(chapter.getTitle(), ""))));
         }
-        return html.toString()
+        return html.toString();
     }
 
-    private String renderSectionToc(sections, String chapterNumber) {
-        if (!sections) {
-            return ""
+    private String renderSectionToc(List<UserGuideNode> sections, String chapterNumber) {
+        if (sections.isEmpty()) {
+            return "";
         }
-        def html = new StringBuilder()
-        html << """                <div id="table-of-content">
-                    <h2>Table of Contents</h2>
-"""
-        sections.eachWithIndex { section, i ->
-            renderSectionTocItem(html, 0, section, "${chapterNumber}.${i + 1}".toString())
+        StringBuilder html = new StringBuilder();
+        html.append("""
+                                <div id="table-of-content">
+                                    <h2>Table of Contents</h2>
+                """);
+        for (int i = 0; i < sections.size(); i++) {
+            renderSectionTocItem(html, 0, sections.get(i), chapterNumber + "." + (i + 1));
         }
-        html << """                </div>
-"""
-        return html.toString()
+        html.append("                </div>\n");
+        return html.toString();
     }
 
-    private void renderSectionTocItem(StringBuilder html, int level, section, String prefix) {
-        def sectionId = StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlFragment(section.name))
-        html << """                    <div class="toc-item" style="margin-left:${level * 10}px"><a href="#${sectionId}"><strong>${prefix}</strong><span>${StringEscapeCategory.encodeAsHtml(section.title ?: "")}</span></a>
-                    </div>
-"""
-        int childLevel = level + 1
-        section.children.eachWithIndex { child, i ->
-            renderSectionTocItem(html, childLevel, child, "${prefix}.${i + 1}".toString())
+    private void renderSectionTocItem(StringBuilder html, int level, UserGuideNode section, String prefix) {
+        String sectionId = html(StringEscapeCategory.encodeAsUrlFragment(section.getName()));
+        html.append("""
+                                    <div class="toc-item" style="margin-left:%spx"><a href="#%s"><strong>%s</strong><span>%s</span></a>
+                                    </div>
+                """.formatted(level * 10, sectionId, prefix, html(Objects.toString(section.getTitle(), ""))));
+        List<UserGuideNode> children = children(section);
+        for (int i = 0; i < children.size(); i++) {
+            renderSectionTocItem(html, level + 1, children.get(i), prefix + "." + (i + 1));
         }
     }
 
-    private String renderReferenceMenu(refMenu, String path, selectedSection) {
-        def html = new StringBuilder()
-        for (cat in refMenu) {
-            def catName = StringEscapeCategory.encodeAsHtml(cat.name ?: "")
-            def catPath = StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlPath(cat.name ?: ""))
-            def selected = cat.name == selectedSection ? " selected" : ""
-            html << """                    <div class="menu-block">
-                        <h1 class="menu-title" onclick="toggleRef(nextElement(this))">${catName}</h1>
-                        <div class="menu-sub${selected}">
-"""
-            if (cat.usage.exists()) {
-                html << """                            <div class="menu-item"><a href="${path}/ref/${catPath}/Usage.html">Usage</a></div>
-"""
+    private String renderReferenceMenu(List<ReferenceCategory> refMenu, String path, Object selectedSection) {
+        StringBuilder html = new StringBuilder();
+        for (ReferenceCategory category : refMenu) {
+            String catName = html(Objects.toString(category.name(), ""));
+            String catPath = html(StringEscapeCategory.encodeAsUrlPath(Objects.toString(category.name(), "")));
+            String selected = Objects.equals(category.name(), selectedSection) ? " selected" : "";
+            html.append("""
+                                    <div class="menu-block">
+                                        <h1 class="menu-title" onclick="toggleRef(nextElement(this))">%s</h1>
+                                        <div class="menu-sub%s">
+                """.formatted(catName, selected));
+            if (category.usage().exists()) {
+                html.append("""
+                                                <div class="menu-item"><a href="%s/ref/%s/Usage.html">Usage</a></div>
+                    """.formatted(path, catPath));
             }
-            for (txt in cat.sections) {
-                def sectionName = txt.name[0..-6]
-                def sectionPath = StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlPath(sectionName))
-                html << """                            <div class="menu-item"><a href="${path}/ref/${catPath}/${sectionPath}.html">${StringEscapeCategory.encodeAsHtml(sectionName)}</a>
-                            </div>
-"""
+            for (File txt : category.sections()) {
+                String sectionName = withoutExtension(txt.getName());
+                String sectionPath = html(StringEscapeCategory.encodeAsUrlPath(sectionName));
+                html.append("""
+                                                <div class="menu-item"><a href="%s/ref/%s/%s.html">%s</a>
+                                                </div>
+                    """.formatted(path, catPath, sectionPath, html(sectionName)));
             }
-            html << """                        </div>
-                    </div>
-"""
+            html.append("""
+                                        </div>
+                                    </div>
+                """);
         }
-        return html.toString()
+        return html.toString();
     }
 
-    private initContext(context, path) {
-        context.set(DocEngine.CONTEXT_PATH, path)
-        context.set(DocEngine.BASE_DIR, src.absolutePath)
-        context.set(DocEngine.API_BASE_PATH, apiDir.absolutePath)
-        context.set(DocEngine.API_CONTEXT_PATH, calculatePathToResources(path))
-        context.set(DocEngine.RESOURCES_CONTEXT_PATH, calculatePathToResources(path))
-        return context
+    private BaseRenderContext initContext(BaseRenderContext renderContext, String path) {
+        renderContext.set(DocEngine.CONTEXT_PATH, path);
+        renderContext.set(DocEngine.BASE_DIR, src.getAbsolutePath());
+        renderContext.set(DocEngine.API_BASE_PATH, apiDir.getAbsolutePath());
+        renderContext.set(DocEngine.API_CONTEXT_PATH, calculatePathToResources(path));
+        renderContext.set(DocEngine.RESOURCES_CONTEXT_PATH, calculatePathToResources(path));
+        return renderContext;
     }
 
-    private overrideAliasesFromToc(node) {
-        engine.engineProperties.setProperty "alias.${node.name}", node.file - ".gdoc"
-
-        for (section in node.children) {
-            overrideAliasesFromToc(section)
+    private void overrideAliasesFromToc(UserGuideNode node) {
+        String file = node.getFile();
+        if (file != null && file.endsWith(".gdoc")) {
+            file = file.substring(0, file.length() - ".gdoc".length());
         }
+        engineProperties.setProperty("alias." + node.getName(), file);
+        for (UserGuideNode section : children(node)) {
+            overrideAliasesFromToc(section);
+        }
+    }
+
+    @Override
+    public void setFileOperations(DocFileOperations fileOperations) {
+        this.fileOperations = fileOperations == null ? new DefaultDocFileOperations() : fileOperations;
+    }
+
+    @Override
+    public void setAsciidoc(boolean asciidoc) {
+        this.asciidoc = asciidoc;
+    }
+
+    @Override
+    public void setDocResources(File docResources) {
+        this.docResources = docResources;
+    }
+
+    @Override
+    public void setApiDir(File apiDir) {
+        this.apiDir = apiDir;
+    }
+
+    @Override
+    public void setLanguage(String language) {
+        this.language = language == null ? "" : language;
+    }
+
+    @Override
+    public void setSourceRepo(String sourceRepo) {
+        this.sourceRepo = sourceRepo;
+    }
+
+    @Override
+    public void setImages(File images) {
+        this.images = images;
+    }
+
+    @Override
+    public void setCss(File css) {
+        this.css = css;
+    }
+
+    @Override
+    public void setFonts(File fonts) {
+        this.fonts = fonts;
+    }
+
+    @Override
+    public void setJs(File js) {
+        this.js = js;
+    }
+
+    @Override
+    public void setStyle(File style) {
+        this.style = style;
+    }
+
+    @Override
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public void setPropertiesFile(File propertiesFile) {
+        this.propertiesFile = propertiesFile;
+    }
+
+    private void applyStringProperties(Properties props) {
+        title = property(props, "title", title);
+        subtitle = property(props, "subtitle", subtitle);
+        version = property(props, "version", version);
+        authors = property(props, "authors", authors);
+        translators = property(props, "translators", translators);
+        license = property(props, "license", license);
+        copyright = property(props, "copyright", copyright);
+        footer = property(props, "footer", footer);
+        logo = property(props, "logo", logo);
+        sponsorLogo = property(props, "sponsorLogo", sponsorLogo);
+        sourceRepo = property(props, "sourceRepo", sourceRepo);
+        encoding = property(props, "encoding", encoding);
+        language = property(props, "language", language);
+    }
+
+    private Map<String, Object> newVars() {
+        Map<String, Object> vars = new LinkedHashMap<>();
+        engineProperties.forEach((key, value) -> vars.put(String.valueOf(key), value));
+        return vars;
+    }
+
+    private List<String> guideFiles(File guideSrcDir, String ext) {
+        if (!guideSrcDir.exists()) {
+            return List.of();
+        }
+        try (Stream<Path> paths = Files.walk(guideSrcDir.toPath())) {
+            return paths
+                .filter(Files::isRegularFile)
+                .filter(path -> path.getFileName().toString().endsWith(ext))
+                .map(path -> guideSrcDir.toPath().relativize(path).toString().replace(File.separatorChar, '/'))
+                .sorted()
+                .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private List<File> filesMatching(File directory, FileFilter filter) {
+        if (directory == null) {
+            return new ArrayList<>();
+        }
+        File[] files = directory.listFiles(filter);
+        if (files == null) {
+            return new ArrayList<>();
+        }
+        List<File> result = new ArrayList<>(List.of(files));
+        result.sort(Comparator.naturalOrder());
+        return result;
+    }
+
+    private String readString(File file) {
+        try {
+            return Files.readString(file.toPath(), Charset.forName(encoding));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private void writeTemplate(File file, Template template, Map<String, Object> vars) {
+        fileOperations.mkdir(file.getParentFile());
+        try (Writer writer = Files.newBufferedWriter(file.toPath(), Charset.forName(encoding))) {
+            template.apply(vars, writer);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private void writeString(File file, String value) {
+        fileOperations.mkdir(file.getParentFile());
+        try {
+            Files.writeString(file.toPath(), value, Charset.forName(encoding));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private void copyFile(File source, File target) {
+        fileOperations.mkdir(target.getParentFile());
+        try {
+            Files.copy(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static void setInitialContextIfSupported(Object macro, BaseRenderContext context) {
+        for (Method method : macro.getClass().getMethods()) {
+            if (method.getName().equals("setInitialContext") && method.getParameterCount() == 1) {
+                try {
+                    method.invoke(macro, context);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new IllegalStateException("Cannot set initialContext on " + macro.getClass().getName(), e);
+                }
+                return;
+            }
+        }
+    }
+
+    private static List<UserGuideNode> children(UserGuideNode node) {
+        if (node == null || node.getChildren() == null) {
+            return List.of();
+        }
+        List<?> children = node.getChildren();
+        List<UserGuideNode> result = new ArrayList<>(children.size());
+        for (Object child : children) {
+            result.add((UserGuideNode) child);
+        }
+        return result;
+    }
+
+    private static UserGuideNode userGuideNode(Object value) {
+        return value instanceof UserGuideNode node ? node : null;
+    }
+
+    private static List<UserGuideNode> nodeList(Object value) {
+        if (!(value instanceof List<?> list)) {
+            return List.of();
+        }
+        List<UserGuideNode> nodes = new ArrayList<>(list.size());
+        for (Object item : list) {
+            if (item instanceof UserGuideNode node) {
+                nodes.add(node);
+            }
+        }
+        return nodes;
+    }
+
+    private static List<ReferenceCategory> refMenu(Object value) {
+        if (!(value instanceof List<?> list)) {
+            return List.of();
+        }
+        List<ReferenceCategory> categories = new ArrayList<>(list.size());
+        for (Object item : list) {
+            if (item instanceof ReferenceCategory category) {
+                categories.add(category);
+            }
+        }
+        return categories;
+    }
+
+    private static String withoutExtension(String fileName) {
+        return fileName.length() <= 5 ? fileName : fileName.substring(0, fileName.length() - 5);
+    }
+
+    private static String html(String value) {
+        return StringEscapeCategory.encodeAsHtml(value == null ? "" : value);
+    }
+
+    private static String stringValue(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private static boolean bool(Object value) {
+        return value instanceof Boolean bool && bool;
+    }
+
+    private static boolean notBlank(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private static String property(Properties props, String key, String currentValue) {
+        Object value = props.get(key);
+        return value == null ? currentValue : String.valueOf(value);
+    }
+
+    private static String join(Collection<?> collection) {
+        List<String> values = new ArrayList<>(collection.size());
+        for (Object item : collection) {
+            values.add(String.valueOf(item));
+        }
+        return String.join(",", values);
+    }
+
+    private static Yaml newYaml() {
+        return new Yaml(new SafeConstructor(new LoaderOptions()));
+    }
+
+    private static void warn(String message) {
+        System.out.println(message);
+    }
+
+    private static void error(String message) {
+        System.err.println(message);
+    }
+
+    private record ReferenceCategory(String name, File usage, List<File> sections) {
     }
 }

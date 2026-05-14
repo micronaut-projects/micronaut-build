@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.docs
+package io.micronaut.docs;
 
-class DefaultGuidePublisherFactory implements GuidePublisherFactory {
+import java.io.File;
+
+public final class DefaultGuidePublisherFactory implements GuidePublisherFactory {
     @Override
-    GuidePublisher create(File sourceDir, File targetDir) {
-        return new DocPublisher(sourceDir, targetDir)
+    public GuidePublisher create(File sourceDir, File targetDir) {
+        return new DocPublisher(sourceDir, targetDir);
     }
 }

@@ -4,11 +4,10 @@ plugins {
 }
 
 dependencies {
-    compileOnly(gradleApi())
-    testImplementation(gradleApi())
+    compileOnly(localGroovy())
     implementation(libs.commons.text)
     implementation(libs.snakeyaml)
-    implementation(libs.grails.gdoc)
+    implementation(libs.radeox)
     implementation(libs.handlebars)
     implementation(libs.asciidoctorj)
     implementation(libs.tomlj)
@@ -29,6 +28,7 @@ dependencies {
         }
     }
     testImplementation(libs.typesafe.config)
+    testImplementation(localGroovy())
 }
 
 val docFilesJar = tasks.register<Jar>("docFilesJar") {
