@@ -1,6 +1,6 @@
 plugins {
     id("io.micronaut.build.internal.gradle-plugin")
-    id("groovy-gradle-plugin")
+    id("groovy")
 }
 
 dependencies {

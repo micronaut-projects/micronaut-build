@@ -1,6 +1,6 @@
-import gradle.kotlin.dsl.accessors._3450bfa35e4df7ed8039ccdc88fb5a2a.gradlePlugin
 import io.micronaut.build.MicronautBuildPluginExtension
 import io.micronaut.internal.VersionsWriterTask
+import org.gradle.plugin.devel.GradlePluginDevelopmentExtension
 
 plugins {
     `java-gradle-plugin`
@@ -13,7 +13,8 @@ plugins {
 version = project.extra.get("projectVersion") as String
 group = "io.micronaut.build.internal"
 
-val pluginExtension = extensions.create<MicronautBuildPluginExtension>("micronautBuildPlugin", gradlePlugin)
+val gradlePluginExtension = extensions.getByType<GradlePluginDevelopmentExtension>()
+val pluginExtension = extensions.create<MicronautBuildPluginExtension>("micronautBuildPlugin", gradlePluginExtension)
 
 repositories {
     mavenCentral()
