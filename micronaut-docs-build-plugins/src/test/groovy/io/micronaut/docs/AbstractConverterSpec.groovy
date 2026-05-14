@@ -1,5 +1,6 @@
 package io.micronaut.docs
 
+import io.micronaut.docs.macros.ConfigurationPropertiesMacro
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
 import org.asciidoctor.Options

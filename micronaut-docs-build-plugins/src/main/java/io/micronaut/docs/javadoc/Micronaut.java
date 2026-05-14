@@ -1,4 +1,4 @@
-package io.micronaut.docs;
+package io.micronaut.docs.javadoc;
 
 public class Micronaut implements JvmLibrary {
     @Override

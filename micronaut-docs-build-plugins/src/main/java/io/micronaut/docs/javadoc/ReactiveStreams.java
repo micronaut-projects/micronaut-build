@@ -1,4 +1,4 @@
-package io.micronaut.docs;
+package io.micronaut.docs.javadoc;
 
 public class ReactiveStreams implements JvmLibrary {
     private static final String DEFAULT_URI = "https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc";

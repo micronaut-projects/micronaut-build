@@ -1,4 +1,4 @@
-package io.micronaut.docs;
+package io.micronaut.docs.macros;
 
 import org.asciidoctor.ast.StructuralNode;
 import org.asciidoctor.ast.PhraseNode;

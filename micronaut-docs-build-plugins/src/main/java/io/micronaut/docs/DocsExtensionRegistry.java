@@ -15,6 +15,18 @@
  */
 package io.micronaut.docs;
 
+import io.micronaut.docs.macros.AnnotationMacro;
+import io.micronaut.docs.macros.ApiMacro;
+import io.micronaut.docs.macros.BuildDependencyMacro;
+import io.micronaut.docs.macros.ConfigurationPropertiesMacro;
+import io.micronaut.docs.macros.JdkApiMacro;
+import io.micronaut.docs.macros.JeeApiMacro;
+import io.micronaut.docs.macros.LanguageSnippetMacro;
+import io.micronaut.docs.macros.MicronautApiMacro;
+import io.micronaut.docs.macros.PackageMacro;
+import io.micronaut.docs.macros.ReactiveStreamsApiMacro;
+import io.micronaut.docs.macros.ReactorJavaApiMacro;
+import io.micronaut.docs.macros.RxJavaApiMacro;
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.extension.JavaExtensionRegistry;
 import org.asciidoctor.jruby.extension.spi.ExtensionRegistry;

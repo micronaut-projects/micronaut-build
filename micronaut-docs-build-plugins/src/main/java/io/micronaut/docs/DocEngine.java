@@ -14,9 +14,17 @@
  */
 package io.micronaut.docs;
 
+import io.micronaut.docs.filters.BlockQuoteFilter;
+import io.micronaut.docs.filters.BoldFilter;
+import io.micronaut.docs.filters.CodeFilter;
 import io.micronaut.docs.filters.HeaderFilter;
+import io.micronaut.docs.filters.ImageFilter;
+import io.micronaut.docs.filters.ItalicFilter;
 import io.micronaut.docs.filters.LinkTestFilter;
+import io.micronaut.docs.filters.TextileLinkFilter;
 import io.micronaut.docs.internal.StringEscapeCategory;
+import io.micronaut.docs.macros.NoteMacro;
+import io.micronaut.docs.macros.WarningMacro;
 import org.radeox.api.engine.WikiRenderEngine;
 import org.radeox.api.engine.context.InitialRenderContext;
 import org.radeox.engine.BaseRenderEngine;

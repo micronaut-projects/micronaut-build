@@ -1,11 +1,11 @@
 /*
- * Copyright 2017-2021 original authors
+ * Copyright 2017 original authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,30 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.docs;
+
+package io.micronaut.docs.macros;
+
+import io.micronaut.docs.javadoc.Jee;
+import io.micronaut.docs.javadoc.JvmLibrary;
 
 import java.util.Map;
 
 /**
- * @author Sergio del Amo
- * @since 4.0.1
+ * @author Graeme Rocher
+ * @since 1.0
  */
-public class ReactorJavaApiMacro extends ApiMacro {
-    public ReactorJavaApiMacro(String macroName) {
+public class JeeApiMacro extends ApiMacro {
+    public JeeApiMacro(String macroName) {
         super(macroName);
     }
 
-    public ReactorJavaApiMacro(String macroName, Map<String, Object> config) {
+    /**
+     * @param macroName The macro name
+     * @param config    The configuration
+     */
+    public JeeApiMacro(String macroName, Map<String, Object> config) {
         super(macroName, config);
     }
 
     @Override
     public String getAttributeKey() {
-        return "reactorapi";
+        return "jeeapi";
     }
+
 
     @Override
     public JvmLibrary getJvmLibrary() {
-        return new Reactor();
+        return new Jee();
     }
 }

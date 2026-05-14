@@ -1,5 +1,6 @@
-package io.micronaut.docs;
+package io.micronaut.docs.filters;
 
+import io.micronaut.docs.DocEngine;
 import org.radeox.filter.context.FilterContext;
 import org.radeox.filter.regex.RegexTokenFilter;
 import org.radeox.regex.MatchResult;

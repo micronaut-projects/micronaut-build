@@ -1,5 +1,6 @@
 package io.micronaut.docs
 
+import io.micronaut.docs.macros.LanguageSnippetMacro
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.ast.StructuralNode
 import spock.lang.Specification

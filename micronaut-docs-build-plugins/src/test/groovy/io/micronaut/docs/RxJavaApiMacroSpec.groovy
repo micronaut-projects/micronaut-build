@@ -1,5 +1,8 @@
 package io.micronaut.docs
 
+import io.micronaut.docs.javadoc.JvmLibrary
+import io.micronaut.docs.javadoc.RxJava
+import io.micronaut.docs.macros.RxJavaApiMacro
 import spock.lang.Specification
 
 class RxJavaApiMacroSpec extends Specification {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 original authors
+ * Copyright 2017 original authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.docs;
+
+package io.micronaut.docs.macros;
+
+import io.micronaut.docs.javadoc.Jdk;
+import io.micronaut.docs.javadoc.JvmLibrary;
 
 import java.util.Map;
 
 /**
- * @author graemerocher
+ * @author Graeme Rocher
  * @since 1.0
  */
-public class AnnotationMacro extends ApiMacro {
-    public AnnotationMacro(String macroName) {
+public class JdkApiMacro extends ApiMacro {
+    public JdkApiMacro(String macroName) {
         super(macroName);
     }
 
-    public AnnotationMacro(String macroName, Map<String, Object> config) {
+    /**
+     * @param macroName The macro name
+     * @param config The configuration
+     */
+    public JdkApiMacro(String macroName, Map<String, Object> config) {
         super(macroName, config);
     }
 
     @Override
-    protected String formatShortName(String shortName) {
-        return '@' + super.formatShortName(shortName);
+    public String getAttributeKey() {
+        return "jdkapi";
     }
+
+    @Override
+    public JvmLibrary getJvmLibrary() {
+        return new Jdk();
+    }
+
+
 }

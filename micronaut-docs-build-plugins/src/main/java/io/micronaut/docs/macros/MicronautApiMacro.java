@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.micronaut.docs.macros;
 
-package io.micronaut.docs;
+import io.micronaut.docs.javadoc.JvmLibrary;
+import io.micronaut.docs.javadoc.MicronautCore;
 
 import java.util.Map;
 
@@ -22,27 +24,26 @@ import java.util.Map;
  * @author Graeme Rocher
  * @since 1.0
  */
-public class JeeApiMacro extends ApiMacro {
-    public JeeApiMacro(String macroName) {
+public class MicronautApiMacro extends ApiMacro {
+    public MicronautApiMacro(String macroName) {
         super(macroName);
     }
 
     /**
      * @param macroName The macro name
-     * @param config    The configuration
+     * @param config The configuration
      */
-    public JeeApiMacro(String macroName, Map<String, Object> config) {
+    public MicronautApiMacro(String macroName, Map<String, Object> config) {
         super(macroName, config);
     }
 
     @Override
     public String getAttributeKey() {
-        return "jeeapi";
+        return "micronautApi";
     }
-
 
     @Override
     public JvmLibrary getJvmLibrary() {
-        return new Jee();
+        return new MicronautCore();
     }
 }

@@ -1,4 +1,4 @@
-package io.micronaut.docs;
+package io.micronaut.docs.javadoc;
 
 public class MicronautCore implements JvmLibrary {
     private static final String DEFAULT_URI = "https://docs.micronaut.io/latest/api";

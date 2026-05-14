@@ -9,7 +9,7 @@ import io.micronaut.build.docs.ValidateAsciidocOutputTask;
 import io.micronaut.build.docs.props.MergeConfigurationReferenceTask;
 import io.micronaut.build.docs.props.PublishConfigurationReferenceTask;
 import io.micronaut.build.utils.GitHubApiService;
-import io.micronaut.docs.LanguageSnippetMacro;
+import io.micronaut.docs.macros.LanguageSnippetMacro;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;

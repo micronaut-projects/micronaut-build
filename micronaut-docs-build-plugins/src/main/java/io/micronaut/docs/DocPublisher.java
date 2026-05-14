@@ -24,6 +24,7 @@ import io.micronaut.docs.internal.StringEscapeCategory;
 import io.micronaut.docs.internal.UserGuideNode;
 import io.micronaut.docs.internal.YamlTocStrategy;
 import io.micronaut.docs.macros.HiddenMacro;
+import io.micronaut.docs.macros.LanguageSnippetMacro;
 import org.radeox.engine.context.BaseInitialRenderContext;
 import org.radeox.engine.context.BaseRenderContext;
 import org.yaml.snakeyaml.LoaderOptions;

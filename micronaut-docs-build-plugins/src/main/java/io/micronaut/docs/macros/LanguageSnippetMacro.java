@@ -1,5 +1,6 @@
-package io.micronaut.docs;
+package io.micronaut.docs.macros;
 
+import io.micronaut.docs.SnippetSourceResolver;
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.Attributes;
 import org.asciidoctor.Options;

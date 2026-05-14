@@ -1,4 +1,4 @@
-package io.micronaut.docs;
+package io.micronaut.docs.macros;
 
 import org.radeox.macro.BaseMacro;
 import org.radeox.macro.parameter.MacroParameter;

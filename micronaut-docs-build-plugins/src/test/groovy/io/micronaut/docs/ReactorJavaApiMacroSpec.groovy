@@ -1,5 +1,8 @@
 package io.micronaut.docs
 
+import io.micronaut.docs.javadoc.JvmLibrary
+import io.micronaut.docs.javadoc.Reactor
+import io.micronaut.docs.macros.ReactorJavaApiMacro
 import spock.lang.Specification
 
 class ReactorJavaApiMacroSpec extends Specification {

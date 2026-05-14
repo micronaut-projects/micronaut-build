@@ -1,4 +1,4 @@
-package io.micronaut.docs;
+package io.micronaut.docs.filters;
 
 import org.radeox.filter.context.FilterContext;
 import org.radeox.filter.regex.RegexTokenFilter;

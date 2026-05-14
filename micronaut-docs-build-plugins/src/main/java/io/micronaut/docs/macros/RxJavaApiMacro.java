@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.docs;
+package io.micronaut.docs.macros;
+
+import io.micronaut.docs.javadoc.JvmLibrary;
+import io.micronaut.docs.javadoc.RxJava;
 
 import java.util.Map;
 
@@ -21,8 +24,8 @@ import java.util.Map;
  * @author Graeme Rocher
  * @since 1.0
  */
-public class MicronautApiMacro extends ApiMacro {
-    public MicronautApiMacro(String macroName) {
+public class RxJavaApiMacro extends ApiMacro {
+    public RxJavaApiMacro(String macroName) {
         super(macroName);
     }
 
@@ -30,17 +33,17 @@ public class MicronautApiMacro extends ApiMacro {
      * @param macroName The macro name
      * @param config The configuration
      */
-    public MicronautApiMacro(String macroName, Map<String, Object> config) {
+    public RxJavaApiMacro(String macroName, Map<String, Object> config) {
         super(macroName, config);
     }
 
     @Override
     public String getAttributeKey() {
-        return "micronautApi";
+        return "rxapi";
     }
 
     @Override
     public JvmLibrary getJvmLibrary() {
-        return new MicronautCore();
+        return new RxJava();
     }
 }

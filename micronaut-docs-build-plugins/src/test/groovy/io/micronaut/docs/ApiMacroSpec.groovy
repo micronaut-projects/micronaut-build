@@ -1,5 +1,6 @@
 package io.micronaut.docs
 
+import io.micronaut.docs.macros.ApiMacro
 import spock.lang.Specification
 import spock.lang.Unroll
 

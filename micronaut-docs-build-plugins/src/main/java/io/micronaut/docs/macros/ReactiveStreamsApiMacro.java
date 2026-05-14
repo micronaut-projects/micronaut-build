@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-package io.micronaut.docs;
+package io.micronaut.docs.macros;
+
+import io.micronaut.docs.javadoc.JvmLibrary;
+import io.micronaut.docs.javadoc.ReactiveStreams;
 
 import java.util.Map;
 

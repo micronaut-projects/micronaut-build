@@ -1,4 +1,4 @@
-package io.micronaut.docs;
+package io.micronaut.docs.javadoc;
 
 public class Reactor implements JvmLibrary {
     private static final String DEFAULT_URI = "https://projectreactor.io/docs/core/release/api";

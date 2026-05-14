@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.docs;
+package io.micronaut.docs.macros;
 
+import io.micronaut.docs.javadoc.JvmLibrary;
+import io.micronaut.docs.javadoc.Micronaut;
 import org.asciidoctor.ast.StructuralNode;
 import org.asciidoctor.ast.PhraseNode;
 import org.asciidoctor.extension.InlineMacroProcessor;

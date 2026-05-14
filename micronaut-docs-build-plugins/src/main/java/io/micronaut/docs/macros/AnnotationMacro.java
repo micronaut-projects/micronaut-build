@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 original authors
+ * Copyright 2018 original authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,34 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.micronaut.docs;
+package io.micronaut.docs.macros;
 
 import java.util.Map;
 
 /**
- * @author Graeme Rocher
+ * @author graemerocher
  * @since 1.0
  */
-public class RxJavaApiMacro extends ApiMacro {
-    public RxJavaApiMacro(String macroName) {
+public class AnnotationMacro extends ApiMacro {
+    public AnnotationMacro(String macroName) {
         super(macroName);
     }
 
-    /**
-     * @param macroName The macro name
-     * @param config The configuration
-     */
-    public RxJavaApiMacro(String macroName, Map<String, Object> config) {
+    public AnnotationMacro(String macroName, Map<String, Object> config) {
         super(macroName, config);
     }
 
     @Override
-    public String getAttributeKey() {
-        return "rxapi";
-    }
-
-    @Override
-    public JvmLibrary getJvmLibrary() {
-        return new RxJava();
+    protected String formatShortName(String shortName) {
+        return '@' + super.formatShortName(shortName);
     }
 }

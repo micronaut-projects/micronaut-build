@@ -1,5 +1,6 @@
 package io.micronaut.docs
 
+import io.micronaut.docs.macros.BuildDependencyMacro
 import spock.lang.Specification
 
 class BuildDependencyMacroSpec extends Specification {
