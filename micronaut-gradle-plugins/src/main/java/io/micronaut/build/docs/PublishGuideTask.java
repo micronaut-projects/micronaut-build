@@ -15,9 +15,9 @@
  */
 package io.micronaut.build.docs;
 
-import io.micronaut.docs.DocPublisher;
+import io.micronaut.docs.GuidePublisher;
+import io.micronaut.docs.GuidePublisherFactory;
 import io.micronaut.docs.SnippetSourceResolver;
-import io.micronaut.docs.macros.HiddenMacro;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.Directory;
@@ -42,6 +42,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 @CacheableTask
@@ -111,6 +112,13 @@ public abstract class PublishGuideTask extends DefaultTask {
         );
     }
 
+    private static GuidePublisher newPublisher(File sourceDir, File targetDir) {
+        return ServiceLoader.load(GuidePublisherFactory.class, GuidePublisherFactory.class.getClassLoader())
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("No " + GuidePublisherFactory.class.getName() + " provider found."))
+            .create(sourceDir, targetDir);
+    }
+
     @TaskAction
     public void generate() throws IOException {
         Properties props = new Properties();
@@ -127,7 +135,7 @@ public abstract class PublishGuideTask extends DefaultTask {
 
         File sourceDir = getSourceDir().getAsFile().get();
         File targetDir = getTargetDir().getAsFile().get();
-        DocPublisher publisher = new DocPublisher(sourceDir, targetDir);
+        GuidePublisher publisher = newPublisher(sourceDir, targetDir);
         publisher.setFileOperations(getFileOperations());
         publisher.setAsciidoc(getAsciidoc().get());
         publisher.setDocResources(getResourcesDir().getAsFile().get());
@@ -148,7 +156,7 @@ public abstract class PublishGuideTask extends DefaultTask {
         // Add custom macros.
 
         // {hidden} macro for enabling translations.
-        publisher.registerMacro(new HiddenMacro());
+        publisher.registerHiddenMacro();
 
         // Radeox loads its bundles off the context class loader, which
         // unfortunately doesn't contain the grails-docs JAR. So, we

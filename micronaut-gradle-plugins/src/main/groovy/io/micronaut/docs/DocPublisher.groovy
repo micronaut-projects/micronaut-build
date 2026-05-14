@@ -24,6 +24,7 @@ import io.micronaut.docs.internal.LegacyTocStrategy
 import io.micronaut.docs.internal.StringEscapeCategory
 import io.micronaut.docs.internal.UserGuideNode
 import io.micronaut.docs.internal.YamlTocStrategy
+import io.micronaut.docs.macros.HiddenMacro
 import org.apache.commons.logging.LogFactory
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.internal.file.FileOperations
@@ -41,7 +42,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor
  * @author Graeme Rocher
  * @since 1.2
  */
-class DocPublisher {
+class DocPublisher implements GuidePublisher {
     static final String TOC_FILENAME = "toc.yml"
 
     /** The source directory of the documentation */
@@ -139,6 +140,11 @@ class DocPublisher {
      */
     void registerMacro(macro) {
         customMacros << macro
+    }
+
+    @Override
+    void registerHiddenMacro() {
+        registerMacro(new HiddenMacro())
     }
 
     void publish() {
