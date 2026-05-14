@@ -2,7 +2,7 @@
 
 This document covers the current docs template bundle in:
 
-`micronaut-gradle-plugins/src/main/template`
+`micronaut-docs-build-plugins/src/main/template`
 
 It also accounts for the generated fixture output at:
 

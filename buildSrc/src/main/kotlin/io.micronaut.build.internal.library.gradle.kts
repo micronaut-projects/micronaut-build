@@ -1,0 +1,99 @@
+plugins {
+    `java-library`
+    `maven-publish`
+    id("com.adarshr.test-logger")
+    id("signing")
+}
+
+version = project.extra.get("projectVersion") as String
+group = "io.micronaut.build.internal"
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+}
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "Build"
+            url = uri(rootProject.layout.buildDirectory.dir("repo"))
+        }
+    }
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+            groupId = project.group as String
+            artifactId = project.name
+            version = project.version as String
+            pom {
+                name = "Micronaut internal build plugin support"
+                description = "Support libraries for Micronaut internal build plugins. Not intended to be used in user's projects"
+                url = "https://github.com/micronaut-projects/micronaut-build"
+                inceptionYear = "2020"
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "alvarosanchez"
+                        name = "Álvaro Sánchez-Mariscal Arnaiz"
+                    }
+                    developer {
+                        id = "melix"
+                        name = "Cédric Champeau"
+                    }
+                }
+                scm {
+                    connection = "scm:https://github.com/micronaut-projects/micronaut-build.git"
+                    developerConnection = "scm:git@github.com:micronaut-projects/micronaut-build.git"
+                    url = "https://github.com/micronaut-projects/micronaut-build"
+                }
+            }
+        }
+    }
+}
+
+val keyId = providers.environmentVariableOrSystemProperty("GPG_KEY_ID", "signing.keyId")
+val keyPassword = providers.environmentVariableOrSystemProperty("GPG_PASSWORD", "signing.password")
+extra.set("signing.keyId", keyId.orNull)
+extra.set("signing.password", keyPassword.orNull)
+if (file("${rootDir}/secring.gpg").exists()) {
+    extra.set("signing.secretKeyRingFile", file("${rootDir}/secring.gpg").absolutePath)
+} else if (file("${System.getenv("HOME")}/.gnupg/secring.gpg").exists()) {
+    extra.set("signing.secretKeyRingFile", file("${System.getenv("HOME")}/.gnupg/secring.gpg").absolutePath)
+}
+
+signing {
+    publishing.publications.configureEach {
+        sign(this)
+    }
+}
+
+tasks.withType<Sign>().configureEach {
+    onlyIf { !project.version.toString().endsWith("-SNAPSHOT") && !project.hasProperty("skipSigning") }
+}
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    mustRunAfter(tasks.withType<Sign>())
+}

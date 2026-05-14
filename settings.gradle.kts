@@ -15,5 +15,6 @@ develocity {
 }
 
 include("micronaut-gradle-plugins")
+include("micronaut-docs-build-plugins")
 include("micronaut-kotlin-build-plugins")
 include("test-suite")

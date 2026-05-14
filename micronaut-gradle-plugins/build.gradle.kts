@@ -9,13 +9,10 @@ dependencies {
             because("Use latest Bouncycastle to avoid ClassNotFoundExceptions when running tests")
         }
     }
+    implementation(projects.micronautDocsBuildPlugins)
     implementation(libs.commons.lang3)
     implementation(libs.commons.text)
-    implementation(libs.snakeyaml)
-    implementation(libs.grails.gdoc)
-    implementation(libs.handlebars)
     implementation(libs.asciidoctorj)
-    implementation(libs.jsoup)
     implementation(libs.spotless.plugin)
     implementation(libs.testlogger.plugin)
     implementation(libs.nexus.publish.plugin)
@@ -55,17 +52,6 @@ dependencies {
 
     testImplementation(libs.mockserver.server)
     testImplementation(libs.mockserver.client)
-}
-
-val docFilesJar = tasks.register<Jar>("docFilesJar") {
-    description = "Package up files used for generating documentation."
-    archiveVersion = null
-    archiveFileName = "grails-doc-files.jar"
-    from("src/main/template")
-}
-
-tasks.named<Jar>("jar") {
-    from(docFilesJar)
 }
 
 micronautBuildPlugin {

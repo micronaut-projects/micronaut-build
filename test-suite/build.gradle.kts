@@ -1,7 +1,7 @@
 description = "Docs layout test-suite runner"
 
 val gradlew = rootProject.layout.projectDirectory.file("gradlew").asFile.absolutePath
-val pluginJar = project(":micronaut-gradle-plugins").tasks.named("jar")
+val pluginRuntimeClasspath = project(":micronaut-gradle-plugins").configurations.named("runtimeClasspath")
 val testSuiteProjectDirs = layout.projectDirectory.dir("projects").asFile
     .listFiles { file -> file.isDirectory && (file.resolve("settings.gradle").isFile || file.resolve("settings.gradle.kts").isFile) }
     ?.sortedBy { it.name }
@@ -26,7 +26,7 @@ val cleanProjectTasks = testSuiteProjectDirs.map { projectDir ->
 tasks.register<Exec>("docs") {
     group = "mndocs"
     description = "Generates the docs layout test-suite project docs."
-    dependsOn(pluginJar)
+    dependsOn(pluginRuntimeClasspath)
     dependsOn(cleanProjectTasks)
     commandLine(
         gradlew,
@@ -41,7 +41,7 @@ tasks.register<Exec>("docs") {
 tasks.register<Exec>("compileTestJava") {
     group = "verification"
     description = "Compiles the docs layout test-suite Java tests."
-    dependsOn(pluginJar)
+    dependsOn(pluginRuntimeClasspath)
     commandLine(
         gradlew,
         "-q",
@@ -55,7 +55,7 @@ tasks.register<Exec>("compileTestJava") {
 val test by tasks.registering(Exec::class) {
     group = "verification"
     description = "Runs the docs layout generated output tests."
-    dependsOn(pluginJar)
+    dependsOn(pluginRuntimeClasspath)
     dependsOn(cleanProjectTasks)
     commandLine(
         gradlew,
@@ -86,7 +86,7 @@ tasks.register("clean") {
 tasks.register<Exec>("openDocs") {
     group = "mndocs"
     description = "Generates the docs layout test-suite project docs and opens the guide in the default browser."
-    dependsOn(pluginJar)
+    dependsOn(pluginRuntimeClasspath)
     dependsOn(cleanProjectTasks)
     commandLine(
         gradlew,
