@@ -4,7 +4,6 @@ plugins {
 }
 
 dependencies {
-    compileOnly(localGroovy())
     implementation(libs.commons.text)
     implementation(libs.snakeyaml)
     implementation(libs.radeox)
