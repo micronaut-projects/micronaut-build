@@ -1,6 +1,11 @@
 package io.micronaut.docs.asciidoc;
 
 import io.micronaut.docs.DocEngine;
+import io.micronaut.docs.DefaultRenderer;
+import io.micronaut.docs.Renderer;
+import io.micronaut.docs.macros.BuildDependencyMacro;
+import io.micronaut.docs.macros.ConfigurationPropertiesMacro;
+import io.micronaut.docs.macros.LanguageSnippetMacro;
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.Attributes;
 import org.asciidoctor.Options;
@@ -8,6 +13,7 @@ import org.asciidoctor.SafeMode;
 import org.radeox.api.engine.context.InitialRenderContext;
 import org.radeox.api.engine.context.RenderContext;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -28,10 +34,21 @@ public class AsciiDocEngine extends DocEngine {
         attributes.put("imagesdir", "../img");
         attributes.put("source-highlighter", "coderay");
         attributes.put("icons", "font");
+        setRenderer(new DefaultRenderer(asciidoctor));
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
+    }
+
+    @Override
+    public void setRenderer(Renderer renderer) {
+        Renderer resolvedRenderer = renderer == null ? new DefaultRenderer(asciidoctor) : renderer;
+        if (resolvedRenderer instanceof DefaultRenderer defaultRenderer) {
+            defaultRenderer.setAsciidoctor(asciidoctor);
+        }
+        super.setRenderer(resolvedRenderer);
+        registerRendererExtensions();
     }
 
     @Override
@@ -45,5 +62,11 @@ public class AsciiDocEngine extends DocEngine {
             optionsBuilder.safe(SafeMode.valueOf(attributes.get("safe").toString()));
         }
         return asciidoctor.convert(content, optionsBuilder.build());
+    }
+
+    private void registerRendererExtensions() {
+        asciidoctor.javaExtensionRegistry().inlineMacro("dependency", new BuildDependencyMacro("dependency", new HashMap<>(), getRenderer()));
+        asciidoctor.javaExtensionRegistry().blockMacro(new LanguageSnippetMacro("snippet", new HashMap<>(), asciidoctor, getRenderer()));
+        asciidoctor.javaExtensionRegistry().block(new ConfigurationPropertiesMacro(asciidoctor, getRenderer()));
     }
 }

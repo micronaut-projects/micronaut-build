@@ -1,5 +1,6 @@
 package io.micronaut.docs.macros;
 
+import io.micronaut.docs.internal.RendererResolver;
 import org.radeox.macro.BaseMacro;
 import org.radeox.macro.parameter.MacroParameter;
 
@@ -14,6 +15,6 @@ public class HiddenMacro extends BaseMacro {
 
     @Override
     public void execute(Writer out, MacroParameter params) throws IOException {
-        out.append("<div class=\"hidden-block\">").append(params.getContent()).append("</div>");
+        out.append(RendererResolver.renderer(params.getContext()).renderHidden(params.getContent()));
     }
 }

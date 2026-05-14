@@ -2,142 +2,127 @@ package io.micronaut.docs
 
 import io.micronaut.docs.macros.LanguageSnippetMacro
 import org.asciidoctor.Asciidoctor
-import org.asciidoctor.ast.StructuralNode
+import org.asciidoctor.Attributes
+import org.asciidoctor.Options
+import org.asciidoctor.SafeMode
 import spock.lang.Specification
+import spock.lang.TempDir
+
+import java.nio.file.Files
+import java.nio.file.Path
 
 class LanguageSnippetMacroSpec extends Specification {
 
-    static class CapturingLanguageSnippetMacro extends LanguageSnippetMacro {
-        String capturedContent
+    @TempDir
+    Path testDirectory
 
-        CapturingLanguageSnippetMacro(String macroName, Map<String, Object> config, Asciidoctor asciidoctor) {
-            super(macroName, config, asciidoctor)
-        }
+    private Asciidoctor asciidoctor
 
-        StructuralNode process(StructuralNode parent, String target, Map<String, Object> attributes) {
-            String[] tags = attributes.get("tags")?.toString()?.split(",")
-            String indent = attributes.get("indent") as String
-            String title = attributes.get("title") as String
-            StringBuilder content = new StringBuilder()
-
-            String[] files = target.split(",")
-            // replicate macro languages
-            List<String> langs = ['java', 'groovy', 'kotlin']
-            for (String lang : langs) {
-                if (title != null) {
-                    content << ".$title\n\n"
-                }
-                String projectDir = attributes.get('project') as String
-                if (!projectDir) {
-                    // Only the 'project' attribute is used in tests, fallback to macro defaults if ever needed
-                    if (lang == 'kotlin') {
-                        projectDir = 'test-suite-kotlin'
-                    } else if (lang == 'groovy') {
-                        projectDir = 'test-suite-groovy'
-                    } else {
-                        projectDir = 'test-suite'
-                    }
-                }
-                String ext = lang == 'kotlin' ? 'kt' : lang
-                String sourceFolder = lang
-                String sourceType = (attributes.get('source') as String) ?: 'test'
-
-                List<String> includes = []
-                for (String fileName : files) {
-                    String baseName = fileName.replace(".", File.separator)
-                    String pathName = "$projectDir/src/$sourceType/$sourceFolder/${baseName}.$ext"
-                    if (System.getProperty("user.dir") != null) {
-                        pathName = "${System.getProperty("user.dir")}${File.separator}${pathName}".toString()
-                    }
-                    File file = new File(pathName)
-                    if (!file.exists()) {
-                        println "!!!! WARNING: NO FILE FOUND MATCHING TARGET PASSED IN AT PATH : $file.path"
-                        continue
-                    }
-
-                    String localIndent = indent ? (tags ? ",indent=$indent" : "indent=$indent") : ""
-                    if (tags) {
-                        includes << tags.collect { "include::${file.absolutePath}[tag=${it}${localIndent}]" }.join("\n\n")
-                    } else {
-                        includes << "include::${file.absolutePath}[${localIndent}]"
-                    }
-                }
-
-                if (!includes.empty) {
-                    content << """
-[source.multi-language-sample,$lang,$title]
-----
-${includes.join("\n\n")}
-----\n\n"""
-                }
-            }
-            // capture the content that would have been passed to asciidoctor.convert and then createBlock
-            this.capturedContent = content.toString()
-            return null
-        }
+    def setup() {
+        asciidoctor = Asciidoctor.Factory.create()
+        asciidoctor.javaExtensionRegistry().blockMacro(new LanguageSnippetMacro("snippet", [:], asciidoctor))
     }
 
-    void "generates include blocks for java, groovy and kotlin with tags and title"() {
-        given: "a fake Asciidoctor (not used because we override process) and temp files"
-        Asciidoctor fakeAsciidoctor = [convert: { String c, Object o -> c }] as Asciidoctor
+    def cleanup() {
+        asciidoctor.shutdown()
+    }
 
-        String baseProject = "build/test-snippets"
-        String sourceType = "test"
-        String pkgPath = "example"
-        String className = "Foo"
-        File javaFile = file("$baseProject/src/$sourceType/java/$pkgPath/${className}.java") << """
-            // tag::a[]
-            class Foo { }
-            // end::a[]
-        """.stripIndent()
-        File groovyFile = file("$baseProject/src/$sourceType/groovy/$pkgPath/${className}.groovy") << """
-            // tag::a[]
-            class Foo { }
-            // end::a[]
-        """.stripIndent()
-        File kotlinFile = file("$baseProject/src/$sourceType/kotlin/$pkgPath/${className}.kt") << """
-            // tag::a[]
+    void "renders tagged snippets for all default languages"() {
+        given:
+        file("test-suite/src/test/java/example/Foo.java", '''
+            // tag::body[]
+            class Foo {}
+            // end::body[]
+        ''')
+        file("test-suite-python/src/test/python/example/Foo.py", '''
+            # tag::body[]
+            class Foo:
+                pass
+            # end::body[]
+        ''')
+        file("test-suite-kotlin/src/test/kotlin/example/Foo.kt", '''
+            // tag::body[]
             class Foo
-            // end::a[]
-        """.stripIndent()
+            // end::body[]
+        ''')
+        file("test-suite-groovy/src/test/groovy/example/Foo.groovy", '''
+            // tag::body[]
+            class Foo {}
+            // end::body[]
+        ''')
 
-        and: "a capturing macro instance"
-        def macro = new CapturingLanguageSnippetMacro("language-snippet", [:], fakeAsciidoctor)
+        when:
+        String converted = convert('snippet::example.Foo[tags=body,indent=0,title="Example"]')
 
-        when: "processing a target file with attributes"
-        Map attrs = [
-                project: baseProject,
-                source : sourceType,
-                tags   : "a",
-                indent : "0",
-                title  : "My Snippet"
-        ]
-        macro.process(null, "example.Foo", attrs)
-
-        then: "the generated content includes 3 language blocks and includes with tags and indent"
-        macro.capturedContent != null
-
-        and: "java block and include"
-        macro.capturedContent.contains("[source.multi-language-sample,java,My Snippet]")
-        macro.capturedContent.contains("include::${javaFile.absolutePath}[tag=a,indent=0]".toString())
-
-        and: "groovy block and include"
-        macro.capturedContent.contains("[source.multi-language-sample,groovy,My Snippet]")
-        macro.capturedContent.contains("include::${groovyFile.absolutePath}[tag=a,indent=0]".toString())
-
-        and: "kotlin block and include"
-        macro.capturedContent.contains("[source.multi-language-sample,kotlin,My Snippet]")
-        macro.capturedContent.contains("include::${kotlinFile.absolutePath}[tag=a,indent=0]".toString())
+        then:
+        converted == '''<div class="listingblock multi-language-sample">
+<div class="title">Example</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-java hljs" data-lang="java">class Foo {}</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="title">Example</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-python hljs" data-lang="python">class Foo:
+    pass</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="title">Example</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">class Foo</code></pre>
+</div>
+</div>
+<div class="listingblock multi-language-sample">
+<div class="title">Example</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-groovy hljs" data-lang="groovy">class Foo {}</code></pre>
+</div>
+</div>'''
     }
 
-    private static File file(String path) {
-        File f = new File(System.getProperty("user.dir"), path)
-        if (!f.parentFile.exists()) {
-            assert f.parentFile.mkdirs()
-        }
-        if (!f.exists()) {
-            assert f.createNewFile()
-        }
-        return f
+    void "renders only the default language when the document sets one"() {
+        given:
+        file("test-suite/src/test/java/example/Foo.java", '''
+            // tag::body[]
+            class Foo {}
+            // end::body[]
+        ''')
+        file("test-suite-kotlin/src/test/kotlin/example/Foo.kt", '''
+            // tag::body[]
+            class Foo
+            // end::body[]
+        ''')
+
+        when:
+        String converted = convert('snippet::example.Foo[tags=body,indent=0]', ['default-language': 'kotlin'])
+
+        then:
+        converted == '''<div class="listingblock multi-language-sample">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="kotlin">class Foo</code></pre>
+</div>
+</div>'''
+    }
+
+    private String convert(String input, Map<String, Object> attributes = [:]) {
+        def attributesBuilder = Attributes.builder()
+                .attribute('source-highlighter', 'highlightjs')
+                .attribute('sourcedir', testDirectory.toString())
+        attributes.each { key, value -> attributesBuilder.attribute(key, value) }
+        def options = Options.builder()
+                .safe(SafeMode.SAFE)
+                .attributes(attributesBuilder.build())
+                .backend("html5")
+                .build()
+        asciidoctor.convert(input, options)
+    }
+
+    private File file(String path, String content) {
+        Path file = testDirectory.resolve(path)
+        Files.createDirectories(file.parent)
+        Files.writeString(file, content.stripIndent().trim() + System.lineSeparator())
+        file.toFile()
     }
 }

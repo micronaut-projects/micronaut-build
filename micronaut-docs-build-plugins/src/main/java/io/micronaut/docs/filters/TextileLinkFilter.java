@@ -1,5 +1,6 @@
 package io.micronaut.docs.filters;
 
+import io.micronaut.docs.internal.RendererResolver;
 import org.radeox.filter.context.FilterContext;
 import org.radeox.filter.regex.RegexTokenFilter;
 import org.radeox.regex.MatchResult;
@@ -16,9 +17,9 @@ public class TextileLinkFilter extends RegexTokenFilter {
         String space = result.group(3);
 
         if (link.startsWith("http://") || link.startsWith("https://")) {
-            buffer.append("<a href=\"").append(link).append("\" target=\"blank\">").append(text).append("</a>").append(space);
+            buffer.append(RendererResolver.renderer(context).renderExternalLink(link, text)).append(space);
         } else {
-            buffer.append("<a href=\"").append(link).append("\">").append(text).append("</a>").append(space);
+            buffer.append(RendererResolver.renderer(context).renderLink(link, text)).append(space);
         }
     }
 }

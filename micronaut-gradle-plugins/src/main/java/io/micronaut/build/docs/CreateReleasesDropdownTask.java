@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 @CacheableTask
 public abstract class CreateReleasesDropdownTask extends DefaultTask {
@@ -91,7 +92,7 @@ public abstract class CreateReleasesDropdownTask extends DefaultTask {
         File targetFile = getOutputIndex().get().getAsFile();
         if (targetFile.getParentFile().isDirectory() || targetFile.getParentFile().mkdirs()) {
             try (OutputStream out = new FileOutputStream(targetFile)) {
-                out.write(original.replace(versionHtml, versionWithSelectHtml).getBytes("utf-8"));
+                out.write(original.replace(versionHtml, versionWithSelectHtml).getBytes(StandardCharsets.UTF_8));
             }
         } else {
             throw new GradleException("Cannot create " + targetFile);

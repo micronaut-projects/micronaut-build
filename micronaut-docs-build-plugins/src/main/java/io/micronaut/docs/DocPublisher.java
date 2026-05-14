@@ -398,16 +398,7 @@ public class DocPublisher implements GuidePublisher {
     private void writeRedirect(File refDocsDirectory) {
         writeString(
             new File(refDocsDirectory, "index.html"),
-            """
-                <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-                <html lang="en">
-                <head>
-                <meta http-equiv="refresh" content="0; url=guide/index.html" />
-                </head>
-
-                </body>
-                </html>
-                """
+            renderer().renderRedirect("guide/index.html")
         );
     }
 
@@ -687,17 +678,16 @@ public class DocPublisher implements GuidePublisher {
     }
 
     private String renderTocTree(UserGuideNode toc, boolean single, String path) {
-        StringBuilder html = new StringBuilder();
         List<UserGuideNode> children = children(toc);
+        List<Renderer.TocNode> nodes = new ArrayList<>(children.size());
         for (int i = 0; i < children.size(); i++) {
             UserGuideNode topSection = children.get(i);
-            renderTocSection(html, 0, topSection, topSection, Integer.toString(i + 1), single, path);
+            nodes.add(tocNode(0, topSection, topSection, Integer.toString(i + 1), single, path));
         }
-        return html.toString();
+        return renderer().renderTocTree(new Renderer.TocTree(nodes));
     }
 
-    private void renderTocSection(
-        StringBuilder html,
+    private Renderer.TocNode tocNode(
         int level,
         UserGuideNode section,
         UserGuideNode topSection,
@@ -709,105 +699,81 @@ public class DocPublisher implements GuidePublisher {
         String sectionHref = single
             ? "#" + sectionId
             : path + "/guide/" + html(StringEscapeCategory.encodeAsUrlPath(topSection.getName())) + (level == 0 ? ".html" : ".html#" + sectionId);
-        boolean hasChildren = !children(section).isEmpty();
-        String title = html(Objects.toString(section.getTitle(), ""));
-        if (hasChildren) {
-            html.append("""
-                <details class="toc-section" id="toc-item-%s" open>
-                    <summary><a href="%s" data-section="%s"><span class="toc-number">%s</span><span class="toc-title">%s</span></a></summary>
-                    <div class="toc-children">
-                """.formatted(sectionId, sectionHref, sectionId, prefix, title));
-        } else {
-            html.append("""
-                <div class="toc-item" id="toc-item-%s">
-                    <a class="toc-link" href="%s" data-section="%s"><span class="toc-number">%s</span><span class="toc-title">%s</span></a>
-                </div>
-                """.formatted(sectionId, sectionHref, sectionId, prefix, title));
-        }
-
         List<UserGuideNode> children = children(section);
+        List<Renderer.TocNode> nodes = new ArrayList<>(children.size());
         for (int i = 0; i < children.size(); i++) {
-            renderTocSection(html, level + 1, children.get(i), topSection, prefix + "." + (i + 1), single, path);
+            nodes.add(tocNode(level + 1, children.get(i), topSection, prefix + "." + (i + 1), single, path));
         }
-        if (hasChildren) {
-            html.append("""
-                    </div>
-                </details>
-                """);
-        }
+        return new Renderer.TocNode(
+            sectionId,
+            sectionHref,
+            sectionId,
+            prefix,
+            html(Objects.toString(section.getTitle(), "")),
+            nodes
+        );
     }
 
     private String renderGuideSummaryItems(UserGuideNode toc, String path) {
-        StringBuilder html = new StringBuilder();
         List<UserGuideNode> children = children(toc);
+        List<Renderer.GuideSummaryItem> items = new ArrayList<>(children.size());
         for (int i = 0; i < children.size(); i++) {
             UserGuideNode chapter = children.get(i);
-            html.append("""
-                                        <div class="toc-item" style="margin-left:0"><a href="%s/guide/%s.html"><strong>%s</strong><span>%s</span></a>
-                                        </div>
-                """.formatted(path, html(StringEscapeCategory.encodeAsUrlPath(chapter.getName())), i + 1, html(Objects.toString(chapter.getTitle(), ""))));
+            items.add(new Renderer.GuideSummaryItem(
+                path,
+                html(StringEscapeCategory.encodeAsUrlPath(chapter.getName())),
+                Integer.toString(i + 1),
+                html(Objects.toString(chapter.getTitle(), ""))
+            ));
         }
-        return html.toString();
+        return renderer().renderGuideSummary(new Renderer.GuideSummary(items));
     }
 
     private String renderSectionToc(List<UserGuideNode> sections, String chapterNumber) {
         if (sections.isEmpty()) {
             return "";
         }
-        StringBuilder html = new StringBuilder();
-        html.append("""
-                                <div id="table-of-content">
-                                    <h2>Table of Contents</h2>
-                """);
+        List<Renderer.SectionTocItem> items = new ArrayList<>();
         for (int i = 0; i < sections.size(); i++) {
-            renderSectionTocItem(html, 0, sections.get(i), chapterNumber + "." + (i + 1));
+            collectSectionTocItems(items, 0, sections.get(i), chapterNumber + "." + (i + 1));
         }
-        html.append("                </div>\n");
-        return html.toString();
+        return renderer().renderSectionToc(new Renderer.SectionToc(items));
     }
 
-    private void renderSectionTocItem(StringBuilder html, int level, UserGuideNode section, String prefix) {
+    private void collectSectionTocItems(List<Renderer.SectionTocItem> items, int level, UserGuideNode section, String prefix) {
         String sectionId = html(StringEscapeCategory.encodeAsUrlFragment(section.getName()));
-        html.append("""
-                                    <div class="toc-item" style="margin-left:%spx"><a href="#%s"><strong>%s</strong><span>%s</span></a>
-                                    </div>
-                """.formatted(level * 10, sectionId, prefix, html(Objects.toString(section.getTitle(), ""))));
+        items.add(new Renderer.SectionTocItem(level * 10, sectionId, prefix, html(Objects.toString(section.getTitle(), ""))));
         List<UserGuideNode> children = children(section);
         for (int i = 0; i < children.size(); i++) {
-            renderSectionTocItem(html, level + 1, children.get(i), prefix + "." + (i + 1));
+            collectSectionTocItems(items, level + 1, children.get(i), prefix + "." + (i + 1));
         }
     }
 
     private String renderReferenceMenu(List<ReferenceCategory> refMenu, String path, Object selectedSection) {
-        StringBuilder html = new StringBuilder();
+        List<Renderer.ReferenceMenuCategory> categories = new ArrayList<>(refMenu.size());
         for (ReferenceCategory category : refMenu) {
             String catName = html(Objects.toString(category.name(), ""));
             String catPath = html(StringEscapeCategory.encodeAsUrlPath(Objects.toString(category.name(), "")));
-            String selected = Objects.equals(category.name(), selectedSection) ? " selected" : "";
-            html.append("""
-                                    <div class="menu-block">
-                                        <h1 class="menu-title" onclick="toggleRef(nextElement(this))">%s</h1>
-                                        <div class="menu-sub%s">
-                """.formatted(catName, selected));
-            if (category.usage().exists()) {
-                html.append("""
-                                                <div class="menu-item"><a href="%s/ref/%s/Usage.html">Usage</a></div>
-                    """.formatted(path, catPath));
-            }
+            List<Renderer.ReferenceMenuItem> items = new ArrayList<>(category.sections().size());
             for (File txt : category.sections()) {
                 String sectionName = withoutExtension(txt.getName());
                 String sectionPath = html(StringEscapeCategory.encodeAsUrlPath(sectionName));
-                html.append("""
-                                                <div class="menu-item"><a href="%s/ref/%s/%s.html">%s</a>
-                                                </div>
-                    """.formatted(path, catPath, sectionPath, html(sectionName)));
+                items.add(new Renderer.ReferenceMenuItem(sectionPath, html(sectionName)));
             }
-            html.append("""
-                                        </div>
-                                    </div>
-                """);
+            categories.add(new Renderer.ReferenceMenuCategory(
+                catName,
+                Objects.equals(category.name(), selectedSection),
+                path,
+                catPath,
+                category.usage().exists(),
+                items
+            ));
         }
-        return html.toString();
+        return renderer().renderReferenceMenu(new Renderer.ReferenceMenu(categories));
+    }
+
+    private Renderer renderer() {
+        return engine == null ? DefaultRenderer.INSTANCE : engine.getRenderer();
     }
 
     private BaseRenderContext initContext(BaseRenderContext renderContext, String path) {

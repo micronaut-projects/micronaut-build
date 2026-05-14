@@ -46,7 +46,7 @@ public class DocsExtensionRegistry implements ExtensionRegistry {
         javaExtensionRegistry.inlineMacro("rs", ReactiveStreamsApiMacro.class);
         javaExtensionRegistry.inlineMacro("rx", RxJavaApiMacro.class);
         javaExtensionRegistry.inlineMacro("reactor", ReactorJavaApiMacro.class);
-        javaExtensionRegistry.inlineMacro("dependency", BuildDependencyMacro.class);
+        javaExtensionRegistry.inlineMacro("dependency", new BuildDependencyMacro("dependency", new HashMap<>()));
         javaExtensionRegistry.blockMacro(new LanguageSnippetMacro("snippet", new HashMap<>(), asciidoctor));
         javaExtensionRegistry.block(new ConfigurationPropertiesMacro(asciidoctor));
     }

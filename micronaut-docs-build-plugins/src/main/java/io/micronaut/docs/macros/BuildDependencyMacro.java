@@ -1,5 +1,7 @@
 package io.micronaut.docs.macros;
 
+import io.micronaut.docs.DefaultRenderer;
+import io.micronaut.docs.Renderer;
 import org.asciidoctor.ast.StructuralNode;
 import org.asciidoctor.ast.PhraseNode;
 import org.asciidoctor.extension.InlineMacroProcessor;
@@ -21,13 +23,38 @@ public class BuildDependencyMacro extends InlineMacroProcessor {
     static final String BUILD_MAVEN = "maven";
     public static final String SCOPE_COMPILE = "compile";
     public static final String SCOPE_IMPLEMENTATION = "implementation";
+    private final Renderer renderer;
 
     public BuildDependencyMacro(String macroName) {
+        this(macroName, DefaultRenderer.INSTANCE);
+    }
+
+    /**
+     * Creates a dependency macro with a custom renderer.
+     *
+     * @param macroName The macro name.
+     * @param renderer The renderer to use.
+     */
+    public BuildDependencyMacro(String macroName, Renderer renderer) {
         super(macroName);
+        this.renderer = renderer == null ? DefaultRenderer.INSTANCE : renderer;
     }
 
     public BuildDependencyMacro(String macroName, Map<String, Object> config) {
         super(macroName, config);
+        this.renderer = DefaultRenderer.INSTANCE;
+    }
+
+    /**
+     * Creates a configured dependency macro with a custom renderer.
+     *
+     * @param macroName The macro name.
+     * @param config The macro configuration.
+     * @param renderer The renderer to use.
+     */
+    public BuildDependencyMacro(String macroName, Map<String, Object> config, Renderer renderer) {
+        super(macroName, config);
+        this.renderer = renderer == null ? DefaultRenderer.INSTANCE : renderer;
     }
 
     public static String valueAtAttributes(String name, Map<String, Object> attributes) {
@@ -49,11 +76,23 @@ public class BuildDependencyMacro extends InlineMacroProcessor {
 
     @Override
     public PhraseNode process(StructuralNode parent, String target, Map<String, Object> attributes) {
-        String content = contentForTargetAndAttributes(target, attributes);
+        String content = contentForTargetAndAttributes(target, attributes, renderer);
         return createPhraseNode(parent, "quoted", content, attributes, Map.of("type", ":pass"));
     }
 
     public static String contentForTargetAndAttributes(String target, Map<String, Object> attributes) {
+        return contentForTargetAndAttributes(target, attributes, DefaultRenderer.INSTANCE);
+    }
+
+    /**
+     * Creates rendered dependency content for a macro target and attributes.
+     *
+     * @param target The dependency macro target.
+     * @param attributes The macro attributes.
+     * @param renderer The renderer to use.
+     * @return The rendered dependency HTML.
+     */
+    public static String contentForTargetAndAttributes(String target, Map<String, Object> attributes, Renderer renderer) {
         String groupId;
         String artifactId;
         String version;
@@ -78,8 +117,16 @@ public class BuildDependencyMacro extends InlineMacroProcessor {
         String gradleScope = firstNonNull(valueAtAttributes("gradleScope", attributes), toGradleScope(attributes), SCOPE_IMPLEMENTATION);
         String mavenScope = firstNonNull(valueAtAttributes("mavenScope", attributes), toMavenScope(attributes), SCOPE_COMPILE);
         String title = firstNonNull(valueAtAttributes("title", attributes), "");
-        return gradleDependency(BUILD_GRADLE, groupId, artifactId, version, classifier, gradleScope, MULTILANGUAGECSSCLASS, title)
-            + mavenDependency(BUILD_MAVEN, groupId, artifactId, version, classifier, mavenScope, MULTILANGUAGECSSCLASS, title);
+        return renderer.renderBuildDependency(new Renderer.BuildDependency(
+            groupId,
+            artifactId,
+            version,
+            classifier,
+            gradleScope,
+            mavenScope,
+            MULTILANGUAGECSSCLASS,
+            title
+        ));
     }
 
     public static String toMavenScope(Map<String, Object> attributes) {
@@ -120,31 +167,16 @@ public class BuildDependencyMacro extends InlineMacroProcessor {
         String multilanguageCssClass,
         String title
     ) {
-        StringBuilder html = new StringBuilder("""
-            <div class="listingblock %s">
-            <div class="title">%s</div>
-            <div class="content">
-            <pre class="highlightjs highlight"><code class="language-kotlin hljs" data-lang="%s">\
-            """.formatted(multilanguageCssClass, title, build));
-
-        html.append(scope).append("(<span class=\"hljs-string\">\"").append(groupId).append(":").append(artifactId);
-        if (version != null || classifier != null) {
-            html.append(":");
-        }
-        if (version != null) {
-            html.append(version);
-        }
-        if (classifier != null) {
-            html.append(":").append(classifier);
-        }
-        html.append("\")</span>");
-
-        html.append("""
-            </code></pre>
-            </div>
-            </div>
-            """);
-        return html.toString();
+        return DefaultRenderer.INSTANCE.renderGradleDependency(new Renderer.Dependency(
+            build,
+            groupId,
+            artifactId,
+            version,
+            classifier,
+            scope,
+            multilanguageCssClass,
+            title
+        ));
     }
 
     public static String mavenDependency(
@@ -157,55 +189,16 @@ public class BuildDependencyMacro extends InlineMacroProcessor {
         String multilanguageCssClass,
         String title
     ) {
-        StringBuilder html = new StringBuilder();
-        if ("annotationProcessor".equals(scope)) {
-            html.append("""
-                <div class="listingblock %s">
-                <div class="title">%s</div>
-                <div class="content">
-                <pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="%s">&lt;annotationProcessorPaths&gt;
-                    &lt;path&gt;
-                        &lt;groupId&gt;%s&lt;/groupId&gt;
-                        &lt;artifactId&gt;%s&lt;/artifactId&gt;\
-                """.formatted(multilanguageCssClass, title, build, groupId, artifactId));
-            if (version != null) {
-                html.append("\n        &lt;version&gt;").append(version).append("&lt;/version&gt;");
-            }
-            if (classifier != null) {
-                html.append("\n        &lt;classifier&gt;").append(classifier).append("&lt;/classifier&gt;");
-            }
-            html.append("""
-
-                    &lt;/path&gt;
-                &lt;/annotationProcessorPaths&gt;</code></pre>
-                </div>
-                </div>
-                """);
-        } else {
-            html.append("""
-                <div class="listingblock %s">
-                <div class="content">
-                <pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="%s">&lt;dependency&gt;
-                    &lt;groupId&gt;%s&lt;/groupId&gt;
-                    &lt;artifactId&gt;%s&lt;/artifactId&gt;\
-                """.formatted(multilanguageCssClass, build, groupId, artifactId));
-            if (version != null) {
-                html.append("\n    &lt;version&gt;").append(version).append("&lt;/version&gt;");
-            }
-            if (!SCOPE_COMPILE.equals(scope)) {
-                html.append("\n    &lt;scope&gt;").append(scope).append("&lt;/scope&gt;");
-            }
-            if (classifier != null) {
-                html.append("\n    &lt;classifier&gt;").append(classifier).append("&lt;/classifier&gt;");
-            }
-            html.append("""
-
-                &lt;/dependency&gt;</code></pre>
-                </div>
-                </div>
-                """);
-        }
-        return html.toString();
+        return DefaultRenderer.INSTANCE.renderMavenDependency(new Renderer.Dependency(
+            build,
+            groupId,
+            artifactId,
+            version,
+            classifier,
+            scope,
+            multilanguageCssClass,
+            title
+        ));
     }
 
     private static String firstNonNull(String... values) {

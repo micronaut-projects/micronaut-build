@@ -14,6 +14,7 @@
  */
 package io.micronaut.docs.filters;
 
+import io.micronaut.docs.internal.RendererResolver;
 import org.radeox.api.engine.WikiRenderEngine;
 import org.radeox.filter.context.FilterContext;
 import org.radeox.filter.regex.RegexTokenFilter;
@@ -68,12 +69,7 @@ public class LinkTestFilter extends RegexTokenFilter {
         }
 
         if (name.contains("http://") || name.contains("https://")) {
-            buffer.append("<a href=\"")
-                .append(name)
-                .append(hash.isEmpty() ? "" : "#" + hash)
-                .append("\" target=\"blank\">")
-                .append(Encoder.escape(alias))
-                .append("</a>");
+            buffer.append(RendererResolver.renderer(context).renderExternalLink(name + (hash.isEmpty() ? "" : "#" + hash), Encoder.escape(alias)));
             return;
         }
 

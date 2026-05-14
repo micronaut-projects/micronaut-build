@@ -1,5 +1,6 @@
 package io.micronaut.docs.filters;
 
+import io.micronaut.docs.internal.RendererResolver;
 import org.radeox.filter.context.FilterContext;
 import org.radeox.filter.regex.RegexTokenFilter;
 import org.radeox.regex.MatchResult;
@@ -11,6 +12,6 @@ public class BlockQuoteFilter extends RegexTokenFilter {
 
     @Override
     public void handleMatch(StringBuffer buffer, MatchResult result, FilterContext context) {
-        buffer.append("<pre class=\"bq\"><code>").append(result.group(1)).append("</code></pre>\n\n");
+        buffer.append(RendererResolver.renderer(context).renderBlockQuote(result.group(1)));
     }
 }

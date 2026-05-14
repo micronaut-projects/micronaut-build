@@ -1,5 +1,6 @@
 package io.micronaut.docs.filters;
 
+import io.micronaut.docs.internal.RendererResolver;
 import org.radeox.filter.context.FilterContext;
 import org.radeox.filter.regex.RegexTokenFilter;
 import org.radeox.regex.MatchResult;
@@ -11,6 +12,6 @@ public class BoldFilter extends RegexTokenFilter {
 
     @Override
     public void handleMatch(StringBuffer buffer, MatchResult result, FilterContext context) {
-        buffer.append("<strong class=\"bold\">").append(result.group(1)).append("</strong>");
+        buffer.append(RendererResolver.renderer(context).renderBold(result.group(1)));
     }
 }

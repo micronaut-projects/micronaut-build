@@ -1,6 +1,7 @@
 package io.micronaut.docs.filters;
 
 import io.micronaut.docs.DocEngine;
+import io.micronaut.docs.internal.RendererResolver;
 import org.radeox.filter.context.FilterContext;
 import org.radeox.filter.regex.RegexTokenFilter;
 import org.radeox.regex.MatchResult;
@@ -13,12 +14,14 @@ public class ImageFilter extends RegexTokenFilter {
     @Override
     public void handleMatch(StringBuffer buffer, MatchResult result, FilterContext context) {
         String img = result.group(1);
+        String src;
         if (img.startsWith("http://") || img.startsWith("https://")) {
-            buffer.append("<img border=\"0\" class=\"center\" src=\"").append(img).append("\"></img>");
+            src = img;
         } else {
             Object contextPath = context.getRenderContext().get(DocEngine.RESOURCES_CONTEXT_PATH);
             String path = contextPath == null ? "." : contextPath.toString();
-            buffer.append("<img border=\"0\" class=\"center\" src=\"").append(path).append("/img/").append(img).append("\"></img>");
+            src = path + "/img/" + img;
         }
+        buffer.append(RendererResolver.renderer(context).renderImage(src));
     }
 }

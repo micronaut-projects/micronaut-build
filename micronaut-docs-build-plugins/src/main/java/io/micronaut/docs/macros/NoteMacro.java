@@ -1,5 +1,6 @@
 package io.micronaut.docs.macros;
 
+import io.micronaut.docs.internal.RendererResolver;
 import org.radeox.macro.BaseMacro;
 import org.radeox.macro.parameter.MacroParameter;
 
@@ -14,6 +15,6 @@ public class NoteMacro extends BaseMacro {
 
     @Override
     public void execute(Writer writer, MacroParameter params) throws IOException {
-        writer.append("<blockquote class=\"note\">").append(params.getContent()).append("</blockquote>");
+        writer.append(RendererResolver.renderer(params.getContext()).renderNote(params.getContent()));
     }
 }

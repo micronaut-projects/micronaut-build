@@ -14,6 +14,7 @@
  */
 package io.micronaut.docs.filters;
 
+import io.micronaut.docs.internal.RendererResolver;
 import org.radeox.filter.context.FilterContext;
 import org.radeox.filter.regex.RegexTokenFilter;
 import org.radeox.regex.MatchResult;
@@ -32,6 +33,6 @@ public class HeaderFilter extends RegexTokenFilter {
     public void handleMatch(StringBuffer out, MatchResult matchResult, FilterContext filterContext) {
         String header = matchResult.group(1);
         String content = matchResult.group(2);
-        out.append("<h").append(header).append(">").append(content).append("</h").append(header).append(">");
+        out.append(RendererResolver.renderer(filterContext).renderHeader(header, content));
     }
 }

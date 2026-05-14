@@ -75,6 +75,7 @@ public class DocEngine extends BaseRenderEngine implements WikiRenderEngine {
     private DocsMacroFilter macroFilter;
     private MacroLoader macroLoader;
     private Properties engineProperties = new Properties();
+    private Renderer renderer = DefaultRenderer.INSTANCE;
 
     public DocEngine(InitialRenderContext context) {
         super(context);
@@ -88,6 +89,22 @@ public class DocEngine extends BaseRenderEngine implements WikiRenderEngine {
 
     public void setEngineProperties(Properties engineProperties) {
         this.engineProperties = engineProperties;
+    }
+
+    /**
+     * @return The renderer used by this engine for generated HTML fragments.
+     */
+    public Renderer getRenderer() {
+        return renderer;
+    }
+
+    /**
+     * Sets the renderer used by this engine for generated HTML fragments.
+     *
+     * @param renderer The renderer to use, or {@code null} to restore the default renderer.
+     */
+    public void setRenderer(Renderer renderer) {
+        this.renderer = renderer == null ? DefaultRenderer.INSTANCE : renderer;
     }
 
     @Override
@@ -235,13 +252,11 @@ public class DocEngine extends BaseRenderEngine implements WikiRenderEngine {
                 alias = alias.substring(i + 1);
             }
 
-            buffer.append("<a href=\"")
-                .append(contextPath)
-                .append("/guide/single.html#")
-                .append(StringEscapeCategory.encodeAsUrlFragment(alias))
-                .append("\" class=\"guide\">")
-                .append(view)
-                .append("</a>");
+            buffer.append(renderer.renderLink(
+                contextPath + "/guide/single.html#" + StringEscapeCategory.encodeAsUrlFragment(alias),
+                view,
+                "guide"
+            ));
         } else if (name.startsWith("api:")) {
             String link = name.substring(4);
 
@@ -252,14 +267,11 @@ public class DocEngine extends BaseRenderEngine implements WikiRenderEngine {
             link = link.replace('.', '/') + ".html";
 
             if (externalKey != null) {
-                buffer.append("<a href=\"")
-                    .append(EXTERNAL_DOCS.get(externalKey))
-                    .append("/")
-                    .append(link)
-                    .append(anchor == null || anchor.isEmpty() ? "" : "#" + anchor)
-                    .append("\" class=\"api\">")
-                    .append(view)
-                    .append("</a>");
+                buffer.append(renderer.renderLink(
+                    EXTERNAL_DOCS.get(externalKey) + "/" + link + (anchor == null || anchor.isEmpty() ? "" : "#" + anchor),
+                    view,
+                    "api"
+                ));
             } else {
                 Object apiBase = initialContext.get(API_BASE_PATH);
                 contextPath = initialContext.get(API_CONTEXT_PATH);
@@ -271,21 +283,16 @@ public class DocEngine extends BaseRenderEngine implements WikiRenderEngine {
                         break;
                     }
                 }
-                buffer.append("<a href=\"")
-                    .append(contextPath)
-                    .append("/")
-                    .append(apiDir)
-                    .append("/")
-                    .append(link)
-                    .append(anchor == null || anchor.isEmpty() ? "" : "#" + anchor)
-                    .append("\" class=\"api\">")
-                    .append(view)
-                    .append("</a>");
+                buffer.append(renderer.renderLink(
+                    contextPath + "/" + apiDir + "/" + link + (anchor == null || anchor.isEmpty() ? "" : "#" + anchor),
+                    view,
+                    "api"
+                ));
             }
         } else {
             String dir = getNaturalName(name);
             String link = contextPath + "/ref/" + dir + "/" + view + ".html";
-            buffer.append("<a href=\"").append(link).append("\" class=\"").append(name).append("\">").append(view).append("</a>");
+            buffer.append(renderer.renderLink(link, view, name));
         }
     }
 
