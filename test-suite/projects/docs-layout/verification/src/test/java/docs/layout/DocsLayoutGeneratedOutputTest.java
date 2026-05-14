@@ -16,6 +16,7 @@ class DocsLayoutGeneratedOutputTest {
         String guideHtml = guideHtml();
 
         assertContains(guideHtml, "<body class=\"body docs-shell\" id=\"docs\"");
+        assertNoTemplateMarkers(guideHtml);
         assertContains(guideHtml, "<script src=\"../js/multi-language-sample.js\"></script>");
         assertContains(guideHtml, "<link rel=\"stylesheet\" href=\"../css/multi-language-sample.css\" />");
         assertContains(guideHtml, "<div class=\"app-shell\">");
@@ -117,6 +118,7 @@ class DocsLayoutGeneratedOutputTest {
 
         assertTrue(Files.isRegularFile(file("docs.apiIndex")));
         String configReferenceHtml = configReferenceHtml();
+        assertNoTemplateMarkers(configReferenceHtml);
         assertContains(configReferenceHtml, "<title>Configuration Reference | Micronaut</title>");
         assertContains(configReferenceHtml, "<body class=\"body docs-shell\" id=\"docs\"");
         assertContains(configReferenceHtml, "<article class=\"docs-content guide-document\">");
@@ -212,5 +214,13 @@ class DocsLayoutGeneratedOutputTest {
 
     private static void assertContains(String actual, String expected) {
         assertTrue(actual.contains(expected), () -> "Expected generated output to contain: " + expected);
+    }
+
+    private static void assertNoTemplateMarkers(String actual) {
+        assertTrue(!actual.contains("<%"));
+        assertTrue(!actual.contains("%>"));
+        assertTrue(!actual.contains("${"));
+        assertTrue(!actual.contains("{{"));
+        assertTrue(!actual.contains("}}"));
     }
 }

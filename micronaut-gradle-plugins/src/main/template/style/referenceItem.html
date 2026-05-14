@@ -2,9 +2,9 @@
                       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
-    <title>${title.encodeAsHtml()} ${version}</title>
+    <title>{{title}} {{version}}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <link rel="stylesheet" href="${resourcesPath}/css/custom.css" type="text/css" media="screen, print" title="Style" charset="utf-8"/>
+    <link rel="stylesheet" href="{{resourcesPath}}/css/custom.css" type="text/css" media="screen, print" title="Style" charset="utf-8"/>
     <script type="text/javascript">
 function addJsClass(el) {
     var classes = document.body.className.split(" ");
@@ -23,23 +23,20 @@ function addJsClass(el) {
 
 <div id="navigation">
     <div class="navTitle">
-        <% if (logo) { %>
-        <span id="logo">${logo}</span>
-        <% } %>
-        ${docTitle.encodeAsHtml()}
+        {{#if logo}}
+        <span id="logo">{{{logo}}}</span>
+        {{/if}}
+        {{docTitle}}
     </div>
 
     <div class="navLinks">
         <ul>
             <li>
                 <div id="nav-summary" onmouseover="toggleNavSummary(false)" onmouseout="toggleNavSummary(true)">
-                    <a href="${path}/guide/index.html" class="button">Table of contents</a>
+                    <a href="{{path}}/guide/index.html" class="button">Table of contents</a>
 
                     <div id="nav-summary-childs">
-                        <% toc.children.eachWithIndex { ch, i -> %>
-                        <div class="toc-item" style="margin-left:0"><a href="${path}/guide/${ch.name.encodeAsUrlPath().encodeAsHtml()}.html"><strong>${i + 1}</strong><span>${ch.title.encodeAsHtml()}</span></a>
-                        </div>
-                        <% } %>
+{{{guideSummaryItemsHtml}}}
                     </div>
                 </div>
             </li>
@@ -50,16 +47,15 @@ function addJsClass(el) {
     </div>
 </div>
 
-
 <table id="colset" border="0" cellpadding="0" cellspacing="0">
     <tr>
         <td id="col1">
             <div id="main" class="reference corner-all">
 
                 <span id='toggle-col1' class="toggle">(<a href="#" onclick="localToggle(); return false;">Quick Reference</a>)</span>
-                <% if(sourceRepo) { %>
+                {{#if sourceRepo}}
                 <div class='contribute-btn'>
-                    <button type='button' class='btn btn-default' onclick='window.location.href="${sourceRepo}/${sourcePath}"'>
+                    <button type='button' class='btn btn-default' onclick='window.location.href="{{sourceRepo}}/{{sourcePath}}"'>
                         <svg class="button-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                             <path d="M12 20h9" />
                             <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
@@ -67,32 +63,19 @@ function addJsClass(el) {
                         <span>Improve this doc</span>
                     </button>
                 </div>
-                <% } %>
+                {{/if}}
 
-                ${content}
+                {{{content}}}
             </div>
         </td>
         <td id="col2">
             <div class="local clearfix">
                 <div class="local-title">
-                    <a href="${path}/guide/index.html" target="mainFrame">Quick Reference</a>
+                    <a href="{{path}}/guide/index.html" target="mainFrame">Quick Reference</a>
                     <span class="toggle">(<a href="#" onclick="localToggle(); return false;">hide</a>)</span>
                 </div>
                 <div class="menu">
-                    <% for (cat in refMenu) { %>
-                    <div class="menu-block">
-                        <h1 class="menu-title" onclick="toggleRef(nextElement(this))">${cat.name.encodeAsHtml()}</h1>
-                        <div class="menu-sub${ cat.name == section ? ' selected' : ''}">
-                            <% if (cat.usage.exists()) { %>
-                            <div class="menu-item"><a href="${path}/ref/${cat.name.encodeAsUrlPath().encodeAsHtml()}/Usage.html">Usage</a></div>
-                            <% } %>
-                            <% for (txt in cat.sections) { %>
-                            <div class="menu-item"><a href="${path}/ref/${cat.name.encodeAsUrlPath().encodeAsHtml()}/${txt.name[0..-6].encodeAsUrlPath().encodeAsHtml()}.html">${txt.name[0..-6].encodeAsHtml()}</a>
-                            </div>
-                            <% } %>
-                        </div>
-                    </div>
-                    <% } %>
+{{{refMenuHtml}}}
                 </div>
             </div>
         </td>
@@ -100,12 +83,11 @@ function addJsClass(el) {
 </table>
 
 <div id="footer">
-    ${copyright}
-    ${footer}
+    {{{copyright}}}
+    {{{footer}}}
 </div>
 
-
-<script type="text/javascript" src="${resourcesPath}/js/docs.js"></script>
+<script type="text/javascript" src="{{resourcesPath}}/js/docs.js"></script>
 
 </body>
 </html>

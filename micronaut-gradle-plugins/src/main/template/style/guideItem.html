@@ -2,10 +2,10 @@
                       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
-    <title>${sectionNumber} ${title.encodeAsHtml()} ${version}</title>
+    <title>{{sectionNumber}} {{title}} {{version}}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <link rel="stylesheet" href="${resourcesPath}/css/custom.css" type="text/css" media="screen, print" title="Style" charset="utf-8"/>
-    <link rel="stylesheet" href="${resourcesPath}/css/multi-language-sample.css"/>
+    <link rel="stylesheet" href="{{resourcesPath}}/css/custom.css" type="text/css" media="screen, print" title="Style" charset="utf-8"/>
+    <link rel="stylesheet" href="{{resourcesPath}}/css/multi-language-sample.css"/>
     <script type="text/javascript">
 function addJsClass() {
     var classes = document.body.className.split(" ");
@@ -18,22 +18,19 @@ function addJsClass() {
 <body class="body docs-shell" onload="addJsClass();">
 <div id="navigation">
     <div class="navTitle">
-        <% if (logo) { %>
-        <span id="logo">${logo}</span>
-        <% } %>
-        ${docTitle.encodeAsHtml()}
+        {{#if logo}}
+        <span id="logo">{{{logo}}}</span>
+        {{/if}}
+        {{docTitle}}
     </div>
     <div class="navLinks">
         <ul>
             <li>
                 <div id="nav-summary" onmouseover="toggleNavSummary(false)" onmouseout="toggleNavSummary(true)">
-                    <a href="${path}/guide/index.html" class="button">Table of contents</a>
+                    <a href="{{path}}/guide/index.html" class="button">Table of contents</a>
 
                     <div id="nav-summary-childs" style="display:none;">
-                        <% toc.children.eachWithIndex { ch, i -> %>
-                        <div class="toc-item" style="margin-left:0"><a href="${path}/guide/${ch.name.encodeAsUrlPath().encodeAsHtml()}.html"><strong>${i + 1}</strong><span>${ch.title.encodeAsHtml()}</span></a>
-                        </div>
-                        <% } %>
+{{{guideSummaryItemsHtml}}}
                     </div>
                 </div>
             </li>
@@ -42,8 +39,6 @@ function addJsClass() {
             </li>
         </ul>
     </div>
-
-
 </div>
 
 <table id="colset" border="0" cellpadding="0" cellspacing="0">
@@ -51,76 +46,44 @@ function addJsClass() {
         <td id="col1">
             <div id="main" class="corner-all">
 
-                <% if(prev){ %>
-                    <div class="toc-item prev-left"><a href="${path}/guide/${prev?.name?.encodeAsUrlPath()?.encodeAsHtml()}.html">&lt;&lt; <strong>${chapterNumber - 1}</strong><span>${prev?.title?.encodeAsHtml()}</span></a></div>
-                <% } %>
+                {{#if prev}}
+                    <div class="toc-item prev-left"><a href="{{path}}/guide/{{prevPath}}.html">&lt;&lt; <strong>{{prevChapterNumber}}</strong><span>{{prev.title}}</span></a></div>
+                {{/if}}
 
                 <span id='toggle-col1' class="toggle">(<a href="#" onclick="localToggle(); return false;">Quick Reference</a>)</span>
 
-                <% if(next){ %>
-                    <div class="toc-item next-right"><a href="${path}/guide/${next?.name?.encodeAsUrlPath()?.encodeAsHtml()}.html"><strong>${chapterNumber + 1}</strong><span>${next?.title?.encodeAsHtml()}</span> >></a></div>
-                <% } %>
-
+                {{#if next}}
+                    <div class="toc-item next-right"><a href="{{path}}/guide/{{nextPath}}.html"><strong>{{nextChapterNumber}}</strong><span>{{next.title}}</span> >></a></div>
+                {{/if}}
 
                 <div class="project">
-                    <h1>${sectionNumber} ${title.encodeAsHtml()}</h1>
+                    <h1>{{sectionNumber}} {{title}}</h1>
 
-                    <p><strong>Version:</strong> ${version}</p>
+                    <p><strong>Version:</strong> {{version}}</p>
                 </div>
 
-                <% if (sectionToc) { %>
-                <div id="table-of-content">
-                    <h2>Table of Contents</h2>
-                    <%
-                    sectionWriter = { lvl, section, prefix ->
-                    %>
-                    <div class="toc-item" style="margin-left:${lvl * 10}px"><a href="#${ section.name.encodeAsUrlFragment().encodeAsHtml() }"><strong>$prefix</strong><span>${section.title?.encodeAsHtml()}</span></a>
-                    </div>
-                    <%
-                        lvl++
-                        section.children.eachWithIndex { s, j ->
-                            sectionWriter.call(lvl, s, prefix + '.' + (j + 1))
-                        }
-                    }
+{{{sectionTocHtml}}}
 
-                    sectionToc.eachWithIndex { s, i ->
-                        sectionWriter.call(0, s, chapterNumber + '.' + (i + 1))
-                    }
-                    %>
-                </div>
-                <% } %>
-
-                ${content}
+                {{{content}}}
 
                 <div style="clear:both;margin-top:15px;"></div>
-                <% if(prev){ %>
-                    <div class="toc-item prev-left"><a href="${path}/guide/${prev?.name?.encodeAsUrlPath()?.encodeAsHtml()}.html">&lt;&lt; <strong>${chapterNumber - 1}</strong><span>${prev?.title?.encodeAsHtml()}</span></a></div>
-                <% }
-                   if(next){ %>
-                    <div class="toc-item next-right"><a href="${path}/guide/${next?.name?.encodeAsUrlPath()?.encodeAsHtml()}.html"><strong>${chapterNumber + 1}</strong><span>${next?.title?.encodeAsHtml()}</span> >></a></div>
-                <% } %>
+                {{#if prev}}
+                    <div class="toc-item prev-left"><a href="{{path}}/guide/{{prevPath}}.html">&lt;&lt; <strong>{{prevChapterNumber}}</strong><span>{{prev.title}}</span></a></div>
+                {{/if}}
+                {{#if next}}
+                    <div class="toc-item next-right"><a href="{{path}}/guide/{{nextPath}}.html"><strong>{{nextChapterNumber}}</strong><span>{{next.title}}</span> >></a></div>
+                {{/if}}
                 <div style="clear:both"></div>
             </div>
         </td>
         <td id="col2">
             <div class="local clearfix">
                 <div class="local-title">
-                    <a href="${path}/guide/index.html" target="mainFrame">Quick Reference</a>
+                    <a href="{{path}}/guide/index.html" target="mainFrame">Quick Reference</a>
                     <span class="toggle">(<a href="#" onclick="localToggle(); return false;">hide</a>)</span>
                 </div>
                 <div class="menu">
-                    <% for (cat in refMenu) { %>
-                    <div class="menu-block"><h1 class="menu-title" onclick="toggleRef(this.parentNode.childNodes[1])">${cat.name.encodeAsHtml()}</h1><div class="menu-sub">
-                        <% if (cat.usage.exists()) { %>
-                            <div class="menu-item"><a href="${path}/ref/${cat.name.encodeAsUrlPath().encodeAsHtml()}/Usage.html">Usage</a></div>
-                            <% } %>
-                            <% for (txt in cat.sections) { %>
-                            <div class="menu-item"><a href="${path}/ref/${cat.name.encodeAsUrlPath().encodeAsHtml()}/${txt.name[0..-6].encodeAsUrlPath().encodeAsHtml()}.html">${txt.name[0..-6].encodeAsHtml()}</a>
-                            </div>
-                            <% } %>
-                            </div>
-                    </div>
-                    <% } %>
+{{{refMenuHtml}}}
                 </div>
             </div>
         </td>
@@ -128,11 +91,11 @@ function addJsClass() {
 </table>
 
 <div id="footer">
-    ${copyright}
-    ${footer}
+    {{{copyright}}}
+    {{{footer}}}
 </div>
 
-<script type="text/javascript" src="${resourcesPath}/js/docs.js"></script>
+<script type="text/javascript" src="{{resourcesPath}}/js/docs.js"></script>
 
 </body>
 </html>

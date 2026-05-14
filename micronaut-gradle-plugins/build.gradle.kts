@@ -13,6 +13,7 @@ dependencies {
     implementation(libs.commons.text)
     implementation(libs.snakeyaml)
     implementation(libs.grails.gdoc)
+    implementation(libs.handlebars)
     implementation(libs.asciidoctorj)
     implementation(libs.jsoup)
     implementation(libs.spotless.plugin)

@@ -1,8 +1,7 @@
-<% def hLevel = level == 0 ? 1 : 2 %>
-<h$hLevel id="${name.encodeAsHtml()}"><a class="anchor" href="#${name.encodeAsHtml()}"></a>${sectionNumber} ${title}</h$hLevel>
-<% if(sourceRepo) { %>
+<h{{hLevel}} id="{{name}}"><a class="anchor" href="#{{name}}"></a>{{sectionNumber}} {{title}}</h{{hLevel}}>
+{{#if sourceRepo}}
 <div class='contribute-btn'>
-    <button type='button' class='btn btn-default' onclick='window.location.href="${sourceRepo}/guide/${sourcePath}"'>
+    <button type='button' class='btn btn-default' onclick='window.location.href="{{sourceRepo}}/guide/{{sourcePath}}"'>
         <svg class="button-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
             <path d="M12 20h9" />
             <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
@@ -10,6 +9,6 @@
         <span>Improve this doc</span>
     </button>
 </div>
-<% } %>
+{{/if}}
 
-${content}
+{{{content}}}

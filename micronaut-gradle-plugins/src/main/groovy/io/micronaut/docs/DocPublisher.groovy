@@ -16,7 +16,8 @@
 package io.micronaut.docs
 
 import groovy.io.FileType
-import groovy.text.Template
+import com.github.jknack.handlebars.Handlebars
+import com.github.jknack.handlebars.Template
 import io.micronaut.docs.asciidoc.AsciiDocEngine
 import io.micronaut.docs.internal.FileResourceChecker
 import io.micronaut.docs.internal.LegacyTocStrategy
@@ -263,7 +264,7 @@ class DocPublisher {
             }
         }
 
-        def templateEngine = new groovy.text.SimpleTemplateEngine()
+        def templateEngine = newTemplateEngine()
 
         // Reference menu items.
         def sectionFilter = { it.directory && !it.name.startsWith('.') } as FileFilter
@@ -326,8 +327,8 @@ class DocPublisher {
         }
 
         // Build the user guide sections first.
-        def template = templateEngine.createTemplate(new File("${docResources}/style/guideItem.html").newReader(encoding))
-        def sectionTemplate = templateEngine.createTemplate(new File("${docResources}/style/section.html").newReader(encoding))
+        def template = compileTemplate(templateEngine, new File("${docResources}/style/guideItem.html"))
+        def sectionTemplate = compileTemplate(templateEngine, new File("${docResources}/style/section.html"))
         def fullContents = new StringBuilder()
 
         def chapterVars
@@ -345,8 +346,7 @@ class DocPublisher {
         }
 
         files = new File("${src}/ref").listFiles()?.toList()?.sort() ?: []
-        def reference = [:]
-        template = templateEngine.createTemplate(new File("${docResources}/style/referenceItem.html").newReader(encoding))
+        template = compileTemplate(templateEngine, new File("${docResources}/style/referenceItem.html"))
 
         pathToRoot = "../.."
         vars.logo = injectPath(logo, pathToRoot)
@@ -371,8 +371,9 @@ class DocPublisher {
                     output.warn "Rendering document file $usageFile.name"
                     vars.content = engine.render(data, context)
                     vars.sourcePath = "ref/$usageFile.name"
+                    refreshRenderedTemplateFragments(vars)
                     new File("${refDocsDir}/ref/${section}/Usage.html").withWriter(encoding) {out ->
-                        template.make(vars).writeTo(out)
+                        template.apply(vars, out)
                     }
                 }
                 for (txt in textiles) {
@@ -384,8 +385,9 @@ class DocPublisher {
                     output.warn "Rendering document file $txt.name"
                     vars.content = engine.render(data, context)
                     vars.sourcePath = "ref/${section}/$txt.name"
+                    refreshRenderedTemplateFragments(vars)
                     new File("${refDocsDir}/ref/${section}/${name}.html").withWriter(encoding) {out ->
-                        template.make(vars).writeTo(out)
+                        template.apply(vars, out)
                     }
                 }
             }
@@ -401,15 +403,17 @@ class DocPublisher {
         vars.path = pathToRoot
         vars.resourcesPath = calculatePathToResources(pathToRoot)
 
-        template = templateEngine.createTemplate(new File("${docResources}/style/layout.html").newReader(encoding))
+        template = compileTemplate(templateEngine, new File("${docResources}/style/layout.html"))
+        refreshRenderedTemplateFragments(vars)
         new File("${refGuideDir}/single.html").withWriter(encoding) {out ->
-            template.make(vars).writeTo(out)
+            template.apply(vars, out)
         }
 
         vars.content = ""
         vars.single = false
+        refreshRenderedTemplateFragments(vars)
         new File("${refGuideDir}/index.html").withWriter(encoding) {out ->
-            template.make(vars).writeTo(out)
+            template.apply(vars, out)
         }
 
         pathToRoot = "."
@@ -417,9 +421,10 @@ class DocPublisher {
         vars.sponsorLogo = injectPath(sponsorLogo, pathToRoot)
         vars.path = pathToRoot
         vars.resourcesPath = calculatePathToResources(pathToRoot)
+        refreshRenderedTemplateFragments(vars)
 
         new File("${refDocsDir}/index.html").withWriter(encoding) {out ->
-            template.make(vars).writeTo(out)
+            template.apply(vars, out)
         }
 
         def singleFile = new File(refGuideDir, "single.html")
@@ -472,15 +477,18 @@ class DocPublisher {
         varsCopy.title = section.title
         varsCopy.path = path
         varsCopy.level = level
+        varsCopy.hLevel = level == 0 ? 1 : 2
         varsCopy.sectionToc = section.children
         varsCopy.sourcePath = section.file
+        varsCopy.prevChapterNumber = varsCopy.chapterNumber ? (varsCopy.chapterNumber as int) - 1 : null
+        varsCopy.nextChapterNumber = varsCopy.chapterNumber ? (varsCopy.chapterNumber as int) + 1 : null
         output.warn "Rendering document file $sourceFile.name"
         varsCopy.content = engine.render(sourceFile.getText("UTF-8"), context)
 
         // First create the section content, which usually consists of a header
         // and the translated gdoc content.
         def sectionContent = new StringWriter()
-        sectionTemplate.make(varsCopy).writeTo(sectionContent)
+        templateApply(sectionTemplate, varsCopy, sectionContent)
 
         // Aggregate the section content and sub-sections.
         def accumulatedContent = new StringBuilder()
@@ -518,7 +526,8 @@ class DocPublisher {
 
         new File("${targetDir}/${section.name}.html").withWriter(encoding) { writer ->
             varsCopy.content = accumulatedContent.toString()
-            layoutTemplate.make(varsCopy).writeTo(writer)
+            refreshRenderedTemplateFragments(varsCopy)
+            layoutTemplate.apply(varsCopy, writer)
         }
 
         return varsCopy.content
@@ -697,14 +706,138 @@ class DocPublisher {
     private String injectPath(String source, String path) {
         if (!source) return source
 
-        def templateEngine = new groovy.text.SimpleTemplateEngine()
-        def out = new StringWriter()
-        templateEngine.createTemplate(source).make(path: calculatePathToResources(path)).writeTo(out)
-        return out.toString()
+        def handlebars = newTemplateEngine()
+        def handlebarsSource = source.replace('${path}', '{{path}}')
+        return handlebars.compileInline(handlebarsSource).apply(path: calculatePathToResources(path))
     }
 
     private String calculatePathToResources(String pathToRoot) {
         return language ? '../' + pathToRoot : pathToRoot
+    }
+
+    private Handlebars newTemplateEngine() {
+        return new Handlebars()
+    }
+
+    private Template compileTemplate(Handlebars handlebars, File source) {
+        return handlebars.compileInline(source.getText(encoding))
+    }
+
+    private static void templateApply(Template template, Map vars, Writer writer) {
+        template.apply(vars, writer)
+    }
+
+    private void refreshRenderedTemplateFragments(Map vars) {
+        vars.prevPath = vars.prev ? StringEscapeCategory.encodeAsUrlPath(vars.prev.name) : null
+        vars.nextPath = vars.next ? StringEscapeCategory.encodeAsUrlPath(vars.next.name) : null
+        vars.tocTreeHtml = vars.toc ? renderTocTree(vars.toc, vars.single as boolean, vars.path as String) : ""
+        vars.guideSummaryItemsHtml = vars.toc ? renderGuideSummaryItems(vars.toc, vars.path as String) : ""
+        vars.sectionTocHtml = vars.sectionToc ? renderSectionToc(vars.sectionToc, vars.chapterNumber?.toString()) : ""
+        vars.refMenuHtml = renderReferenceMenu(vars.refMenu ?: [], vars.path as String, vars.section)
+    }
+
+    private String renderTocTree(toc, boolean single, String path) {
+        def html = new StringBuilder()
+        toc.children.eachWithIndex { topSection, i ->
+            renderTocSection(html, 0, topSection, topSection, (i + 1).toString(), single, path)
+        }
+        return html.toString()
+    }
+
+    private void renderTocSection(StringBuilder html, int level, section, topSection, String prefix, boolean single, String path) {
+        def sectionId = StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlFragment(section.name))
+        def sectionHref = single ? "#${sectionId}" : "${path}/guide/${StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlPath(topSection.name))}${level == 0 ? '.html' : '.html#' + sectionId}"
+        def hasChildren = section.children && !section.children.empty
+        def title = StringEscapeCategory.encodeAsHtml(section.title ?: "")
+        if (hasChildren) {
+            html << """
+                <details class="toc-section" id="toc-item-${sectionId}" open>
+                    <summary><a href="${sectionHref}" data-section="${sectionId}"><span class="toc-number">${prefix}</span><span class="toc-title">${title}</span></a></summary>
+                    <div class="toc-children">
+"""
+        } else {
+            html << """
+                <div class="toc-item" id="toc-item-${sectionId}">
+                    <a class="toc-link" href="${sectionHref}" data-section="${sectionId}"><span class="toc-number">${prefix}</span><span class="toc-title">${title}</span></a>
+                </div>
+"""
+        }
+
+        int childLevel = level + 1
+        section.children.eachWithIndex { child, i ->
+            renderTocSection(html, childLevel, child, topSection, "${prefix}.${i + 1}".toString(), single, path)
+        }
+        if (hasChildren) {
+            html << """
+                    </div>
+                </details>
+"""
+        }
+    }
+
+    private String renderGuideSummaryItems(toc, String path) {
+        def html = new StringBuilder()
+        toc.children.eachWithIndex { chapter, i ->
+            html << """                        <div class="toc-item" style="margin-left:0"><a href="${path}/guide/${StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlPath(chapter.name))}.html"><strong>${i + 1}</strong><span>${StringEscapeCategory.encodeAsHtml(chapter.title ?: "")}</span></a>
+                        </div>
+"""
+        }
+        return html.toString()
+    }
+
+    private String renderSectionToc(sections, String chapterNumber) {
+        if (!sections) {
+            return ""
+        }
+        def html = new StringBuilder()
+        html << """                <div id="table-of-content">
+                    <h2>Table of Contents</h2>
+"""
+        sections.eachWithIndex { section, i ->
+            renderSectionTocItem(html, 0, section, "${chapterNumber}.${i + 1}".toString())
+        }
+        html << """                </div>
+"""
+        return html.toString()
+    }
+
+    private void renderSectionTocItem(StringBuilder html, int level, section, String prefix) {
+        def sectionId = StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlFragment(section.name))
+        html << """                    <div class="toc-item" style="margin-left:${level * 10}px"><a href="#${sectionId}"><strong>${prefix}</strong><span>${StringEscapeCategory.encodeAsHtml(section.title ?: "")}</span></a>
+                    </div>
+"""
+        int childLevel = level + 1
+        section.children.eachWithIndex { child, i ->
+            renderSectionTocItem(html, childLevel, child, "${prefix}.${i + 1}".toString())
+        }
+    }
+
+    private String renderReferenceMenu(refMenu, String path, selectedSection) {
+        def html = new StringBuilder()
+        for (cat in refMenu) {
+            def catName = StringEscapeCategory.encodeAsHtml(cat.name ?: "")
+            def catPath = StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlPath(cat.name ?: ""))
+            def selected = cat.name == selectedSection ? " selected" : ""
+            html << """                    <div class="menu-block">
+                        <h1 class="menu-title" onclick="toggleRef(nextElement(this))">${catName}</h1>
+                        <div class="menu-sub${selected}">
+"""
+            if (cat.usage.exists()) {
+                html << """                            <div class="menu-item"><a href="${path}/ref/${catPath}/Usage.html">Usage</a></div>
+"""
+            }
+            for (txt in cat.sections) {
+                def sectionName = txt.name[0..-6]
+                def sectionPath = StringEscapeCategory.encodeAsHtml(StringEscapeCategory.encodeAsUrlPath(sectionName))
+                html << """                            <div class="menu-item"><a href="${path}/ref/${catPath}/${sectionPath}.html">${StringEscapeCategory.encodeAsHtml(sectionName)}</a>
+                            </div>
+"""
+            }
+            html << """                        </div>
+                    </div>
+"""
+        }
+        return html.toString()
     }
 
     private initContext(context, path) {
