@@ -1,13 +1,45 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-workflows=(
-  ".github/workflows/gradle.yml"
-  ".github/workflows/release.yml"
-  ".github/workflows/update-gradle-wrapper.yml"
-)
+workflow_dir=".github/workflows"
 
 failed=0
+
+list_action_uses() {
+  local workflow="$1"
+
+  python3 - "$workflow" <<'PY'
+import re
+import sys
+
+workflow = sys.argv[1]
+block_scalar_indent = None
+block_scalar_re = re.compile(r"^(\s*)(?:-\s*)?[\w.-]+:\s*[|>][-+0-9 ]*(?:#.*)?$")
+uses_re = re.compile(r"^\s*(?:-\s*)?uses:\s*([^#\s]+)")
+
+with open(workflow, encoding="utf-8") as handle:
+    for line_number, line in enumerate(handle, 1):
+        text = line.rstrip("\n")
+        if not text.strip():
+            continue
+
+        indent = len(text) - len(text.lstrip(" "))
+        if block_scalar_indent is not None:
+            if indent > block_scalar_indent:
+                continue
+            block_scalar_indent = None
+
+        match = uses_re.match(text)
+        if match:
+            spec = match.group(1)
+            if "@" in spec and not spec.startswith(("./", "docker://")):
+                print(f"{line_number}:{spec}")
+            continue
+
+        if block_scalar_re.match(text):
+            block_scalar_indent = indent
+PY
+}
 
 verify_commit_ref() {
   local workflow="$1"
@@ -43,16 +75,21 @@ verify_commit_ref() {
   rm -rf "$tmp"
 }
 
-for workflow in "${workflows[@]}"; do
-  if [[ ! -f "$workflow" ]]; then
-    echo "Expected workflow does not exist: $workflow" >&2
-    failed=1
-    continue
-  fi
+if [[ ! -d "$workflow_dir" ]]; then
+  echo "Expected workflow directory does not exist: $workflow_dir" >&2
+  exit 1
+fi
 
+mapfile -t workflows < <(find "$workflow_dir" -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) | sort)
+if [[ "${#workflows[@]}" -eq 0 ]]; then
+  echo "No workflow files found under $workflow_dir" >&2
+  exit 1
+fi
+
+for workflow in "${workflows[@]}"; do
   while IFS= read -r match; do
     line="${match%%:*}"
-    spec="$(sed -E 's/^[^:]+:[[:space:]-]*uses:[[:space:]]*([^#[:space:]]+).*/\1/' <<< "$match")"
+    spec="${match#*:}"
     action_path="${spec%@*}"
     ref="${spec##*@}"
     ref="${ref%%[[:space:]#]*}"
@@ -64,7 +101,7 @@ for workflow in "${workflows[@]}"; do
     fi
 
     verify_commit_ref "$workflow" "$line" "$action_path" "$ref"
-  done < <(grep -nE 'uses:[[:space:]]+[^#[:space:]]+@' "$workflow" || true)
+  done < <(list_action_uses "$workflow")
 done
 
 exit "$failed"
