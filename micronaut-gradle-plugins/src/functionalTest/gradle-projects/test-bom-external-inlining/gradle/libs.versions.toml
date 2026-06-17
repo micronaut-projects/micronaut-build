@@ -1,5 +1,5 @@
 [versions]
-managed-junit = "5.10.2"
+managed-junit = "5.14.4"
 
 [libraries]
 boms-junit = { module = "org.junit:junit-bom", version.ref = "managed-junit"}

@@ -4,7 +4,7 @@ micronaut-test = "4.5.0"
 micronaut-docs = "2.0.0"
 groovy = "5.0.3"
 spock = "2.4-groovy-5.0"
-junit6 = "6.0.1"
+junit6 = "6.1.0"
 
 [libraries]
 spock-bom = { module = "org.spockframework:spock-bom", version.ref = "spock" }
