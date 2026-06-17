@@ -15,11 +15,13 @@
  */
 package io.micronaut.build.docs;
 
+import io.micronaut.build.problems.MicronautBuildProblems;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.problems.Problems;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
@@ -38,6 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import static io.micronaut.build.utils.ConsoleUtils.clickableUrl;
 
 @CacheableTask
@@ -54,6 +58,9 @@ public abstract class ValidateAsciidocOutputTask extends DefaultTask {
 
     @OutputFile
     public abstract RegularFileProperty getReport();
+
+    @Inject
+    public abstract Problems getProblems();
 
     @TaskAction
     void validate() throws IOException {
@@ -81,7 +88,12 @@ public abstract class ValidateAsciidocOutputTask extends DefaultTask {
                 }
             }
             if (getFailOnError().getOrElse(true)) {
-                throw new GradleException("Validation of generated asciidoctor files failed. See the report at " + clickableUrl(getReport().getAsFile().get()));
+                var reportFile = getReport().getAsFile().get();
+                var message = "Validation of generated asciidoctor files failed. See the report at " + clickableUrl(reportFile);
+                throw MicronautBuildProblems.throwing(getProblems(), new GradleException(message), MicronautBuildProblems.ASCIIDOC_OUTPUT_VALIDATION_FAILED, spec -> spec
+                    .contextualLabel("Generated Asciidoc output contains unresolved directives")
+                    .details("Generated HTML files contain unresolved Asciidoc directives. See the validation report at " + reportFile + ".")
+                    .solution("Fix the unresolved directives in the generated documentation source and rerun the docs validation task."));
             }
         }
     }
