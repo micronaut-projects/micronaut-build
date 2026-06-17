@@ -51,6 +51,7 @@ dependencies {
     }
 
     testImplementation(libs.typesafe.config)
+    testRuntimeOnly(gradleApi())
 
     testImplementation(libs.mockserver.server)
     testImplementation(libs.mockserver.client)
