@@ -40,7 +40,10 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -69,8 +72,10 @@ import static java.util.Collections.reverseOrder;
  * A task which updates version catalog files and outputs a copy
  * of them.
  */
+@DisableCachingByDefault(because = "Resolves latest external dependency versions")
 public abstract class VersionCatalogUpdate extends DefaultTask {
     @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
     public abstract DirectoryProperty getCatalogsDirectory();
 
     @OutputDirectory

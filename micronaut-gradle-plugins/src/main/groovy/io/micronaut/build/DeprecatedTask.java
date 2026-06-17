@@ -21,7 +21,9 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
+@DisableCachingByDefault(because = "Only logs a deprecation warning")
 public abstract class DeprecatedTask extends DefaultTask {
     @Input
     public abstract Property<String> getMessage();
