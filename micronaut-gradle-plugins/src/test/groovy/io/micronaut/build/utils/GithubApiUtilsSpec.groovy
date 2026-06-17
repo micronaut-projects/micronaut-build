@@ -1,56 +1,30 @@
 package io.micronaut.build.utils
 
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpServer
 import org.gradle.api.logging.Logger
-import software.xdev.mockserver.client.MockServerClient
-import software.xdev.mockserver.model.MediaType
-import software.xdev.mockserver.netty.MockServer
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.environment.RestoreSystemProperties
 
+import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets
-
-import static software.xdev.mockserver.model.HttpRequest.request
-import static software.xdev.mockserver.model.HttpResponse.response
 
 @RestoreSystemProperties
 class GithubApiUtilsSpec extends Specification {
 
     @Shared
-    private MockServer mockServer
-    @Shared
-    private MockServerClient mockServerClient
+    private HttpServer githubApi
 
     def setupSpec() {
-        mockServer = new MockServer()
-        mockServerClient = new MockServerClient("localhost", mockServer.localPort)
-        ['tags', 'releases'].each { what ->
-            mockServerClient.when(
-                    request()
-                            .withMethod("GET")
-                            .withPath("/repos/micronaut-projects/micronaut-security/$what")
-            ).respond(
-                    response()
-                            .withStatusCode(200)
-                            .withContentType(MediaType.JSON_UTF_8)
-                            .withBody(GithubApiUtilsSpec.getResourceAsStream("/io.micronaut.build.utils/releases.json").bytes)
-            )
-            mockServerClient.when(
-                    request()
-                            .withMethod("GET")
-                            .withPath("/repos/micronaut-projects/nope/$what")
-            ).respond(
-                    response()
-                            .withStatusCode(404)
-                            .withBody("Not found")
-            )
-            System.setProperty(GithubApiUtils.GITHUB_API_BASE_URL_SYSTEM_PROPERTY, "http://localhost:${mockServer.localPort}")
-        }
+        githubApi = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0)
+        githubApi.createContext("/", GithubApiUtilsSpec::serveGithubApiResponse)
+        githubApi.start()
+        System.setProperty(GithubApiUtils.GITHUB_API_BASE_URL_SYSTEM_PROPERTY, "http://127.0.0.1:${githubApi.address.port}")
     }
 
     def cleanupSpec() {
-        mockServerClient.close()
-        mockServer.close()
+        githubApi.stop(0)
     }
 
     void "it is possible to fetch tags"() {
@@ -61,5 +35,22 @@ class GithubApiUtilsSpec extends Specification {
         then:
         noExceptionThrown()
         tags.contains("v")
+    }
+
+    private static void serveGithubApiResponse(HttpExchange exchange) throws IOException {
+        try {
+            if (exchange.requestMethod == "GET" && ["/repos/micronaut-projects/micronaut-security/tags", "/repos/micronaut-projects/micronaut-security/releases"].contains(exchange.requestURI.path)) {
+                byte[] response = GithubApiUtilsSpec.getResourceAsStream("/io.micronaut.build.utils/releases.json").bytes
+                exchange.responseHeaders.add("Content-Type", "application/json; charset=utf-8")
+                exchange.sendResponseHeaders(200, response.length)
+                exchange.responseBody.write(response)
+            } else {
+                byte[] response = "Not found".bytes
+                exchange.sendResponseHeaders(404, response.length)
+                exchange.responseBody.write(response)
+            }
+        } finally {
+            exchange.close()
+        }
     }
 }

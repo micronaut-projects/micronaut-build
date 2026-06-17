@@ -13,7 +13,7 @@ micronaut:
         port: 8080
 
 mongodb:
-    uri: mongodb://username:password@localhost:27017/databaseName
+    uri: mongodb://username:pwd@localhost:27017/databaseName
 ----
 
 """
@@ -23,7 +23,7 @@ mongodb:
 <div class="listingblock multi-language-sample">
 <div class="content">
 <pre class="highlightjs highlight"><code class="language-properties hljs" data-lang="properties">micronaut.server.port=8080
-mongodb.uri=mongodb://username:password@localhost:27017/databaseName</code></pre>
+mongodb.uri=mongodb://username:pwd@localhost:27017/databaseName</code></pre>
 </div>
 </div>
 <div class="listingblock multi-language-sample">
@@ -33,16 +33,13 @@ mongodb.uri=mongodb://username:password@localhost:27017/databaseName</code></pre
         port: 8080
 
 mongodb:
-    uri: mongodb://username:password@localhost:27017/databaseName</code></pre>
+    uri: mongodb://username:pwd@localhost:27017/databaseName</code></pre>
 </div>
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">[micronaut]
-  [micronaut.server]
-    port=8080
-[mongodb]
-  uri="mongodb://username:password@localhost:27017/databaseName"</code></pre>
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">micronaut = {server = {port = 8080}}
+mongodb = {uri = "mongodb://username:pwd@localhost:27017/databaseName"}</code></pre>
 </div>
 </div>
 <div class="listingblock multi-language-sample">
@@ -53,7 +50,7 @@ mongodb:
   }
 }
 mongodb {
-  uri = "mongodb://username:password@localhost:27017/databaseName"
+  uri = "mongodb://username:pwd@localhost:27017/databaseName"
 }</code></pre>
 </div>
 </div>
@@ -66,7 +63,7 @@ mongodb {
     }
   }
   mongodb {
-    uri = "mongodb://username:password@localhost:27017/databaseName"
+    uri = "mongodb://username:pwd@localhost:27017/databaseName"
   }
 }</code></pre>
 </div>
@@ -80,7 +77,7 @@ mongodb {
     }
   },
   "mongodb": {
-    "uri": "mongodb://username:password@localhost:27017/databaseName"
+    "uri": "mongodb://username:pwd@localhost:27017/databaseName"
   }
 }</code></pre>
 </div>
