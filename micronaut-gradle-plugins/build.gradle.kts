@@ -52,8 +52,6 @@ dependencies {
 
     testImplementation(libs.typesafe.config)
 
-    testImplementation(libs.mockserver.server)
-    testImplementation(libs.mockserver.client)
 }
 
 val docFilesJar = tasks.register<Jar>("docFilesJar") {

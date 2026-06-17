@@ -1,43 +1,28 @@
 package io.micronaut.build.compat
 
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpServer
 import io.micronaut.build.utils.ExternalURLService
 import org.gradle.testfixtures.ProjectBuilder
-import software.xdev.mockserver.client.MockServerClient
-import software.xdev.mockserver.model.MediaType
-import software.xdev.mockserver.netty.MockServer
 import spock.lang.Shared
 import spock.lang.Specification
 
+import java.net.InetSocketAddress
 import java.nio.file.Files
-
-import static software.xdev.mockserver.model.HttpRequest.request
-import static software.xdev.mockserver.model.HttpResponse.response
 
 class FindBaselineTaskTest extends Specification {
 
     @Shared
-    private MockServer mockServer
-    @Shared
-    private MockServerClient mockServerClient
+    private HttpServer mavenRepository
 
     def setupSpec() {
-        mockServer = new MockServer()
-        mockServerClient = new MockServerClient("localhost", mockServer.localPort)
-        mockServerClient.when(
-                request()
-                        .withMethod("GET")
-                        .withPath("/io/micronaut/micronaut-core/maven-metadata.xml")
-        ).respond(
-                response()
-                        .withStatusCode(200)
-                        .withContentType(MediaType.XML_UTF_8)
-                        .withBody(FindBaselineTaskTest.getResourceAsStream("/test-maven-metadata.xml").bytes)
-        )
+        mavenRepository = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0)
+        mavenRepository.createContext("/", FindBaselineTaskTest::serveMavenMetadata)
+        mavenRepository.start()
     }
 
     def cleanupSpec() {
-        mockServerClient.close()
-        mockServer.close()
+        mavenRepository.stop(0)
     }
 
     def "parses releases from Maven Central"() {
@@ -46,7 +31,7 @@ class FindBaselineTaskTest extends Specification {
         def task = project.tasks.register("findBaseline", FindBaselineTask) { task ->
             task.groupId.set("io.micronaut")
             task.artifactId.set("micronaut-core")
-            task.baseRepository.set("http://localhost:${mockServer.localPort}")
+            task.baseRepository.set("http://127.0.0.1:${mavenRepository.address.port}")
             task.currentVersion.set("2.5.6")
             task.usesService(downloader);
             task.getDownloader().set(downloader)
@@ -69,7 +54,7 @@ class FindBaselineTaskTest extends Specification {
         def task = project.tasks.register("findBaseline", FindBaselineTask) { task ->
             task.groupId.set("io.micronaut.missing")
             task.artifactId.set("micronaut-missing")
-            task.baseRepository.set("http://localhost:${mockServer.localPort}")
+            task.baseRepository.set("http://127.0.0.1:${mavenRepository.address.port}")
             task.currentVersion.set("2.5.6")
             task.usesService(downloader);
             task.getDownloader().set(downloader)
@@ -83,5 +68,20 @@ class FindBaselineTaskTest extends Specification {
         then:
         IllegalStateException e = thrown()
         e.message == "Could not find a previous version for 2.5.6"
+    }
+
+    private static void serveMavenMetadata(HttpExchange exchange) throws IOException {
+        try {
+            if (exchange.requestMethod == "GET" && exchange.requestURI.path == "/io/micronaut/micronaut-core/maven-metadata.xml") {
+                byte[] response = FindBaselineTaskTest.getResourceAsStream("/test-maven-metadata.xml").bytes
+                exchange.responseHeaders.add("Content-Type", "application/xml; charset=utf-8")
+                exchange.sendResponseHeaders(200, response.length)
+                exchange.responseBody.write(response)
+            } else {
+                exchange.sendResponseHeaders(404, -1)
+            }
+        } finally {
+            exchange.close()
+        }
     }
 }

@@ -9,7 +9,6 @@ develocity-plugin = "4.4.2"
 gradle-github-actions-plugin = "1.4.0"
 grails-gdoc = "1.0.1"
 graalvm-native-build-tools = "1.1.2"
-mockserver = "2.50.9"
 nexus-publish-plugin = "2.0.0"
 snakeyaml = "2.6"
 sonar-plugin = "7.3.0.8198"
@@ -68,9 +67,6 @@ micronaut-docs = { module = "io.micronaut.docs:micronaut-docs-asciidoc-config-pr
 micronaut-logging = { module = "io.micronaut.logging:micronaut-logging", version.ref = "micronaut-logging" }
 micronaut-test = { module = "io.micronaut.test:micronaut-test", version.ref = "micronaut-test" }
 groovy = { module = "org.codehaus.groovy:groovy-core", version.ref = "groovy" }
-mockserver-client = { module = "software.xdev.mockserver:client", version.ref = "mockserver" }
-mockserver-server = { module = "software.xdev.mockserver:server", version.ref = "mockserver" }
-
 junit6-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit6" }
 junit6-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit6" }
 junit6-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit6" }
