@@ -24,6 +24,7 @@ import io.micronaut.build.catalogs.internal.VersionModel;
 import io.micronaut.build.compat.MavenMetadataVersionHelper;
 import io.micronaut.build.utils.ComparableVersion;
 import io.micronaut.build.utils.Downloader;
+import io.micronaut.build.utils.LfPrintWriter;
 import io.micronaut.build.utils.VersionParser;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -145,7 +146,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
     }
 
     private void updateCatalog(File inputCatalog, File outputCatalog, File logFile) throws IOException, InterruptedException {
-        try (PrintWriter log = newPrintWriter(logFile)) {
+        try (var log = newPrintWriter(logFile)) {
             log.println("Processing catalog file " + inputCatalog);
             LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
             try (FileInputStream is = new FileInputStream(inputCatalog)) {
@@ -230,7 +231,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
             }
 
             getLogger().lifecycle("Writing updated catalog at " + outputCatalog);
-            try (PrintWriter writer = newPrintWriter(outputCatalog)) {
+            try (var writer = newPrintWriter(outputCatalog)) {
                 lines.forEach(writer::println);
             }
 
@@ -359,7 +360,7 @@ public abstract class VersionCatalogUpdate extends DefaultTask {
     }
 
     private static PrintWriter newPrintWriter(File file) throws FileNotFoundException {
-        return new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
+        return new LfPrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
     }
 
     /**

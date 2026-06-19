@@ -1,6 +1,8 @@
 package io.micronaut.build.pom
 
 import groovy.transform.CompileStatic
+import io.micronaut.build.utils.LfPrintWriter
+import javax.inject.Inject
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
@@ -18,8 +20,6 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.workers.WorkerExecutor
-
-import javax.inject.Inject
 
 import static org.gradle.language.base.plugins.LifecycleBasePlugin.VERIFICATION_GROUP
 
@@ -155,7 +155,7 @@ abstract class PomChecker extends DefaultTask {
 
         File reportFile = writeReport(errorCollector.errors, errorCollector.suggestions)
         if (failOnError.get() && errorCollector.errors) {
-            try (var writer = new BufferedWriter(new PrintWriter(System.err))) {
+            try (var writer = new BufferedWriter(new LfPrintWriter(System.err))) {
                 writeSuggestions(errorCollector.suggestions, writer)
             }
             throw new GradleException("POM verification failed. See report in ${reportFile}")

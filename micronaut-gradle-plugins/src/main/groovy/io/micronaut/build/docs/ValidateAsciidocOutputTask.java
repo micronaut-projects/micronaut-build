@@ -15,6 +15,7 @@
  */
 package io.micronaut.build.docs;
 
+import io.micronaut.build.utils.LfPrintWriter;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.DirectoryProperty;
@@ -31,7 +32,6 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,7 +72,7 @@ public abstract class ValidateAsciidocOutputTask extends DefaultTask {
             }
         });
         if (!errors.isEmpty()) {
-            try (PrintWriter prn = new PrintWriter(new FileWriter(getReport().getAsFile().get()))) {
+            try (var prn = new LfPrintWriter(new FileWriter(getReport().getAsFile().get()))) {
                 for (Map.Entry<String, List<String>> entry : errors.entrySet()) {
                     prn.println("In file " + entry.getKey());
                     for (String line : entry.getValue()) {
