@@ -39,6 +39,7 @@ public abstract class MicronautBuildExtension {
         getEnforcedPlatform().convention(false);
         getEnableProcessing().convention(false);
         getEnableBom().convention(true);
+        getNullAway().convention(false);
     }
 
     public BuildEnvironment getEnvironment() {
@@ -92,6 +93,18 @@ public abstract class MicronautBuildExtension {
      * Whether to enable the Micronaut BOM for dependency management
      */
     public abstract Property<Boolean> getEnableBom();
+
+    /**
+     * Whether to enable NullAway checks for this project.
+     */
+    public abstract Property<Boolean> getNullAway();
+
+    /**
+     * Whether to enable NullAway checks for this project.
+     */
+    public Property<Boolean> getEnableNullAway() {
+        return getNullAway();
+    }
 
     /**
      * Errors which should be suppressed when validating POMs.
