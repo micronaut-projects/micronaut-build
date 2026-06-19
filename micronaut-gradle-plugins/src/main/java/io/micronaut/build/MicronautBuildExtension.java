@@ -100,13 +100,6 @@ public abstract class MicronautBuildExtension {
     public abstract Property<Boolean> getNullAway();
 
     /**
-     * Whether to enable NullAway checks for this project.
-     */
-    public Property<Boolean> getEnableNullAway() {
-        return getNullAway();
-    }
-
-    /**
      * Errors which should be suppressed when validating POMs.
      */
     @Nested
