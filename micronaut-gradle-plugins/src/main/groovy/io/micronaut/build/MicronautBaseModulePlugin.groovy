@@ -26,12 +26,21 @@ class MicronautBaseModulePlugin implements Plugin<Project> {
         project.pluginManager.apply(MicronautBinaryCompatibilityPlugin)
         project.pluginManager.apply(SonatypeConfigurationPlugin)
         project.pluginManager.apply(MicronautModuleInfoPlugin)
-        project.pluginManager.apply(MicronautNullAwayPlugin)
+        configureNullAway(project)
         configureJUnit(project)
         assertSettingsPluginApplied(project)
         project.pluginManager.withPlugin("maven-publish") {
             PomCheckerUtils.registerPomChecker("checkPom", project, project.extensions.findByType(PublishingExtension)) {
                 it.suppressions.convention(project.extensions.getByType(MicronautBuildExtension).bomSuppressions)
+            }
+        }
+    }
+
+    private static void configureNullAway(Project project) {
+        MicronautBuildExtension micronautBuild = project.extensions.getByType(MicronautBuildExtension)
+        project.afterEvaluate {
+            if (micronautBuild.nullAway.get()) {
+                project.pluginManager.apply(MicronautNullAwayPlugin)
             }
         }
     }

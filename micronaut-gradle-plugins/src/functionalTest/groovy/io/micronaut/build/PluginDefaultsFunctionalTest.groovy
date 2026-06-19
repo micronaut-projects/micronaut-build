@@ -198,6 +198,27 @@ class PluginDefaultsFunctionalTest extends AbstractFunctionalTest {
         }
     }
 
+    void "nullaway is opt-in for module projects"() {
+        given:
+        withSample("test-micronaut-module")
+
+        file("subproject1/build.gradle") << """
+            tasks.register("verifyNullAwayIsOptIn") {
+                doLast {
+                    assert project.extensions.findByName("micronautNullAway") == null
+                    assert project.configurations.findByName("errorprone") == null
+                    assert !project.pluginManager.hasPlugin("net.ltgt.errorprone")
+                }
+            }
+        """
+
+        when:
+        run ':subproject1:verifyNullAwayIsOptIn'
+
+        then:
+        noExceptionThrown()
+    }
+
     private void writeIncludedBuild(String name) {
         file("${name}/settings.gradle") << """
             pluginManagement {
