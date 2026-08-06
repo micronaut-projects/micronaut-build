@@ -4,7 +4,7 @@ asm = "9.10.1"
 managed-dekorate = "4.1.7"
 managed-junit = "6.1.0"
 managed-micronaut-aws = "5.0.0"
-managed-ksp = "2.3.9"
+managed-ksp = "2.3.11"
 
 [libraries]
 boms-micronaut-aws = { module = "io.micronaut.aws:micronaut-aws-bom", version.ref = "managed-micronaut-aws" }
