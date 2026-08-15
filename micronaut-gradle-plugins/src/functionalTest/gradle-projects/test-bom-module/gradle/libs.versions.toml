@@ -2,7 +2,7 @@
 asm = "9.10.1"
 
 managed-dekorate = "4.1.7"
-managed-junit = "6.1.0"
+managed-junit = "6.1.3"
 managed-micronaut-aws = "5.0.0"
 managed-ksp = "2.3.9"
 
