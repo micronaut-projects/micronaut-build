@@ -5,6 +5,9 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -24,7 +27,7 @@ jobs:
       - name: Run pre-release
         env:
           MICRONAUT_BUILD_EMAIL: ${{ secrets.MICRONAUT_BUILD_EMAIL }}
-        uses: micronaut-projects/github-actions/pre-release@master
+        uses: micronaut-projects/github-actions/pre-release@5f587657fc12601ab92d64d077f99a54c3cbdf78
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish to Sonatype OSSRH
@@ -42,7 +45,7 @@ jobs:
           ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
       - name: Run post-release
         if: success()
-        uses: micronaut-projects/github-actions/post-release@master
+        uses: micronaut-projects/github-actions/post-release@5f587657fc12601ab92d64d077f99a54c3cbdf78
         env:
           MICRONAUT_BUILD_EMAIL: ${{ secrets.MICRONAUT_BUILD_EMAIL }}
         with:
