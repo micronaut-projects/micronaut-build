@@ -17,6 +17,7 @@ class SnippetSourceResolverSpec extends Specification {
         def groovyFile = file("test-suite-groovy/src/test/groovy/example/Foo.groovy")
         def kotlinFile = file("test-suite-kotlin/src/test/kotlin/example/Foo.kt")
         def pythonFile = file("test-suite-python/src/test/python/example/Foo.py")
+        def scalaFile = file("test-suite-scala/src/test/scala/example/Foo.scala")
         def secondJavaFile = file("test-suite/src/test/java/example/Bar.java")
 
         expect:
@@ -24,7 +25,7 @@ class SnippetSourceResolverSpec extends Specification {
                 testDirectory.resolve("src/main/docs").toFile(),
                 testDirectory.toFile(),
                 ""
-        ) == [javaFile, secondJavaFile, pythonFile, kotlinFile, groovyFile] as Set
+        ) == [javaFile, secondJavaFile, pythonFile, kotlinFile, groovyFile, scalaFile] as Set
     }
 
     void "finds snippet source files for language specific guide"() {
@@ -41,6 +42,24 @@ class SnippetSourceResolverSpec extends Specification {
         ) == [kotlinFile] as Set
     }
 
+    void "honors explicit language filters"() {
+        given:
+        file("src/main/docs/guide/index.adoc") << """
+snippet::example.Foo[language=scala]
+snippet::example.Bar[languages="java,scala"]
+""".stripIndent()
+        def scalaFile = file("test-suite-scala/src/test/scala/example/Foo.scala")
+        def javaFile = file("test-suite/src/test/java/example/Bar.java")
+        def secondScalaFile = file("test-suite-scala/src/test/scala/example/Bar.scala")
+
+        expect:
+        SnippetSourceResolver.findSnippetSourceFiles(
+                testDirectory.resolve("src/main/docs").toFile(),
+                testDirectory.toFile(),
+                "kotlin"
+        ) == [scalaFile, javaFile, secondScalaFile] as Set
+    }
+
     void "honors snippet project source project base and python package rules"() {
         given:
         file("src/main/docs/guide/index.adoc") << """
@@ -52,13 +71,14 @@ snippet::io.micronaut.Sample[project-base=base]
         def basePythonFile = file("base-python/src/test/python/micronaut/Sample.py")
         def baseKotlinFile = file("base-kotlin/src/test/kotlin/io/micronaut/Sample.kt")
         def baseGroovyFile = file("base-groovy/src/test/groovy/io/micronaut/Sample.groovy")
+        def baseScalaFile = file("base-scala/src/test/scala/io/micronaut/Sample.scala")
 
         expect:
         SnippetSourceResolver.findSnippetSourceFiles(
                 testDirectory.resolve("src/main/docs").toFile(),
                 testDirectory.toFile(),
                 ""
-        ) == [customJavaFile, baseJavaFile, basePythonFile, baseKotlinFile, baseGroovyFile] as Set
+        ) == [customJavaFile, baseJavaFile, basePythonFile, baseKotlinFile, baseGroovyFile, baseScalaFile] as Set
     }
 
     private File file(String path) {
