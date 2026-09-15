@@ -16,7 +16,6 @@
 package io.micronaut.docs.converter;
 
 import org.tomlj.Toml;
-import org.tomlj.TomlParseResult;
 
 import java.util.List;
 import java.util.Map;
@@ -108,11 +107,7 @@ public class TomlGenerator extends AbstractModelVisitor {
 
     @Override
     public String toString() {
-        // We let the toml library handle the output, which is nicer
-        // than what we produce ourselves
-        TomlParseResult toml = Toml.parse(super.toString());
-        toml.errors().stream().forEach(System.err::println);
-        return toml.toToml();
+        return super.toString();
     }
 
 }

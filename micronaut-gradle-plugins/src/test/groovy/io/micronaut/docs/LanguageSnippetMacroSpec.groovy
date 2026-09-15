@@ -1,6 +1,9 @@
 package io.micronaut.docs
 
 import org.asciidoctor.Asciidoctor
+import org.asciidoctor.Attributes
+import org.asciidoctor.Options
+import org.asciidoctor.SafeMode
 import org.asciidoctor.ast.StructuralNode
 import spock.lang.Specification
 
@@ -20,8 +23,11 @@ class LanguageSnippetMacroSpec extends Specification {
             StringBuilder content = new StringBuilder()
 
             String[] files = target.split(",")
-            // replicate macro languages
-            List<String> langs = ['java', 'groovy', 'kotlin']
+            List<String> langs = SnippetSourceResolver.languagesToRender(
+                    null,
+                    attributes.get('language') as String,
+                    attributes.get('languages') as String
+            )
             for (String lang : langs) {
                 if (title != null) {
                     content << ".$title\n\n"
@@ -99,6 +105,11 @@ ${includes.join("\n\n")}
             class Foo
             // end::a[]
         """.stripIndent()
+        File scalaFile = file("$baseProject/src/$sourceType/scala/$pkgPath/${className}.scala") << """
+            // tag::a[]
+            class Foo
+            // end::a[]
+        """.stripIndent()
 
         and: "a capturing macro instance"
         def macro = new CapturingLanguageSnippetMacro("language-snippet", [:], fakeAsciidoctor)
@@ -127,6 +138,49 @@ ${includes.join("\n\n")}
         and: "kotlin block and include"
         macro.capturedContent.contains("[source.multi-language-sample,kotlin,My Snippet]")
         macro.capturedContent.contains("include::${kotlinFile.absolutePath}[tag=a,indent=0]".toString())
+
+        and: "scala block and include"
+        macro.capturedContent.contains("[source.multi-language-sample,scala,My Snippet]")
+        macro.capturedContent.contains("include::${scalaFile.absolutePath}[tag=a,indent=0]".toString())
+    }
+
+    void "filters generated blocks by explicit language"() {
+        given:
+        Asciidoctor fakeAsciidoctor = [convert: { String c, Object o -> c }] as Asciidoctor
+        String baseProject = "build/test-snippets-filtered"
+        File scalaFile = file("$baseProject/src/test/scala/example/Foo.scala") << "class Foo"
+        file("$baseProject/src/test/java/example/Foo.java") << "class Foo {}"
+        def macro = new CapturingLanguageSnippetMacro("language-snippet", [:], fakeAsciidoctor)
+
+        when:
+        macro.process(null, "example.Foo", [project: baseProject, language: "scala"])
+
+        then:
+        macro.capturedContent.contains("[source.multi-language-sample,scala,null]")
+        macro.capturedContent.contains("include::${scalaFile.absolutePath}[]".toString())
+        !macro.capturedContent.contains("source.multi-language-sample,java")
+    }
+
+    void "live asciidoctor macro honors explicit language"() {
+        given:
+        Asciidoctor asciidoctor = Asciidoctor.Factory.create()
+        asciidoctor.javaExtensionRegistry().blockMacro(new LanguageSnippetMacro("snippet", [:], asciidoctor))
+        File scalaFile = file("build/live-macro-snippets/test-suite-scala/src/test/scala/example/Foo.scala") << "class Foo"
+        file("build/live-macro-snippets/test-suite/src/test/java/example/Foo.java") << "class Foo {}"
+        Options options = Options.builder()
+                .attributes(Attributes.builder().attribute("sourcedir", new File("build/live-macro-snippets").absolutePath).build())
+                .safe(SafeMode.UNSAFE)
+                .build()
+
+        when:
+        String rendered = asciidoctor.convert('snippet::example.Foo[language="scala"]', options)
+
+        then:
+        rendered.contains("class Foo")
+        !rendered.contains("source.multi-language-sample,java")
+
+        cleanup:
+        asciidoctor.shutdown()
     }
 
     private static File file(String path) {

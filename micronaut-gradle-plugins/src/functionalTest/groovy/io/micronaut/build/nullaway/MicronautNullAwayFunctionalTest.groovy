@@ -14,6 +14,7 @@ class MicronautNullAwayFunctionalTest extends AbstractFunctionalTest {
         }
 
         micronautBuild {
+            nullAway = true
             enableProcessing.set(false)
         }
 
@@ -46,6 +47,7 @@ class MicronautNullAwayFunctionalTest extends AbstractFunctionalTest {
         }
 
         micronautBuild {
+            nullAway = true
             enableProcessing.set(false)
         }
 
@@ -59,7 +61,7 @@ class MicronautNullAwayFunctionalTest extends AbstractFunctionalTest {
         }
     '''
 
-    void "nullaway plugin configures default checks and dependencies"() {
+    void "nullaway opt-in configures default checks and dependencies"() {
         given:
         settingsFile.text = "rootProject.name = 'nullaway-default'"
         gradlePropertiesFile.text = "projectVersion=1.0.0\ntitle=Demo"

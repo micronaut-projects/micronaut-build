@@ -3,6 +3,8 @@ package io.micronaut.docs.converter
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValue
+import groovy.json.JsonSlurper
+import org.tomlj.Toml
 import spock.lang.Specification
 
 class YamlFormatConverterTest extends Specification {
@@ -418,7 +420,11 @@ logger.levels.io.github.jhipster=INFO
     }
 
     private void hasToml(String toml) {
-        assertEqualsTrimmed(this.toml, toml)
+        def actual = Toml.parse(this.toml)
+        def expected = Toml.parse(toml)
+        assert !actual.hasErrors()
+        assert !expected.hasErrors()
+        assert new JsonSlurper().parseText(actual.toJson()) == new JsonSlurper().parseText(expected.toJson())
     }
 
     private void hasJson(String json) {

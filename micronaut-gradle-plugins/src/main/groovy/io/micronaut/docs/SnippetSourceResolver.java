@@ -24,24 +24,82 @@ public final class SnippetSourceResolver {
     private static final String LANG_GROOVY = "groovy";
     private static final String LANG_KOTLIN = "kotlin";
     private static final String LANG_PYTHON = "python";
-    private static final List<String> LANGS = List.of(LANG_JAVA, LANG_PYTHON, LANG_KOTLIN, LANG_GROOVY);
+    private static final String LANG_SCALA = "scala";
+    private static final List<String> LANGS = List.of(LANG_JAVA, LANG_PYTHON, LANG_KOTLIN, LANG_GROOVY, LANG_SCALA);
     private static final String DEFAULT_KOTLIN_PROJECT = "test-suite-kotlin";
     private static final String DEFAULT_PYTHON_PROJECT = "test-suite-python";
     private static final String DEFAULT_JAVA_PROJECT = "test-suite";
     private static final String DEFAULT_GROOVY_PROJECT = "test-suite-groovy";
+    private static final String DEFAULT_SCALA_PROJECT = "test-suite-scala";
     private static final String ATTR_PROJECT = "project";
     private static final String ATTR_SOURCE = "source";
     private static final String ATTR_PROJECT_BASE = "project-base";
+    private static final String ATTR_LANGUAGE = "language";
+    private static final String ATTR_LANGUAGES = "languages";
     private static final Pattern SNIPPET_MACRO = Pattern.compile("(?m)^\\s*snippet::([^\\[]+)\\[([^\\]]*)]");
 
     private SnippetSourceResolver() {
     }
 
     public static List<String> languagesToRender(String defaultLanguage) {
-        if (defaultLanguage != null && LANGS.contains(defaultLanguage)) {
-            return List.of(defaultLanguage);
+        String language = normalize(defaultLanguage);
+        if (language != null && LANGS.contains(language)) {
+            return List.of(language);
         }
         return LANGS;
+    }
+
+    /**
+     * @return The supported snippet languages in their rendering order
+     */
+    public static List<String> getLanguages() {
+        return LANGS;
+    }
+
+    /**
+     * Resolve the language set for a snippet macro or source-tracking pass.
+     * An explicit {@code language} attribute takes precedence over
+     * {@code languages}, which takes precedence over the guide language.
+     *
+     * @param defaultLanguage The language of a language-specific guide
+     * @param attributes      The snippet attributes
+     * @return The languages to render
+     */
+    public static List<String> languagesToRender(String defaultLanguage, Map<String, Object> attributes) {
+        return languagesToRender(
+            defaultLanguage,
+            valueAtAttributes(ATTR_LANGUAGE, attributes),
+            valueAtAttributes(ATTR_LANGUAGES, attributes)
+        );
+    }
+
+    /**
+     * Resolve the language set for a snippet macro or source-tracking pass.
+     *
+     * @param defaultLanguage The language of a language-specific guide
+     * @param language        An optional single language override
+     * @param languages       An optional comma-separated language override
+     * @return The languages to render
+     */
+    public static List<String> languagesToRender(String defaultLanguage, String language, String languages) {
+        String explicitLanguage = normalize(language);
+        if (explicitLanguage != null) {
+            return LANGS.contains(explicitLanguage) ? List.of(explicitLanguage) : Collections.emptyList();
+        }
+
+        String explicitLanguages = normalize(languages);
+        if (explicitLanguages != null) {
+            Set<String> selected = new LinkedHashSet<>();
+            for (String candidate : explicitLanguages.split(",")) {
+                String normalized = normalize(candidate);
+                if (normalized != null && LANGS.contains(normalized)) {
+                    selected.add(normalized);
+                }
+            }
+            return List.copyOf(selected);
+        }
+
+        return languagesToRender(defaultLanguage);
     }
 
     public static Set<File> findSnippetSourceFiles(File sourceDir, File baseDir, String defaultLanguage) {
@@ -72,7 +130,7 @@ public final class SnippetSourceResolver {
         while (matcher.find()) {
             String target = matcher.group(1);
             Map<String, Object> attributes = parseAttributes(matcher.group(2));
-            for (String language : languagesToRender(defaultLanguage)) {
+            for (String language : languagesToRender(defaultLanguage, attributes)) {
                 for (String fileName : splitTargets(target)) {
                     File snippetFile = resolveSnippetFile(baseDir, language, fileName, attributes);
                     if (snippetFile.exists()) {
@@ -176,6 +234,9 @@ public final class SnippetSourceResolver {
         if (LANG_GROOVY.equals(language)) {
             return DEFAULT_GROOVY_PROJECT;
         }
+        if (LANG_SCALA.equals(language)) {
+            return DEFAULT_SCALA_PROJECT;
+        }
         return DEFAULT_JAVA_PROJECT;
     }
 
@@ -197,6 +258,14 @@ public final class SnippetSourceResolver {
     private static String valueAtAttributes(String name, Map<String, Object> attributes) {
         Object value = attributes.get(name);
         return value == null ? null : value.toString();
+    }
+
+    private static String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private static boolean isAsciiDoc(Path path) {

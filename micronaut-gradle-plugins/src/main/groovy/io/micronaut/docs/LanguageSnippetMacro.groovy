@@ -10,11 +10,7 @@ import org.asciidoctor.extension.BlockMacroProcessor
 public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttributes {
     final Asciidoctor asciidoctor
 
-    private static final String LANG_JAVA = 'java'
-    private static final String LANG_GROOVY = 'groovy'
-    private static final String LANG_KOTLIN = 'kotlin'
-    private static final String LANG_PYTHON = 'python'
-    public static final List<String> LANGS = [LANG_JAVA, LANG_PYTHON, LANG_KOTLIN, LANG_GROOVY]
+    public static final List<String> LANGS = SnippetSourceResolver.languages
 
     LanguageSnippetMacro(String macroName, Map<String, Object> config, Asciidoctor asciidoctor) {
         super(macroName, config)
@@ -41,10 +37,11 @@ public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAt
 
         // If a specific target language is requested and it is one of the known code languages,
         // only render that language, and do NOT use the multi-language-sample selector class.
-        List<String> languagesToRender = LANGS
-        if (defaultLanguage && LANGS.contains(defaultLanguage)) {
-            languagesToRender = [defaultLanguage]
-        }
+        List<String> languagesToRender = SnippetSourceResolver.languagesToRender(
+                defaultLanguage,
+                valueAtAttributes('language', attributes),
+                valueAtAttributes('languages', attributes)
+        )
 
         String[] files = target.split(",")
         for (lang in languagesToRender) {

@@ -15,29 +15,22 @@
  */
 package io.micronaut.build.catalogs
 
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpServer
 import io.micronaut.build.AbstractFunctionalTest
-import software.xdev.mockserver.client.MockServerClient
-import software.xdev.mockserver.mock.action.ExpectationResponseCallback
-import software.xdev.mockserver.model.HttpRequest
-import software.xdev.mockserver.model.HttpResponse
-import software.xdev.mockserver.model.MediaType
-import software.xdev.mockserver.netty.MockServer
 import spock.lang.Shared
 
-import static software.xdev.mockserver.model.HttpRequest.request
-import static software.xdev.mockserver.model.HttpResponse.notFoundResponse
-import static software.xdev.mockserver.model.HttpResponse.response
+import java.net.InetSocketAddress
 
 class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
 
     @Shared
-    private MockServer mockServer
-    @Shared
-    private MockServerClient repository
+    private HttpServer repository
 
     def setup() {
-        mockServer = new MockServer()
-        repository = new MockServerClient("localhost", mockServer.localPort)
+        repository = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0)
+        repository.createContext("/", VersionCatalogUpdateFunctionalTest::serveRepositoryResource)
+        repository.start()
         buildFile << """
             plugins {
                 id 'io.micronaut.build.internal.version-catalog-updates'            
@@ -45,7 +38,7 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
             
             repositories {
                 maven {
-                    url "http://localhost:${mockServer.localPort}"
+                    url "http://127.0.0.1:${repository.address.port}"
                     allowInsecureProtocol = true
                 }        
             }
@@ -53,8 +46,7 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
     }
 
     def cleanup() {
-        repository.close()
-        mockServer.close()
+        repository.stop(0)
     }
 
     def "can update a version catalog"() {
@@ -63,9 +55,6 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
         catalogFile.text = VersionCatalogUpdateFunctionalTest.getResourceAsStream("${VersionCatalogUpdateFunctionalTest.simpleName}/initial-${idx}.versions.toml").text
 
         when:
-        repository.when(
-                request()
-        ).respond(new LoggingCallback())
         if (idx == 7) {
             buildFile << """
                 tasks.named("updateVersionCatalogs") {
@@ -95,22 +84,23 @@ class VersionCatalogUpdateFunctionalTest extends AbstractFunctionalTest {
         idx << (0..7)
     }
 
-    static class LoggingCallback implements ExpectationResponseCallback {
-
-        @Override
-        HttpResponse handle(HttpRequest httpRequest) throws Exception {
-            String path = "/repository${httpRequest.path}"
-            println "Requesting $path"
-            def body = VersionCatalogUpdateFunctionalTest.getResourceAsStream(path)
+    private static void serveRepositoryResource(HttpExchange exchange) throws IOException {
+        String path = "/repository${exchange.requestURI.path}"
+        println "Requesting $path"
+        def body = VersionCatalogUpdateFunctionalTest.getResourceAsStream(path)
+        try {
             if (body) {
-                return response()
-                        .withStatusCode(200)
-                        .withContentType(MediaType.APPLICATION_XML)
-                        .withBody(body.bytes)
+                byte[] response = body.bytes
+                exchange.responseHeaders.add("Content-Type", "application/xml")
+                exchange.sendResponseHeaders(200, response.length)
+                exchange.responseBody.write(response)
             } else {
                 println "Not found"
-                notFoundResponse()
+                exchange.sendResponseHeaders(404, -1)
             }
+        } finally {
+            body?.close()
+            exchange.close()
         }
     }
 }

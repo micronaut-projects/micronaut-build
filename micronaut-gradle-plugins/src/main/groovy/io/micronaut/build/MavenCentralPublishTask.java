@@ -7,8 +7,11 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,6 +26,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.UUID;
 
+@DisableCachingByDefault(because = "Publishes artifacts to Maven Central")
 public abstract class MavenCentralPublishTask extends DefaultTask {
 
     public enum PublishingType {
@@ -31,6 +35,7 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
     }
 
     @InputFile
+    @PathSensitive(PathSensitivity.NONE)
     public abstract RegularFileProperty getBundle();
 
     @Input
