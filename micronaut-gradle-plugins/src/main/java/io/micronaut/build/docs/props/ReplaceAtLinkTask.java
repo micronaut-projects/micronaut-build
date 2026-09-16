@@ -15,6 +15,7 @@
  */
 package io.micronaut.build.docs.props;
 
+import io.micronaut.build.utils.LfPrintWriter;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -27,7 +28,6 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
@@ -49,7 +49,7 @@ public abstract class ReplaceAtLinkTask extends DefaultTask {
             for (File configPropertiesFile : getInputFiles().getFiles()) {
                 if (configPropertiesFile.exists()) {
                     List<String> lines = Files.readAllLines(configPropertiesFile.toPath(), StandardCharsets.UTF_8);
-                    try (PrintWriter prn = new PrintWriter(outputFile, StandardCharsets.UTF_8.name())) {
+                    try (var prn = new LfPrintWriter(outputFile, StandardCharsets.UTF_8)) {
                         for (String line : lines) {
                             String processedLine = line;
                             while (processedLine.contains("{@link io.micronaut.")) {
