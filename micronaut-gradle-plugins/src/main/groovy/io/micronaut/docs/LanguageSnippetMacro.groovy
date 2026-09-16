@@ -17,10 +17,21 @@ public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAt
         this.asciidoctor = asciidoctor
     }
 
-    private File snippetFile(StructuralNode parent, String lang, String fileName, Map<String, Object> attributes) {
+    private static File baseDir(StructuralNode parent) {
         String sourceDir = parent.document.getAttribute('sourcedir') ?: parent.document.getAttribute('sourceDir')
-        File baseDir = sourceDir ? new File(sourceDir) : System.getProperty("user.dir") ? new File(System.getProperty("user.dir")) : new File("")
-        SnippetSourceResolver.resolveSnippetFile(baseDir, lang, fileName, attributes)
+        sourceDir ? new File(sourceDir) : System.getProperty("user.dir") ? new File(System.getProperty("user.dir")) : new File("")
+    }
+
+    private File snippetFile(StructuralNode parent, String lang, String fileName, Map<String, Object> attributes) {
+        SnippetSourceResolver.resolveSnippetFile(baseDir(parent), lang, fileName, attributes)
+    }
+
+    /**
+     * A missing snippet is only worth a warning when the module has a project for that language at all:
+     * a module without, say, Scala sources would otherwise log a warning for every single snippet.
+     */
+    private boolean hasLanguageProject(StructuralNode parent, String lang, Map<String, Object> attributes) {
+        SnippetSourceResolver.projectDirectory(baseDir(parent), lang, attributes).isDirectory()
     }
 
     @Override
@@ -51,7 +62,9 @@ public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAt
             for (fileName in files) {
                 File file = snippetFile(parent, lang, fileName, attributes)
                 if (!file.exists()) {
-                    println "!!!! WARNING: NO FILE FOUND MATCHING TARGET PASSED IN AT PATH : $file.path"
+                    if (hasLanguageProject(parent, lang, attributes)) {
+                        println "!!!! WARNING: NO FILE FOUND MATCHING TARGET PASSED IN AT PATH : $file.path"
+                    }
                     continue
                 }
 

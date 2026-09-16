@@ -142,6 +142,19 @@ public final class SnippetSourceResolver {
         return result;
     }
 
+    /**
+     * The directory of the project holding the snippets of a language, for example
+     * {@code test-suite-python} or {@code doc-examples/example-python}.
+     *
+     * @param baseDir    The base directory of the build
+     * @param language   The snippet language
+     * @param attributes The snippet attributes
+     * @return the project directory, which may not exist when the module has no sources in that language
+     */
+    public static File projectDirectory(File baseDir, String language, Map<String, Object> attributes) {
+        return new File(baseDir, projectDir(language, attributes));
+    }
+
     public static File resolveSnippetFile(File baseDir, String language, String fileName, Map<String, Object> attributes) {
         String baseName = fileName.trim().replace(".", File.separator);
         if (LANG_PYTHON.equals(language) && baseName.startsWith("io" + File.separator)) {
