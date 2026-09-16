@@ -120,6 +120,19 @@ dependencies {
 }
 ```
 
+Python tests need a GraalVM runtime and are slow, so the `Test` tasks of a project applying the plugin only run
+when the `python-ci` Gradle property is set (`./gradlew -p test-suite-python check -Ppython-ci`), which the
+dedicated "Python CI" GitHub workflow of the project template does on GraalVM. The regular CI still compiles the
+Python sources. This convention can be changed with:
+
+```groovy
+micronautBuild {
+    python {
+        testsEnabled = true
+    }
+}
+```
+
 Python sources are compiled after the Java classes of the source set, so a test suite whose Python sources use
 Java classes of the same project should declare:
 
