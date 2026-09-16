@@ -121,9 +121,10 @@ dependencies {
 ```
 
 Python tests need a GraalVM runtime and are slow, so the `Test` tasks of a project applying the plugin only run
-when the `python-ci` Gradle property is set (`./gradlew -p test-suite-python check -Ppython-ci`), which the
-dedicated "Python CI" GitHub workflow of the project template does on GraalVM. The regular CI still compiles the
-Python sources. This convention can be changed with:
+when the `python-ci` Gradle property is set. The dedicated "Python CI" GitHub workflow of the project template runs
+`./gradlew pythonCheck -Ppython-ci` on GraalVM: `pythonCheck` is a root project task aggregating the `check` task
+of every project applying the plugin (a build can register `pythonCheck` in its root project itself to add other
+projects to it). The regular CI still compiles the Python sources. The test convention can be changed with:
 
 ```groovy
 micronautBuild {
