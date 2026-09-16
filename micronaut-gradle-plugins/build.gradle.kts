@@ -101,6 +101,7 @@ micronautBuildPlugin {
     definePlugin("parent", "io.micronaut.build.MicronautParentPlugin")
     definePlugin("parent-publishing", "io.micronaut.build.MicronautParentPublishingPlugin")
     definePlugin("publishing", "io.micronaut.build.MicronautPublishingPlugin")
+    definePlugin("python", "io.micronaut.build.python.MicronautPythonPlugin")
     definePlugin("quality-checks", "io.micronaut.build.MicronautQualityChecksParticipantPlugin")
     definePlugin("quality-reporting", "io.micronaut.build.MicronautQualityReportingAggregatorPlugin")
     definePlugin("version-catalog-updates", "io.micronaut.build.catalogs.MicronautVersionCatalogUpdatePlugin")

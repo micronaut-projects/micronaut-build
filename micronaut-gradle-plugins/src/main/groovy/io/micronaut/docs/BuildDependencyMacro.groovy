@@ -58,6 +58,23 @@ import org.asciidoctor.extension.InlineMacroProcessor
  *
  * dependency:micronaut-spring[gradleScope="implementation"]
  *
+ * A Pyronaut (Python) snippet is rendered as well, for a pyproject.toml file:
+ *
+ * [tool.pyronaut.dependencies]
+ * runtime = [
+ *     "io.micronaut:micronaut-spring:1.0.1",
+ * ]
+ *
+ * The Pyronaut scope (runtime, build or test) is derived from the scope attribute:
+ * annotation processor and compile only scopes map to build, test scopes map to test
+ * and everything else maps to runtime. It can be overridden with:
+ *
+ * dependency:micronaut-spring[pyronautScope="build"]
+ *
+ * and the snippet can be omitted for JVM-only dependencies with:
+ *
+ * dependency:micronaut-kotlin-runtime[pyronaut="false"]
+ *
  */
 class BuildDependencyMacro extends InlineMacroProcessor implements ValueAtAttributes {
     static final String MICRONAUT_GROUPID = "io.micronaut."
@@ -66,8 +83,13 @@ class BuildDependencyMacro extends InlineMacroProcessor implements ValueAtAttrib
     static final String MULTILANGUAGECSSCLASS = 'multi-language-sample'
     static final String BUILD_GRADLE = 'gradle'
     static final String BUILD_MAVEN = 'maven'
+    static final String BUILD_PYRONAUT = 'pyronaut'
     public static final String SCOPE_COMPILE = 'compile'
     public static final String SCOPE_IMPLEMENTATION = 'implementation'
+    public static final String PYRONAUT_SCOPE_RUNTIME = 'runtime'
+    public static final String PYRONAUT_SCOPE_BUILD = 'build'
+    public static final String PYRONAUT_SCOPE_TEST = 'test'
+    private static final List<String> PYRONAUT_SCOPES = [PYRONAUT_SCOPE_RUNTIME, PYRONAUT_SCOPE_BUILD, PYRONAUT_SCOPE_TEST]
 
     BuildDependencyMacro(String macroName) {
         super(macroName)
@@ -109,7 +131,41 @@ class BuildDependencyMacro extends InlineMacroProcessor implements ValueAtAttrib
         String title = valueAtAttributes('title', attributes) ?: ""
         String content = gradleDependency(BUILD_GRADLE, groupId, artifactId, version, classifier, gradleScope, MULTILANGUAGECSSCLASS, title)
         content += mavenDependency(BUILD_MAVEN, groupId, artifactId, version, classifier, mavenScope, MULTILANGUAGECSSCLASS, title)
+        if (isPyronautEnabled(attributes)) {
+            String pyronautScope = valueAtAttributes('pyronautScope', attributes) ?: toPyronautScope(attributes)
+            content += pyronautDependency(BUILD_PYRONAUT, groupId, artifactId, version, classifier, pyronautScope, MULTILANGUAGECSSCLASS, title)
+        }
         content
+    }
+
+    static boolean isPyronautEnabled(Map<String, Object> attributes) {
+        String pyronaut = valueAtAttributes('pyronaut', attributes)
+        pyronaut == null || !'false'.equalsIgnoreCase(pyronaut.trim())
+    }
+
+    /**
+     * Maps the scope attribute to a Pyronaut dependency scope: {@code build} for annotation processor
+     * and compile only scopes, {@code test} for test scopes and {@code runtime} otherwise.
+     */
+    static String toPyronautScope(Map<String, Object> attributes) {
+        String s = valueAtAttributes('scope', attributes) ?: valueAtAttributes('gradleScope', attributes) ?: valueAtAttributes('mavenScope', attributes)
+        if (s == null) {
+            return PYRONAUT_SCOPE_RUNTIME
+        }
+        if (s in PYRONAUT_SCOPES) {
+            return s
+        }
+        switch (s) {
+            case 'annotationProcessor':
+            case 'kapt':
+            case 'ksp':
+            case 'compileOnly':
+            case 'provided':
+            case 'developmentOnly':
+                return PYRONAUT_SCOPE_BUILD
+            default:
+                return s.startsWith('test') ? PYRONAUT_SCOPE_TEST : PYRONAUT_SCOPE_RUNTIME
+        }
     }
 
     static String toMavenScope(Map<String, Object> attributes) {
@@ -175,6 +231,38 @@ class BuildDependencyMacro extends InlineMacroProcessor implements ValueAtAttrib
         html += "\")</span>"
 
         html += """</code></pre>
+</div>
+</div>
+"""
+        html
+    }
+
+    static String pyronautDependency(String build,
+                                     String groupId,
+                                     String artifactId,
+                                     String version,
+                                     String classifier,
+                                     String scope,
+                                     String multilanguageCssClass,
+                                     String title) {
+        String coordinates = "${groupId}:${artifactId}"
+        if (version || classifier) {
+            coordinates += ":"
+        }
+        if (version) {
+            coordinates += version
+        }
+        if (classifier) {
+            coordinates += ":${classifier}"
+        }
+        String html = """\
+<div class=\"listingblock ${multilanguageCssClass}\">
+<div class=\"title\">$title</div>
+<div class=\"content\">
+<pre class=\"highlightjs highlight\"><code class=\"language-toml hljs\" data-lang=\"${build}\">[tool.pyronaut.dependencies]
+${scope} = [
+    <span class=\"hljs-string\">\"${coordinates}\"</span>,
+]</code></pre>
 </div>
 </div>
 """
