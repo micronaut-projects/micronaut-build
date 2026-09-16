@@ -89,4 +89,15 @@ snippet::io.micronaut.Sample[project-base=base]
         }
         return f
     }
+
+    void "the project directory of a language is derived like the snippet file"() {
+        given:
+        File baseDir = new File("/tmp/build")
+
+        expect:
+        SnippetSourceResolver.projectDirectory(baseDir, "python", [:]) == new File(baseDir, "test-suite-python")
+        SnippetSourceResolver.projectDirectory(baseDir, "scala", [:]) == new File(baseDir, "test-suite-scala")
+        SnippetSourceResolver.projectDirectory(baseDir, "kotlin", ["project-base": "doc-examples/example"]) == new File(baseDir, "doc-examples/example-kotlin")
+        SnippetSourceResolver.projectDirectory(baseDir, "groovy", [project: "doc-examples/custom"]) == new File(baseDir, "doc-examples/custom")
+    }
 }

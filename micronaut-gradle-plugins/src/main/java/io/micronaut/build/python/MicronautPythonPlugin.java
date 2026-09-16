@@ -23,6 +23,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.attributes.Bundling;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.LibraryElements;
 import org.gradle.api.attributes.Usage;
@@ -198,8 +199,9 @@ public class MicronautPythonPlugin implements Plugin<Project> {
         sourceSet.getExtensions().add(PYTHON_SOURCE_DIRECTORY_SET_NAME, sourceDirectorySet);
         var sourceSetName = sourceSet.getName();
         sourceDirectorySet.srcDir("src/" + sourceSetName + "/python");
+        var pythonCompileClasspath = createPythonCompileClasspath(project, sourceSet);
         var compileTask =
-            createCompileTask(project, pyronautCompilerClasspath, sourceSet, compileTaskName(sourceSetName), sourceDirectorySet);
+            createCompileTask(project, pyronautCompilerClasspath, pythonCompileClasspath, sourceSet, compileTaskName(sourceSetName), sourceDirectorySet);
         var classesDirs = sourceSet.getOutput().getClassesDirs();
         if (classesDirs instanceof ConfigurableFileCollection cfc) {
             // Declare that the Python compiler task contributes new classes
@@ -208,6 +210,49 @@ public class MicronautPythonPlugin implements Plugin<Project> {
             throw new IllegalStateException(
                 "Unexpected classes directory type: " + classesDirs.getClass());
         }
+    }
+
+    /**
+     * Creates the classpath the Python sources of a source set are compiled against. It declares the
+     * same dependencies as the source set's compile classpath but requests jars: Gradle resolves
+     * sibling projects of a compile classpath to their bare classes directories, without resources,
+     * which would hide the {@code META-INF/services} files of annotation processors and type element
+     * visitors from the Pyronaut compiler.
+     *
+     * @param project the project
+     * @param sourceSet the source set
+     * @return the resolvable classpath configuration
+     */
+    private static Configuration createPythonCompileClasspath(Project project, SourceSet sourceSet) {
+        var compileClasspath = project.getConfigurations().getByName(sourceSet.getCompileClasspathConfigurationName());
+        return project.getConfigurations().create(pythonCompileClasspathName(sourceSet.getName()), conf -> {
+            conf.setDescription("Compile classpath of the " + sourceSet.getName() + " Python sources.");
+            conf.setCanBeResolved(true);
+            conf.setCanBeConsumed(false);
+            conf.setVisible(false);
+            conf.extendsFrom(compileClasspath);
+            conf.attributes(attrs -> {
+                var objects = project.getObjects();
+                attrs.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, Usage.JAVA_API));
+                attrs.attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.class, Category.LIBRARY));
+                attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR));
+                attrs.attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.class, Bundling.EXTERNAL));
+            });
+        });
+    }
+
+    /**
+     * Returns the name of the Python compile classpath configuration of a source set, for example
+     * {@code pythonCompileClasspath} for {@code main} and {@code testPythonCompileClasspath} for {@code test}.
+     *
+     * @param sourceSetName the source set name
+     * @return the configuration name
+     */
+    public static String pythonCompileClasspathName(String sourceSetName) {
+        if (SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSetName)) {
+            return "pythonCompileClasspath";
+        }
+        return sourceSetName + "PythonCompileClasspath";
     }
 
     /**
@@ -229,12 +274,14 @@ public class MicronautPythonPlugin implements Plugin<Project> {
      *
      * @param project the project
      * @param pyronautCompilerClasspath the compiler classpath
+     * @param pythonCompileClasspath the classpath the Python sources are compiled against
      * @param sourceSet the source set for which to generate a compilation task
      * @param taskName the name of the task to create
      * @param sourceDirectorySet the Python source directory set
      */
     private static TaskProvider<PythonCompile> createCompileTask(Project project,
                                                                  Configuration pyronautCompilerClasspath,
+                                                                 Configuration pythonCompileClasspath,
                                                                  SourceSet sourceSet,
                                                                  String taskName,
                                                                  SourceDirectorySet sourceDirectorySet) {
@@ -245,8 +292,7 @@ public class MicronautPythonPlugin implements Plugin<Project> {
             task.getDestinationDir()
                 .convention(project.getLayout().getBuildDirectory().dir("classes/python/" + sourceSet.getName()));
             task.getCompilerClasspath().from(pyronautCompilerClasspath);
-            task.getClasspath().from(project.getConfigurations()
-                .getByName(sourceSet.getCompileClasspathConfigurationName()));
+            task.getClasspath().from(pythonCompileClasspath);
         });
     }
 }

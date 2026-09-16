@@ -45,8 +45,24 @@ class MicronautPythonPluginSpec extends Specification {
         compilePython.destinationDir.get().asFile == project.file("build/classes/python/main")
         compileTestPython.destinationDir.get().asFile == project.file("build/classes/python/test")
         project.configurations.getByName(MicronautPythonPlugin.PYRONAUT_COMPILER_CLASSPATH_CONFIGURATION) in compilePython.compilerClasspath.from
-        project.configurations.getByName("compileClasspath") in compilePython.classpath.from
-        project.configurations.getByName("testCompileClasspath") in compileTestPython.classpath.from
+        project.configurations.getByName("pythonCompileClasspath") in compilePython.classpath.from
+        project.configurations.getByName("testPythonCompileClasspath") in compileTestPython.classpath.from
+    }
+
+    def "the python compile classpath declares the compile dependencies but resolves jars"() {
+        given:
+        def project = ProjectBuilder.builder().build()
+        project.pluginManager.apply(MicronautPythonPlugin)
+
+        when:
+        def classpath = project.configurations.getByName("testPythonCompileClasspath")
+
+        then:
+        classpath.canBeResolved
+        !classpath.canBeConsumed
+        classpath.extendsFrom.contains(project.configurations.getByName("testCompileClasspath"))
+        classpath.attributes.getAttribute(org.gradle.api.attributes.LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE).name == org.gradle.api.attributes.LibraryElements.JAR
+        classpath.attributes.getAttribute(org.gradle.api.attributes.Usage.USAGE_ATTRIBUTE).name == org.gradle.api.attributes.Usage.JAVA_API
     }
 
     def "the pyronaut compiler is resolved from the micronaut version"() {
