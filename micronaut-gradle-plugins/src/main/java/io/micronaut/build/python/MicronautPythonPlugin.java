@@ -322,6 +322,22 @@ public class MicronautPythonPlugin implements Plugin<Project> {
             // not a convention: a task calling compilerArgs.add(...) would discard it, so the task
             // property starts with the extension arguments and a task appends to them
             task.getCompilerArgs().addAll(extension.getCompilerArgs());
+            // The Java classes and resources of the same source set (helpers next to the Python sources)
+            // and, for test-like source sets, the main output: neither is part of the compile classpath
+            // configuration, so without them their shims are never generated and imports silently
+            // degrade to Object.
+            task.getClasspath().from(sourceSet.getJava().getClassesDirectory());
+            task.getClasspath().from(project.provider(() -> sourceSet.getOutput().getResourcesDir()));
+            task.dependsOn(sourceSet.getProcessResourcesTaskName());
+            if (!SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+                var sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+                var main = sourceSets.findByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                if (main != null) {
+                    task.getClasspath().from(main.getJava().getClassesDirectory());
+                    task.getClasspath().from(project.provider(() -> main.getOutput().getResourcesDir()));
+                    task.dependsOn(main.getProcessResourcesTaskName());
+                }
+            }
         });
     }
 }
