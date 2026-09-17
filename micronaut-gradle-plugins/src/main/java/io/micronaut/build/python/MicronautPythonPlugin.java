@@ -293,6 +293,25 @@ public class MicronautPythonPlugin implements Plugin<Project> {
                 .convention(project.getLayout().getBuildDirectory().dir("classes/python/" + sourceSet.getName()));
             task.getCompilerClasspath().from(pyronautCompilerClasspath);
             task.getClasspath().from(pythonCompileClasspath);
+            // The Java classes and resources of the same source set (helpers next to the Python sources)
+            // and, for test-like source sets, the main output: neither is part of the compile classpath
+            // configuration, so without them their shims are never generated and imports silently
+            // degrade to Object.
+            task.getClasspath().from(sourceSet.getJava().getClassesDirectory());
+            task.getClasspath().from(project.provider(() -> sourceSet.getOutput().getResourcesDir()));
+            task.dependsOn(sourceSet.getProcessResourcesTaskName());
+            if (!SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+                var sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+                var main = sourceSets.findByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                if (main != null) {
+                    // Every classes directory of main, including the one the main Python compile task
+                    // produces: the compiled Python classes of main are what lets test Python sources
+                    // import main Python classes (the file collection carries the task dependency).
+                    task.getClasspath().from(main.getOutput().getClassesDirs());
+                    task.getClasspath().from(project.provider(() -> main.getOutput().getResourcesDir()));
+                    task.dependsOn(main.getProcessResourcesTaskName());
+                }
+            }
         });
     }
 }

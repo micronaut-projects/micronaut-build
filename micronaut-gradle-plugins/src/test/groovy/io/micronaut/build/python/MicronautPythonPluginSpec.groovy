@@ -173,4 +173,23 @@ class MicronautPythonPluginSpec extends Specification {
         pythonCheck.description == "custom"
         pythonCheck.taskDependencies.getDependencies(pythonCheck)*.path == [":test-suite-python:check"]
     }
+
+    def "python sources see the java output of their own source set and of main"() {
+        given:
+        def project = ProjectBuilder.builder().build()
+        project.pluginManager.apply(MicronautPythonPlugin)
+        def sourceSets = project.extensions.getByType(SourceSetContainer)
+
+        when:
+        def compileTestPython = project.tasks.named("compileTestPython", PythonCompile).get()
+        def files = compileTestPython.classpath.files
+
+        then:
+        sourceSets.getByName("test").java.classesDirectory.get().asFile in files
+        sourceSets.getByName("main").java.classesDirectory.get().asFile in files
+        sourceSets.getByName("test").output.resourcesDir in files
+        sourceSets.getByName("main").output.resourcesDir in files
+        project.file("build/classes/python/main") in files
+        compileTestPython.taskDependencies.getDependencies(compileTestPython)*.name.containsAll(["compileTestJava", "compileJava", "compilePython", "processTestResources", "processResources"])
+    }
 }
