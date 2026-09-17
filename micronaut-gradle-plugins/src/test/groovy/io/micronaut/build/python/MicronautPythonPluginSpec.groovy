@@ -189,6 +189,7 @@ class MicronautPythonPluginSpec extends Specification {
         sourceSets.getByName("main").java.classesDirectory.get().asFile in files
         sourceSets.getByName("test").output.resourcesDir in files
         sourceSets.getByName("main").output.resourcesDir in files
-        compileTestPython.taskDependencies.getDependencies(compileTestPython)*.name.containsAll(["compileTestJava", "compileJava", "processTestResources", "processResources"])
+        project.file("build/classes/python/main") in files
+        compileTestPython.taskDependencies.getDependencies(compileTestPython)*.name.containsAll(["compileTestJava", "compileJava", "compilePython", "processTestResources", "processResources"])
     }
 }

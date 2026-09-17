@@ -304,7 +304,10 @@ public class MicronautPythonPlugin implements Plugin<Project> {
                 var sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
                 var main = sourceSets.findByName(SourceSet.MAIN_SOURCE_SET_NAME);
                 if (main != null) {
-                    task.getClasspath().from(main.getJava().getClassesDirectory());
+                    // Every classes directory of main, including the one the main Python compile task
+                    // produces: the compiled Python classes of main are what lets test Python sources
+                    // import main Python classes (the file collection carries the task dependency).
+                    task.getClasspath().from(main.getOutput().getClassesDirs());
                     task.getClasspath().from(project.provider(() -> main.getOutput().getResourcesDir()));
                     task.dependsOn(main.getProcessResourcesTaskName());
                 }
