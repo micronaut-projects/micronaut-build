@@ -15,6 +15,7 @@
  */
 package io.micronaut.build.python;
 
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
 /**
@@ -44,4 +45,15 @@ public abstract class MicronautPythonExtension {
      * @return whether Python tests run in this build
      */
     public abstract Property<Boolean> getTestsEnabled();
+
+    /**
+     * Extra arguments passed to the Python compiler by every {@link PythonCompile} task of the
+     * project, typically annotation processor options of the form {@code -Akey=value} (for example
+     * {@code -Amicronaut.jsonschema.baseUri=https://example.com/schemas}). They are appended after the
+     * options the plugin sets itself. A task can append to or replace them through its own
+     * {@link PythonCompile#getCompilerArgs() compilerArgs} property.
+     *
+     * @return the extra compiler arguments
+     */
+    public abstract ListProperty<String> getCompilerArgs();
 }

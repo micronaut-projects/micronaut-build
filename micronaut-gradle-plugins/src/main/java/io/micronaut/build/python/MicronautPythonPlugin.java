@@ -78,7 +78,7 @@ public class MicronautPythonPlugin implements Plugin<Project> {
         var extension = createExtension(project);
         var pyronautCompiler = createPyronautCompilerConfiguration(project, extension);
         var pyronautCompilerClasspath = createPyronautCompilerClasspath(project, pyronautCompiler);
-        configureSourceSets(project, pyronautCompilerClasspath);
+        configureSourceSets(project, extension, pyronautCompilerClasspath);
         configureTestTasks(project, extension);
         registerPythonCheckTask(project);
     }
@@ -181,17 +181,20 @@ public class MicronautPythonPlugin implements Plugin<Project> {
      * each source set.
      *
      * @param project the project
+     * @param extension the python extension
      * @param pyronautCompilerClasspath the compiler classpath configuration
      */
     private static void configureSourceSets(Project project,
+                                            MicronautPythonExtension extension,
                                             Configuration pyronautCompilerClasspath) {
         project.getPluginManager().withPlugin("java-base", unused -> {
             var sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
-            sourceSets.all(sourceSet -> createPythonSourceDirectory(project, pyronautCompilerClasspath, sourceSet));
+            sourceSets.all(sourceSet -> createPythonSourceDirectory(project, extension, pyronautCompilerClasspath, sourceSet));
         });
     }
 
     private static void createPythonSourceDirectory(Project project,
+                                                    MicronautPythonExtension extension,
                                                     Configuration pyronautCompilerClasspath,
                                                     SourceSet sourceSet) {
         var sourceDirectorySet =
@@ -201,7 +204,7 @@ public class MicronautPythonPlugin implements Plugin<Project> {
         sourceDirectorySet.srcDir("src/" + sourceSetName + "/python");
         var pythonCompileClasspath = createPythonCompileClasspath(project, sourceSet);
         var compileTask =
-            createCompileTask(project, pyronautCompilerClasspath, pythonCompileClasspath, sourceSet, compileTaskName(sourceSetName), sourceDirectorySet);
+            createCompileTask(project, extension, pyronautCompilerClasspath, pythonCompileClasspath, sourceSet, compileTaskName(sourceSetName), sourceDirectorySet);
         var classesDirs = sourceSet.getOutput().getClassesDirs();
         if (classesDirs instanceof ConfigurableFileCollection cfc) {
             // Declare that the Python compiler task contributes new classes
@@ -273,6 +276,7 @@ public class MicronautPythonPlugin implements Plugin<Project> {
      * Creates a new Pyronaut compilation task.
      *
      * @param project the project
+     * @param extension the python extension providing the default compiler arguments
      * @param pyronautCompilerClasspath the compiler classpath
      * @param pythonCompileClasspath the classpath the Python sources are compiled against
      * @param sourceSet the source set for which to generate a compilation task
@@ -280,6 +284,7 @@ public class MicronautPythonPlugin implements Plugin<Project> {
      * @param sourceDirectorySet the Python source directory set
      */
     private static TaskProvider<PythonCompile> createCompileTask(Project project,
+                                                                 MicronautPythonExtension extension,
                                                                  Configuration pyronautCompilerClasspath,
                                                                  Configuration pythonCompileClasspath,
                                                                  SourceSet sourceSet,
@@ -293,6 +298,9 @@ public class MicronautPythonPlugin implements Plugin<Project> {
                 .convention(project.getLayout().getBuildDirectory().dir("classes/python/" + sourceSet.getName()));
             task.getCompilerClasspath().from(pyronautCompilerClasspath);
             task.getClasspath().from(pythonCompileClasspath);
+            // not a convention: a task calling compilerArgs.add(...) would discard it, so the task
+            // property starts with the extension arguments and a task appends to them
+            task.getCompilerArgs().addAll(extension.getCompilerArgs());
         });
     }
 }
