@@ -23,7 +23,8 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.attributes.Bundling;
+import org.gradle.api.attributes.Attribute;
+import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.LibraryElements;
 import org.gradle.api.attributes.Usage;
@@ -217,10 +218,17 @@ public class MicronautPythonPlugin implements Plugin<Project> {
 
     /**
      * Creates the classpath the Python sources of a source set are compiled against. It declares the
-     * same dependencies as the source set's compile classpath but requests jars: Gradle resolves
+     * same dependencies and requests the same attributes as the source set's compile classpath, so that
+     * Gradle selects the same variants javac compiles against, but requests jars: Gradle resolves
      * sibling projects of a compile classpath to their bare classes directories, without resources,
      * which would hide the {@code META-INF/services} files of annotation processors and type element
      * visitors from the Pyronaut compiler.
+     * <p>
+     * Requesting only a subset of the compile classpath attributes would change the variant selection:
+     * Gradle prefers the candidate matching the most requested attributes, so a library publishing a
+     * custom variant carrying attributes like {@code org.gradle.jvm.environment}, which the default
+     * {@code apiElements} lacks, is resolved to that variant by the compile classpath but to
+     * {@code apiElements} by a configuration not requesting them.
      *
      * @param project the project
      * @param sourceSet the source set
@@ -235,13 +243,26 @@ public class MicronautPythonPlugin implements Plugin<Project> {
             conf.setVisible(false);
             conf.extendsFrom(compileClasspath);
             conf.attributes(attrs -> {
-                var objects = project.getObjects();
-                attrs.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, Usage.JAVA_API));
-                attrs.attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.class, Category.LIBRARY));
-                attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR));
-                attrs.attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.class, Bundling.EXTERNAL));
+                var compileAttributes = compileClasspath.getAttributes();
+                for (Attribute<?> attribute : compileAttributes.keySet()) {
+                    copyAttribute(attrs, compileAttributes, attribute, project);
+                }
+                attrs.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+                    project.getObjects().named(LibraryElements.class, LibraryElements.JAR));
             });
         });
+    }
+
+    /**
+     * Lazily copies an attribute of one container to another: the value is read when the target
+     * is realized, so that attribute values the Java plugin provides lazily, like the target JVM
+     * version derived from the toolchain, are not resolved too early.
+     */
+    private static <T> void copyAttribute(AttributeContainer target,
+                                          AttributeContainer source,
+                                          Attribute<T> attribute,
+                                          Project project) {
+        target.attributeProvider(attribute, project.provider(() -> source.getAttribute(attribute)));
     }
 
     /**

@@ -1,6 +1,15 @@
 package io.micronaut.build.python
 
 import io.micronaut.build.MicronautBuildExtension
+import org.gradle.api.JavaVersion
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.attributes.Bundling
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
+import org.gradle.api.attributes.java.TargetJvmEnvironment
+import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.tasks.SourceSetContainer
@@ -61,8 +70,55 @@ class MicronautPythonPluginSpec extends Specification {
         classpath.canBeResolved
         !classpath.canBeConsumed
         classpath.extendsFrom.contains(project.configurations.getByName("testCompileClasspath"))
-        classpath.attributes.getAttribute(org.gradle.api.attributes.LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE).name == org.gradle.api.attributes.LibraryElements.JAR
-        classpath.attributes.getAttribute(org.gradle.api.attributes.Usage.USAGE_ATTRIBUTE).name == org.gradle.api.attributes.Usage.JAVA_API
+        classpath.attributes.getAttribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE).name == LibraryElements.JAR
+        classpath.attributes.getAttribute(Usage.USAGE_ATTRIBUTE).name == Usage.JAVA_API
+
+        and: 'it requests every other attribute of the compile classpath, so that the same variants are selected'
+        def compileAttributes = project.configurations.getByName("testCompileClasspath").attributes
+        compileAttributes.getAttribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE).name == LibraryElements.CLASSES
+        compileAttributes.keySet().contains(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE)
+        compileAttributes.keySet().contains(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE)
+        classpath.attributes.keySet() == compileAttributes.keySet()
+        (compileAttributes.keySet() - LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE).each {
+            assert classpath.attributes.getAttribute(it) == compileAttributes.getAttribute(it)
+        }
+    }
+
+    def "the python compile classpath selects the variants of the compile classpath"() {
+        given: 'a library which, like the OCI SDK modules of micronaut-oracle-cloud, publishes a custom variant instead of apiElements'
+        def root = ProjectBuilder.builder().withName("root").build()
+        def lib = ProjectBuilder.builder().withName("lib").withParent(root).build()
+        lib.pluginManager.apply("java-library")
+        lib.configurations.create("metadataElements") {
+            it.canBeConsumed = true
+            it.canBeResolved = false
+            it.attributes {
+                it.attribute(Usage.USAGE_ATTRIBUTE, lib.objects.named(Usage, Usage.JAVA_RUNTIME))
+                it.attribute(Category.CATEGORY_ATTRIBUTE, lib.objects.named(Category, Category.LIBRARY))
+                it.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, lib.objects.named(LibraryElements, LibraryElements.JAR))
+                it.attribute(Bundling.BUNDLING_ATTRIBUTE, lib.objects.named(Bundling, Bundling.EXTERNAL))
+                // apiElements and runtimeElements of the java plugins don't carry this attribute
+                it.attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE, lib.objects.named(TargetJvmEnvironment, TargetJvmEnvironment.STANDARD_JVM))
+                it.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, Integer.parseInt(JavaVersion.current().majorVersion))
+            }
+        }
+        def app = ProjectBuilder.builder().withName("app").withParent(root).build()
+        app.pluginManager.apply(MicronautPythonPlugin)
+        app.dependencies.add("implementation", lib)
+
+        when:
+        def javaVariants = selectedVariants(app.configurations.getByName("compileClasspath"))
+        def pythonVariants = selectedVariants(app.configurations.getByName("pythonCompileClasspath"))
+
+        then:
+        javaVariants == ["metadataElements"]
+        pythonVariants == javaVariants
+    }
+
+    private static List<String> selectedVariants(Configuration configuration) {
+        configuration.incoming.resolutionResult.allComponents
+            .findAll { it.id instanceof ProjectComponentIdentifier && it.id.projectPath != ":app" }
+            .collectMany { it.variants*.displayName }
     }
 
     def "the pyronaut compiler is resolved from the micronaut version"() {
