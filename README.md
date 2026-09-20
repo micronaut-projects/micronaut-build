@@ -134,6 +134,22 @@ micronautBuild {
 }
 ```
 
+Annotation processor options (the `-Akey=value` arguments `JavaCompile` takes through `options.compilerArgs`) can
+be passed to the Python compiler for every compile task of the project, or per task. They are appended after the
+options the plugin sets itself, and reach type element visitors through `VisitorContext.getOptions()`:
+
+```groovy
+micronautBuild {
+    python {
+        compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas")
+    }
+}
+
+tasks.named("compileTestPython") {
+    compilerArgs.add("-Amicronaut.openapi.project.dir=${projectDir}")
+}
+```
+
 Python sources are compiled after the Java classes of the source set, so a test suite whose Python sources use
 Java classes of the same project should declare:
 

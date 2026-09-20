@@ -113,6 +113,72 @@ class MicronautPythonPluginSpec extends Specification {
         project.configurations.getByName(MicronautPythonPlugin.PYRONAUT_COMPILER_CONFIGURATION).dependencies.empty
     }
 
+    def "compiler arguments of the extension apply to every compile task and a task can add its own"() {
+        given:
+        def project = ProjectBuilder.builder().build()
+        project.pluginManager.apply(MicronautPythonPlugin)
+        def micronautBuild = project.extensions.getByType(MicronautBuildExtension)
+        def python = (micronautBuild as ExtensionAware).extensions.getByType(MicronautPythonExtension)
+        def compilePython = project.tasks.named("compilePython", PythonCompile).get()
+        def compileTestPython = project.tasks.named("compileTestPython", PythonCompile).get()
+
+        expect: 'no arguments by default'
+        compilePython.compilerArgs.get() == []
+        compileTestPython.compilerArgs.get() == []
+
+        when:
+        python.compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas")
+        compileTestPython.compilerArgs.add("-Amicronaut.openapi.project.dir=/tmp/project")
+
+        then:
+        compilePython.compilerArgs.get() == ["-Amicronaut.jsonschema.baseUri=https://example.com/schemas"]
+        compileTestPython.compilerArgs.get() == [
+                "-Amicronaut.jsonschema.baseUri=https://example.com/schemas",
+                "-Amicronaut.openapi.project.dir=/tmp/project"
+        ]
+
+        when: 'a task replaces the arguments'
+        compileTestPython.compilerArgs.set(["-Afoo=bar"])
+
+        then:
+        compileTestPython.compilerArgs.get() == ["-Afoo=bar"]
+    }
+
+    def "compiler arguments reach the compiler work action after the source root option"() {
+        given:
+        def project = ProjectBuilder.builder().build()
+        project.pluginManager.apply(MicronautPythonPlugin)
+        def micronautBuild = project.extensions.getByType(MicronautBuildExtension)
+        def python = (micronautBuild as ExtensionAware).extensions.getByType(MicronautPythonExtension)
+        python.compilerArgs.add("-Afoo=bar")
+        def compilePython = project.tasks.named("compilePython", PythonCompile).get()
+        compilePython.compilerArgs.add("-Abaz=qux")
+        project.file("src/main/python").mkdirs()
+        def projectDir = project.projectDir.toPath().toAbsolutePath().normalize().toString()
+
+        when:
+        def parameters = project.objects.newInstance(PythonCompileParameters)
+        compilePython.configureWorkParameters(parameters)
+
+        then:
+        parameters.sourceDirs.get() == ["src/main/python"]
+        parameters.sourceRoot.get() == projectDir
+        parameters.destinationDir.get() == project.file("build/classes/python/main").absolutePath
+        parameters.compilerArgs.get() == ["-Afoo=bar", "-Abaz=qux"]
+
+        and: 'the work action puts the arguments after the option the plugin sets itself'
+        PythonCompileWorkAction.compilerOptions(parameters.sourceRoot.get(), parameters.compilerArgs.get()) == [
+                "-Amicronaut.python.source.root=" + projectDir,
+                "-Afoo=bar",
+                "-Abaz=qux"
+        ]
+    }
+
+    def "the compiler is invoked with only the source root option when no arguments are configured"() {
+        expect:
+        PythonCompileWorkAction.compilerOptions("/project", []) == ["-Amicronaut.python.source.root=/project"]
+    }
+
     def "compile task names are derived from the source set name"() {
         expect:
         MicronautPythonPlugin.compileTaskName("main") == "compilePython"

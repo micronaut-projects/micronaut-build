@@ -81,6 +81,21 @@ public abstract class PythonCompile extends DefaultTask {
     @Optional
     public abstract MapProperty<String, String> getEnvironmentVariables();
 
+    /**
+     * Extra arguments passed to the Python compiler, typically annotation processor options of the
+     * form {@code -Akey=value} such as {@code -Amicronaut.openapi.project.dir=...}. They are appended
+     * after the options the plugin sets itself, so they cannot override the source root option.
+     * This is the Python counterpart of {@code JavaCompile}'s {@code options.compilerArgs}.
+     * <p>
+     * The plugin initialises the property with {@code micronautBuild.python.compilerArgs}; a task
+     * appends to those with {@code compilerArgs.add(...)} or replaces them with {@code compilerArgs.set(...)}.
+     *
+     * @return the extra compiler arguments
+     */
+    @Input
+    @Optional
+    public abstract ListProperty<String> getCompilerArgs();
+
     @Internal
     @Option(option = "debug-python-compiler", description = "Debug the Pyronaut compiler")
     public abstract Property<Boolean> getDebugCompiler();
@@ -143,7 +158,36 @@ public abstract class PythonCompile extends DefaultTask {
                 fork.jvmArgs(getMergedJvmArgs());
             });
         });
-        var destDir = getDestinationDir().getAsFile().get().getAbsolutePath();
+        if (relocatableSourceDirs(projectDir).isEmpty()) {
+            return;
+        }
+        // one work item: the roots share the destination, so they must not compile concurrently
+        queue.submit(PythonCompileWorkAction.class, this::configureWorkParameters);
+        queue.await();
+    }
+
+    /**
+     * Populates the parameters of the compiler work action from the task inputs.
+     * Package-private so that tests can assert what reaches the worker.
+     *
+     * @param parameters the work parameters
+     */
+    void configureWorkParameters(PythonCompileParameters parameters) {
+        var projectDir = getLayout().getProjectDirectory().getAsFile().toPath().toAbsolutePath().normalize();
+        parameters.getSourceDirs().set(relocatableSourceDirs(projectDir));
+        parameters.getSourceRoot().set(projectDir.toString());
+        parameters.getDestinationDir().set(getDestinationDir().getAsFile().get().getAbsolutePath());
+        parameters.getClasspath().from(getCompilerClasspath(), getClasspath());
+        parameters.getCompilerArgs().set(getCompilerArgs().getOrElse(List.of()));
+    }
+
+    /**
+     * Returns the source directories which exist, relative to the project directory where possible.
+     *
+     * @param projectDir the absolute project directory
+     * @return the source directories to compile
+     */
+    private List<String> relocatableSourceDirs(Path projectDir) {
         var sourceDirs = new ArrayList<String>();
         for (var location : getSource().getElements().get()) {
             // Compiler currently accepts a single directory, but maybe it should
@@ -152,17 +196,7 @@ public abstract class PythonCompile extends DefaultTask {
                 sourceDirs.add(relocatableSourcePath(projectDir, location.getAsFile().toPath()));
             }
         }
-        if (sourceDirs.isEmpty()) {
-            return;
-        }
-        // one work item: the roots share the destination, so they must not compile concurrently
-        queue.submit(PythonCompileWorkAction.class, parameters -> {
-            parameters.getSourceDirs().set(sourceDirs);
-            parameters.getSourceRoot().set(projectDir.toString());
-            parameters.getDestinationDir().set(destDir);
-            parameters.getClasspath().from(getCompilerClasspath(), getClasspath());
-        });
-        queue.await();
+        return sourceDirs;
     }
 
     /**
