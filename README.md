@@ -134,6 +134,14 @@ micronautBuild {
 }
 ```
 
+A large Python test suite can be split across several CI jobs: the workflow runs one job per shard with
+`./gradlew pythonCheck -Ppython-ci -Ppython-ci-shard=<index>/<count>` (a 1-based index, for example `2/4` for the
+second of four jobs), and every `Test` task then only runs the test classes assigned to that shard. Classes are
+assigned by the hash of their top level class name, so nested classes run with their declaring class and every job
+computes the same partition. The `micronautBuild.python.testShard` property overrides the Gradle property, and a
+build which adds projects without Python sources to `pythonCheck` itself shards their tests with
+`MicronautPythonPlugin.shardTests(project)`.
+
 Annotation processor options (the `-Akey=value` arguments `JavaCompile` takes through `options.compilerArgs`) can
 be passed to the Python compiler for every compile task of the project, or per task. They are appended after the
 options the plugin sets itself, and reach type element visitors through `VisitorContext.getOptions()`:
