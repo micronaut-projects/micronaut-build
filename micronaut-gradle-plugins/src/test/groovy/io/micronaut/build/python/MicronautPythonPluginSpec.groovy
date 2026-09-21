@@ -263,6 +263,129 @@ class MicronautPythonPluginSpec extends Specification {
         test.onlyIf.isSatisfiedBy(test)
     }
 
+    def "a test shard restricts the test task to its share of the test classes"() {
+        given:
+        def project = ProjectBuilder.builder().build()
+        project.pluginManager.apply(MicronautPythonPlugin)
+        def micronautBuild = project.extensions.getByType(MicronautBuildExtension)
+        def python = (micronautBuild as ExtensionAware).extensions.getByType(MicronautPythonExtension)
+        def test = project.tasks.named("test", org.gradle.api.tasks.testing.Test).get()
+        def classesDir = project.file("build/classes/groovy/test")
+        def classNames = (1..20).collect { "io/micronaut/Spec$it" }
+        classNames.each { name ->
+            new File(classesDir, "${name}.class").tap { parentFile.mkdirs() }.text = name
+            new File(classesDir, "${name}\$Nested.class").text = name
+        }
+        test.testClassesDirs = project.files(classesDir)
+
+        expect: "without a shard every class is a candidate"
+        test.candidateClassFiles.files.size() == classNames.size() * 2
+        test.failOnNoDiscoveredTests.get()
+
+        when:
+        python.testShard.set("2/3")
+        def candidates = test.candidateClassFiles.files.collect { classesDir.toPath().relativize(it.toPath()).toString() }
+
+        then: "a shard is a strict, non-empty subset in which nested classes follow their declaring class"
+        !candidates.empty
+        candidates.size() < classNames.size() * 2
+        candidates.every { it.startsWith("io/micronaut/") }
+        candidates.findAll { it.contains('$') }*.replaceAll(/\$.*/, '.class').toSet() == candidates.findAll { !it.contains('$') }.toSet()
+
+        and: "a shard which happens to get no test class is not an error"
+        !test.failOnNoDiscoveredTests.get()
+    }
+
+    def "a build can shard the tests of a project without python sources"() {
+        given:
+        def project = ProjectBuilder.builder().build()
+        project.pluginManager.apply("java")
+        def test = project.tasks.named("test", org.gradle.api.tasks.testing.Test).get()
+        def classesDir = project.file("build/classes/java/test")
+        (1..20).each { new File(classesDir, "io/micronaut/Test${it}.class").tap { parentFile.mkdirs() }.text = "$it" }
+        test.testClassesDirs = project.files(classesDir)
+
+        when: "the property is not set"
+        MicronautPythonPlugin.shardTests(project)
+
+        then:
+        test.candidateClassFiles.files.size() == 20
+        test.failOnNoDiscoveredTests.get()
+    }
+
+    def "a shard narrows the includes of a test task instead of widening them"() {
+        given:
+        def project = ProjectBuilder.builder().build()
+        project.pluginManager.apply(MicronautPythonPlugin)
+        def micronautBuild = project.extensions.getByType(MicronautBuildExtension)
+        def python = (micronautBuild as ExtensionAware).extensions.getByType(MicronautPythonExtension)
+        def test = project.tasks.named("test", org.gradle.api.tasks.testing.Test).get()
+        def classesDir = project.file("build/classes/java/test")
+        def included = (1..20).collect { "io/micronaut/included/Test${it}.class" }
+        def excluded = (1..20).collect { "io/micronaut/excluded/Test${it}.class" }
+        (included + excluded).each { new File(classesDir, it).tap { parentFile.mkdirs() }.text = it }
+        test.testClassesDirs = project.files(classesDir)
+        test.include("io/micronaut/included/**")
+        def shardOf = { String path -> (1..3).find { new TestShard(it, 3).includesClassFile(path) } }
+
+        when:
+        python.testShard.set("2/3")
+        def candidates = test.candidateClassFiles.files.collect { classesDir.toPath().relativize(it.toPath()).toString() }
+
+        then:
+        !candidates.empty
+        candidates.toSet() == included.findAll { shardOf(it) == 2 }.toSet()
+    }
+
+    def "every test class belongs to exactly one shard"() {
+        given:
+        def classes = (1..200).collect { "io/micronaut/some/pkg/SomeSpec${it}.class" }
+        def shards = (1..count).collect { new TestShard(it, count) }
+
+        expect:
+        classes.every { path -> shards.count { it.includesClassFile(path) } == 1 }
+        shards.every { shard -> classes.any { shard.includesClassFile(it) } }
+
+        where:
+        count << [1, 2, 3, 4, 7]
+    }
+
+    def "shard membership is decided by the top level class and applies to files only"() {
+        given:
+        def shard = (1..4).collect { new TestShard(it, 4) }.find { it.includesClassFile("io/micronaut/FooSpec.class") }
+        def directory = Stub(org.gradle.api.file.FileTreeElement) { isDirectory() >> true }
+
+        expect:
+        shard.includesClassFile('io/micronaut/FooSpec$Nested.class')
+        shard.includesClassFile('io/micronaut/FooSpec$Nested$Deeper.class')
+        shard.includesClassFile('io/micronaut/FooSpec$_closure1.class')
+        shard.isSatisfiedBy(directory)
+        // a '$' in a package name is not a nested class marker
+        new TestShard(1, 1).includesClassFile('io/mi$cro/FooSpec.class')
+    }
+
+    def "the shard property has the form index/count"() {
+        expect:
+        TestShard.parse("2/4") == new TestShard(2, 4)
+        TestShard.parse(" 1 / 1 ") == new TestShard(1, 1)
+
+        when:
+        TestShard.parse(value)
+
+        then:
+        def e = thrown(org.gradle.api.InvalidUserDataException)
+        e.message.contains(message)
+
+        where:
+        value   | message
+        "3"     | "must have the form <index>/<count>"
+        "a/b"   | "must have the form <index>/<count>"
+        "1/2/3" | "must have the form <index>/<count>"
+        "0/4"   | "between 1 and 4"
+        "5/4"   | "between 1 and 4"
+        "1/0"   | "at least 1"
+    }
+
     def "the root pythonCheck task aggregates the check tasks of python projects"() {
         given:
         def root = ProjectBuilder.builder().withName("root").build()

@@ -31,6 +31,7 @@ import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.SourceDirectorySet;
 import org.gradle.api.plugins.ExtensionAware;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
@@ -53,7 +54,9 @@ import java.util.List;
  * the Python sources while the Python tests run in the dedicated "Python CI" workflow on GraalVM.
  * That workflow runs the root {@code pythonCheck} task, which aggregates the {@code check} tasks of
  * every project applying this plugin; a build can register {@code pythonCheck} in its root project
- * itself to add other projects to it.
+ * itself to add other projects to it. When that workflow splits the tests across several jobs, each
+ * job sets the {@code python-ci-shard} property (see {@link MicronautPythonExtension#getTestShard()})
+ * and only runs its share of the test classes.
  */
 public class MicronautPythonPlugin implements Plugin<Project> {
     public static final String PYRONAUT_COMPILER_CONFIGURATION = "pyronautCompiler";
@@ -62,6 +65,11 @@ public class MicronautPythonPlugin implements Plugin<Project> {
     public static final String PYTHON_SOURCE_DIRECTORY_SET_NAME = "python";
     public static final String COMPILE_PYTHON_TASK_NAME = "compilePython";
     public static final String PYTHON_CI_PROPERTY = "python-ci";
+    /**
+     * Gradle property selecting one shard of the Python tests, as {@code <index>/<count>}: the
+     * "Python CI" workflow sets it when it splits the tests across a matrix of jobs.
+     */
+    public static final String PYTHON_CI_SHARD_PROPERTY = "python-ci-shard";
     /**
      * Root project task which runs the {@code check} task of every project applying this plugin,
      * the entry point of the "Python CI" workflow.
@@ -112,11 +120,13 @@ public class MicronautPythonPlugin implements Plugin<Project> {
         extension.getTestsEnabled().convention(
             project.getProviders().gradleProperty(PYTHON_CI_PROPERTY).map(unused -> true).orElse(false)
         );
+        extension.getTestShard().convention(project.getProviders().gradleProperty(PYTHON_CI_SHARD_PROPERTY));
         return extension;
     }
 
     /**
-     * Skips the test tasks unless Python tests are enabled.
+     * Skips the test tasks unless Python tests are enabled, and restricts them to the test classes
+     * of the configured shard, if any.
      *
      * @param project the project
      * @param extension the python extension
@@ -126,6 +136,34 @@ public class MicronautPythonPlugin implements Plugin<Project> {
             test.onlyIf("Python tests only run with -P" + PYTHON_CI_PROPERTY + " (micronautBuild.python.testsEnabled)",
                 unused -> extension.getTestsEnabled().get())
         );
+        shardTests(project, extension.getTestShard());
+    }
+
+    /**
+     * Restricts the {@code Test} tasks of a project to the test classes of the shard selected by the
+     * {@code python-ci-shard} property, if it is set. The plugin does this for every project applying
+     * it; a build which adds other projects to {@code pythonCheck} itself, because their tests exercise
+     * Python without having Python sources, calls this for them so that they are sharded too.
+     *
+     * @param project the project whose tests to shard
+     */
+    public static void shardTests(Project project) {
+        shardTests(project, project.getProviders().gradleProperty(PYTHON_CI_SHARD_PROPERTY));
+    }
+
+    private static void shardTests(Project project, Provider<String> testShard) {
+        Provider<TestShard> shard = testShard.map(TestShard::parse);
+        project.getTasks().withType(Test.class).configureEach(test -> {
+            // An exclude intersects with the includes a task may have of its own, whereas Gradle
+            // would union another include with them. The candidate class files are an input of the
+            // task, so a shard is cached on its own.
+            test.exclude(element -> {
+                TestShard value = shard.getOrNull();
+                return value != null && !value.isSatisfiedBy(element);
+            });
+            // A shard of a small project may only get classes that are not tests, which is not an error
+            test.getFailOnNoDiscoveredTests().convention(shard.map(value -> value.count() == 1).orElse(true));
+        });
     }
 
     /**

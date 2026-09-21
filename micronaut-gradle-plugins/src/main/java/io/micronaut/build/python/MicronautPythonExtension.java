@@ -47,6 +47,17 @@ public abstract class MicronautPythonExtension {
     public abstract Property<Boolean> getTestsEnabled();
 
     /**
+     * The shard of the Python tests this build runs, as {@code <index>/<count>} with a 1-based index
+     * (for example {@code 2/4} for the second of four shards), or unset to run every test. Defaults to
+     * the {@code python-ci-shard} Gradle property, which the "Python CI" GitHub workflow sets on each
+     * job of its matrix. Test classes are assigned to a shard by the hash of their top level class
+     * name, so nested classes run with their declaring class and every job computes the same partition.
+     *
+     * @return the test shard of this build
+     */
+    public abstract Property<String> getTestShard();
+
+    /**
      * Extra arguments passed to the Python compiler by every {@link PythonCompile} task of the
      * project, typically annotation processor options of the form {@code -Akey=value} (for example
      * {@code -Amicronaut.jsonschema.baseUri=https://example.com/schemas}). They are appended after the
