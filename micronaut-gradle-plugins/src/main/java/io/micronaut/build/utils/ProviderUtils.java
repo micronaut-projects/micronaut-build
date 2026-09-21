@@ -20,18 +20,74 @@ import org.gradle.api.provider.ProviderFactory;
 
 import java.io.File;
 import java.util.Properties;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 
 public class ProviderUtils {
+    private static final Pattern TRUSTED_BRANCH_REF = Pattern.compile("refs/heads/(master|main|[0-9]+\\.[0-9]+\\.x)");
+
     public static boolean guessCI(ProviderFactory providers) {
-        return providers
-                .environmentVariable("CI")
-                .flatMap(s -> // Not all workflows may have the enterprise key set
-                        providers.environmentVariable("GRADLE_ENTERPRISE_ACCESS_KEY")
-                                .map(env -> true)
-                                .orElse(false)
-                )
-                .orElse(false)
-                .get();
+        return guessCI(name -> providers.environmentVariable(name).getOrNull());
+    }
+
+    static boolean guessCI(Function<String, String> environment) {
+        // Not all workflows have a Develocity access key set. setup-gradle exports short-lived tokens
+        // under both names; workflows that pass the key themselves use DEVELOCITY_ACCESS_KEY.
+        return environment.apply("CI") != null
+            && (isNotBlank(environment.apply("DEVELOCITY_ACCESS_KEY"))
+            || isNotBlank(environment.apply("GRADLE_ENTERPRISE_ACCESS_KEY")));
+    }
+
+    /**
+     * Whether this is a GitHub Actions build of a push to a release or default branch. Only such builds
+     * write to the remote build cache by default: pull requests, merge queues, {@code workflow_run},
+     * scheduled and manually dispatched builds may run code that has not been merged.
+     *
+     * @param providers the provider factory
+     * @return true for a {@code push} event to {@code master}, {@code main} or an {@code x.y.x} branch
+     */
+    public static boolean isTrustedGitHubPush(ProviderFactory providers) {
+        return isTrustedGitHubPush(name -> providers.environmentVariable(name).getOrNull());
+    }
+
+    static boolean isTrustedGitHubPush(Function<String, String> environment) {
+        String ref = environment.apply("GITHUB_REF");
+        return "push".equals(environment.apply("GITHUB_EVENT_NAME"))
+            && ref != null
+            && TRUSTED_BRANCH_REF.matcher(ref).matches();
+    }
+
+    /**
+     * Finds the Develocity access key, ignoring blank values so that an empty variable does not hide a
+     * configured one.
+     *
+     * @param providers the provider factory
+     * @return the access key, or null if none is configured
+     */
+    public static String findDevelocityAccessKey(ProviderFactory providers) {
+        return findDevelocityAccessKey(
+            name -> providers.environmentVariable(name).getOrNull(),
+            name -> providers.systemProperty(name).getOrNull()
+        );
+    }
+
+    static String findDevelocityAccessKey(Function<String, String> environment, Function<String, String> systemProperties) {
+        String[] candidates = {
+            environment.apply("DEVELOCITY_ACCESS_KEY"),
+            environment.apply("GRADLE_ENTERPRISE_ACCESS_KEY"),
+            // kept for backward compatibility
+            systemProperties.apply("GRADLE_ENTERPRISE_ACCESS_KEY")
+        };
+        for (String candidate : candidates) {
+            if (isNotBlank(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
     }
 
     public static String envOrSystemProperty(ProviderFactory providers, String envName, String propertyName, String defaultValue) {
