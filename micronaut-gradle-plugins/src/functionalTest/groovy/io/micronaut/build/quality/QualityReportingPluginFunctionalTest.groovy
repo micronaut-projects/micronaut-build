@@ -50,6 +50,47 @@ class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
         aggregateJacocoReport().exists()
     }
 
+    void "the JaCoCo agent only instruments Micronaut classes by default"() {
+        given:
+        withSample("test-micronaut-module")
+        file("gradle.properties") << "micronaut.jacoco.enabled=true"
+        file("subproject1/build.gradle") << """
+            tasks.register("printJacocoIncludes") {
+                def includes = providers.provider { tasks.test.jacoco.includes }
+                doLast { println "JaCoCo includes: \${includes.get()}" }
+            }
+        """
+
+        when:
+        run 'printJacocoIncludes'
+
+        then:
+        outputContains 'JaCoCo includes: [io.micronaut.*]'
+    }
+
+    void "a project can choose which classes the JaCoCo agent instruments"() {
+        given:
+        withSample("test-micronaut-module")
+        file("gradle.properties") << "micronaut.jacoco.enabled=true"
+        file("subproject1/build.gradle") << """
+            tasks.named("test") {
+                jacoco {
+                    includes = ["io.micronaut.subproject1.*", "org.example.*"]
+                }
+            }
+            tasks.register("printJacocoIncludes") {
+                def includes = providers.provider { tasks.test.jacoco.includes }
+                doLast { println "JaCoCo includes: \${includes.get()}" }
+            }
+        """
+
+        when:
+        run 'printJacocoIncludes'
+
+        then:
+        outputContains 'JaCoCo includes: [io.micronaut.subproject1.*, org.example.*]'
+    }
+
     void "it can run Spotless and Checkstyle"() {
         given:
         withSample("test-micronaut-module")
