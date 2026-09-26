@@ -21,6 +21,7 @@ import java.util.List;
 public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> {
 
     public static final String MICRONAUT_JACOCO_PROPERTY = "micronaut.jacoco.enabled";
+    public static final String MICRONAUT_JACOCO_INCLUDES = "io.micronaut.*";
 
     @Override
     public void apply(final Project project) {
@@ -104,6 +105,12 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
             project.getTasks().withType(Test.class).configureEach(t -> {
                 JacocoTaskExtension jacocoTaskExtension = t.getExtensions().findByType(JacocoTaskExtension.class);
                 if (jacocoTaskExtension != null) {
+                    if (jacocoTaskExtension.getIncludes() == null || jacocoTaskExtension.getIncludes().isEmpty()) {
+                        // The agent instruments every class a test loads by default: libraries,
+                        // Groovy, and the compilers annotation processing tests run in-process.
+                        // Coverage is only reported for our classes.
+                        jacocoTaskExtension.setIncludes(List.of(MICRONAUT_JACOCO_INCLUDES));
+                    }
                     ProviderFactory providers = project.getProviders();
                     jacocoTaskExtension.setEnabled(
                             micronautBuild.getEnvironment()
