@@ -54,9 +54,14 @@ public class MicronautBuildJavaBasePlugin implements Plugin<Project> {
 
         var useVendorAsInput = project.getProviders().environmentVariable("MICRONAUT_TEST_USE_VENDOR")
             .map(Boolean::parseBoolean).getOrElse(false);
+        var keepGraalJit = project.getProviders().gradleProperty(C2TestJitArgumentProvider.KEEP_GRAAL_JIT_PROPERTY)
+            .map(Boolean::parseBoolean).getOrElse(false);
         project.getTasks().withType(Test.class).configureEach(task -> {
             task.jvmArgs("-Duser.country=US");
             task.jvmArgs("-Duser.language=en");
+            if (!keepGraalJit) {
+                task.getJvmArgumentProviders().add(new C2TestJitArgumentProvider());
+            }
             task.useJUnitPlatform();
             if (useVendorAsInput) {
                 // This will have to be changed once we switch to toolchain support, since it will not be relevant anymore
@@ -90,6 +95,10 @@ public class MicronautBuildJavaBasePlugin implements Plugin<Project> {
             options.setEncoding("UTF-8");
             options.getCompilerArgs().add("-parameters");
             micronautBuildExtension.getCompileOptions().applyTo(options);
+            if (!keepGraalJit) {
+                // Applies when the compiler is forked, which it is by default
+                options.getForkOptions().getJvmArgumentProviders().add(new C2TestJitArgumentProvider());
+            }
         });
     }
 
