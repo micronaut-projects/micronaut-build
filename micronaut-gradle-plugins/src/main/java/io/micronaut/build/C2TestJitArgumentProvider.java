@@ -20,10 +20,10 @@ import org.gradle.process.CommandLineArgumentProvider;
 import java.util.List;
 
 /**
- * Makes C2 the top tier JIT of a test JVM running on a JDK whose default is the Graal compiler,
- * such as Oracle GraalVM, which the CI builds run on. The Graal compiler spends more CPU compiling
- * than C2, which does not pay off in a short-lived test JVM. On other JDKs the arguments change
- * nothing.
+ * Makes C2 the top tier JIT of a test JVM or a forked compiler running on a JDK whose default is
+ * the Graal compiler, such as Oracle GraalVM, which the CI builds run on. The Graal compiler spends
+ * more CPU compiling than C2, which does not pay off in these short-lived JVMs. On other JDKs the
+ * arguments change nothing.
  */
 public final class C2TestJitArgumentProvider implements CommandLineArgumentProvider {
 

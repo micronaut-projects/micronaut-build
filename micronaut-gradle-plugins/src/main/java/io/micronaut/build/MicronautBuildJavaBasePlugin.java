@@ -95,6 +95,10 @@ public class MicronautBuildJavaBasePlugin implements Plugin<Project> {
             options.setEncoding("UTF-8");
             options.getCompilerArgs().add("-parameters");
             micronautBuildExtension.getCompileOptions().applyTo(options);
+            if (!keepGraalJit) {
+                // Applies when the compiler is forked, which it is by default
+                options.getForkOptions().getJvmArgumentProviders().add(new C2TestJitArgumentProvider());
+            }
         });
     }
 

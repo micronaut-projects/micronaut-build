@@ -35,6 +35,34 @@ class TestJitFunctionalTest extends AbstractFunctionalTest {
         outputDoesNotContain '-XX:-UseJVMCICompiler'
     }
 
+    void "forked compilers use C2 as the top tier JIT unless the build keeps the Graal JIT"() {
+        given:
+        withSample("test-micronaut-module")
+        if (keepGraalJit) {
+            file("gradle.properties") << "\nmicronaut.test.graal-jit=true\n"
+        }
+        file("subproject1/build.gradle") << """
+            tasks.register("printCompilerJvmArgs") {
+                def jvmArgs = providers.provider { tasks.compileJava.options.fork ? tasks.compileJava.options.forkOptions.allJvmArgs : "not forked" }
+                doLast { println "Compiler JVM args: \${jvmArgs.get()}" }
+            }
+        """
+
+        when:
+        run "printCompilerJvmArgs"
+
+        then:
+        outputContains "Compiler JVM args: ["
+        if (keepGraalJit) {
+            outputDoesNotContain "-XX:-UseJVMCICompiler"
+        } else {
+            outputContains "-XX:+UnlockExperimentalVMOptions, -XX:-UseJVMCICompiler"
+        }
+
+        where:
+        keepGraalJit << [false, true]
+    }
+
     void "python test JVMs keep the Graal JIT when the python plugin is applied #order"() {
         given:
         withSample("test-micronaut-module")
