@@ -15,8 +15,10 @@
  */
 package io.micronaut.build.python;
 
+import io.micronaut.build.C2TestJitArgumentProvider;
 import io.micronaut.build.MicronautBuildExtension;
 import io.micronaut.build.MicronautBuildExtensionPlugin;
+import io.micronaut.build.MicronautBuildJavaBasePlugin;
 import io.micronaut.build.utils.VersionHandling;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -135,6 +137,13 @@ public class MicronautPythonPlugin implements Plugin<Project> {
         project.getTasks().withType(Test.class).configureEach(test ->
             test.onlyIf("Python tests only run with -P" + PYTHON_CI_PROPERTY + " (micronautBuild.python.testsEnabled)",
                 unused -> extension.getTestsEnabled().get())
+        );
+        // GraalPy compiles Python code with the Graal compiler. The java-base plugin may be applied
+        // before or after this one, so the arguments are removed once it has added them.
+        project.getPlugins().withType(MicronautBuildJavaBasePlugin.class, unused ->
+            project.getTasks().withType(Test.class).configureEach(test ->
+                test.getJvmArgumentProviders().removeIf(C2TestJitArgumentProvider.class::isInstance)
+            )
         );
         shardTests(project, extension.getTestShard());
     }
