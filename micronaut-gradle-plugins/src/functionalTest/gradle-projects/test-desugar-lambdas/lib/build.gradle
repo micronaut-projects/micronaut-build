@@ -1,0 +1,21 @@
+plugins {
+    id 'io.micronaut.build.internal.base-module'
+}
+
+group = 'io.micronaut.dummy'
+
+micronautBuild {
+    enableBom = false
+    enableProcessing = false
+}
+
+dependencies {
+    compileOnly project(':optional')
+    implementation project(':api')
+    implementation "org.apache.groovy:groovy:${libs.versions.groovy.get()}"
+}
+
+tasks.withType(Jar).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
