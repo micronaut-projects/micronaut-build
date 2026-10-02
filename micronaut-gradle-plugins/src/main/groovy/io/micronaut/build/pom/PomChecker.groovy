@@ -1,12 +1,14 @@
 package io.micronaut.build.pom
 
 import groovy.transform.CompileStatic
+import io.micronaut.build.problems.MicronautBuildProblems
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.problems.Problems
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
@@ -59,6 +61,9 @@ abstract class PomChecker extends DefaultTask {
     @Inject
     abstract WorkerExecutor getWorkerExecutor()
 
+    @Inject
+    abstract Problems getProblems()
+
     PomChecker() {
         description = "Verifies a POM file"
         group = VERIFICATION_GROUP
@@ -78,7 +83,12 @@ abstract class PomChecker extends DefaultTask {
         ErrorCollector errorCollector = new ErrorCollector(silencedDeps)
         def coordinates = pomCoordinates.get().split(':')
         if (coordinates.length != 3) {
-            throw new GradleException("Incorrect POM coordinates '${pomCoordinates.get()}': should be of the form group:artifact:version ")
+            String message = "Incorrect POM coordinates '${pomCoordinates.get()}': should be of the form group:artifact:version"
+            throw MicronautBuildProblems.throwing(problems, new GradleException(message), MicronautBuildProblems.INVALID_POM_COORDINATES) {
+                it.contextualLabel("Invalid POM coordinates")
+                        .details("The configured POM coordinates do not use the expected group:artifact:version format.")
+                        .solution("Set pomCoordinates to a complete group:artifact:version coordinate.")
+            }
         }
         def queue = new ArrayDeque<List<Object>>()
         queue.add([coordinates[0], coordinates[1], coordinates[2], pomFile.get().asFile, pomCoordinates.get()] as List<Object>)
@@ -158,7 +168,13 @@ abstract class PomChecker extends DefaultTask {
             try (var writer = new BufferedWriter(new PrintWriter(System.err))) {
                 writeSuggestions(errorCollector.suggestions, writer)
             }
-            throw new GradleException("POM verification failed. See report in ${reportFile}")
+            String message = "POM verification failed. See report in ${reportFile}"
+            int errorCount = errorCollector.errors.size()
+            throw MicronautBuildProblems.throwing(problems, new GradleException(message), MicronautBuildProblems.POM_VERIFICATION_FAILED) {
+                it.contextualLabel("POM verification failed")
+                        .details("POM verification found $errorCount validation error(s). See report in ${reportFile}.")
+                        .solution("Review the POM verification report and either fix the dependencies or add a targeted micronautBom suppression when the dependency is intentional.")
+            }
         }
     }
 
