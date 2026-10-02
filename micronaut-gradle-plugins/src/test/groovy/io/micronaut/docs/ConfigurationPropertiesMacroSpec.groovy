@@ -38,8 +38,11 @@ mongodb:
 </div>
 <div class="listingblock multi-language-sample">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">micronaut = {server = {port = 8080}}
-mongodb = {uri = "mongodb://username:pwd@localhost:27017/databaseName"}</code></pre>
+<pre class="highlightjs highlight"><code class="language-toml hljs" data-lang="toml">[micronaut.server]
+port = 8080
+
+[mongodb]
+uri = "mongodb://username:pwd@localhost:27017/databaseName"</code></pre>
 </div>
 </div>
 <div class="listingblock multi-language-sample">
