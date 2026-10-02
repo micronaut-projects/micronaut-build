@@ -2,6 +2,8 @@ plugins {
     id 'io.micronaut.build.internal.base-module'
 }
 
+group = 'io.micronaut.dummy'
+
 micronautBuild {
     enableBom = false
     enableProcessing = false

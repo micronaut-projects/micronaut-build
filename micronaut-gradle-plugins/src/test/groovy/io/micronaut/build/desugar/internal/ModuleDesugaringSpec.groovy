@@ -134,7 +134,7 @@ public class Host implements Serializable {
         classes = compile('classes', MODULE_SOURCES, [optional, runtime])
         output = work.resolve('output')
         report = work.resolve('report.txt')
-        summary = ModuleDesugaring.run(classes, [runtime], [optional, runtime], output, report)
+        summary = ModuleDesugaring.run(classes, [runtime], [optional, runtime], output, report, 'demo/demo-module')
     }
 
     def "rewrites the sites it can and keeps the others by reason"() {
@@ -254,10 +254,26 @@ public class Host implements Serializable {
         desugared?.close()
     }
 
+    def "native image initializes the generated classes at build time"() {
+        when:
+        String properties = output.resolve('META-INF/native-image/demo/demo-module/desugared-lambdas/native-image.properties').text
+        Properties parsed = new Properties()
+        parsed.load(new StringReader(properties))
+
+        then:
+        parsed.getProperty('Args').split(',')*.trim() == [
+                '--initialize-at-build-time=demo.Host$$Lambda$R0',
+                'demo.Host$$Lambda$R1', 'demo.Host$$Lambda$R2', 'demo.Host$$Lambda$R3', 'demo.Host$$Lambda$R4',
+                'demo.Host$$Lambda$R5', 'demo.Host$$Lambda$R6', 'demo.Host$$Lambda$R7', 'demo.Host$Inner$$Lambda$R0']
+
+        and: 'none without a name, nor without a generated class'
+        !Files.exists(work.resolve('alone').resolve('META-INF'))
+    }
+
     def "the output is deterministic"() {
         given:
         Path again = work.resolve('again')
-        ModuleDesugaring.run(classes, [runtime], [optional, runtime], again, work.resolve('again.txt'))
+        ModuleDesugaring.run(classes, [runtime], [optional, runtime], again, work.resolve('again.txt'), 'demo/demo-module')
 
         expect:
         files(again) == files(output)
@@ -269,7 +285,7 @@ public class Host implements Serializable {
         given:
         Path alone = work.resolve('alone')
         Path aloneReport = work.resolve('alone.txt')
-        ModuleDesugaring.run(classes, [], [optional, runtime], alone, aloneReport)
+        ModuleDesugaring.run(classes, [], [optional, runtime], alone, aloneReport, null)
 
         expect:
         aloneReport.text.contains('site\tdemo/Host\truntimeInterface()Ldep/Transformer;\t0\tkept\tunresolvedType\tdep/Transformer')

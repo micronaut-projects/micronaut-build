@@ -19,6 +19,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.Logging;
+import org.gradle.api.provider.Property;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 
@@ -43,7 +44,8 @@ public abstract class DesugarLambdasAction implements WorkAction<DesugarLambdasA
             String summary = ModuleDesugaring.run(parameters.getClassesDirectory().get().getAsFile().toPath(),
                     paths(parameters.getClasspath()), paths(parameters.getCompileClasspath()),
                     parameters.getOutputDirectory().get().getAsFile().toPath(),
-                    parameters.getReportFile().get().getAsFile().toPath());
+                    parameters.getReportFile().get().getAsFile().toPath(),
+                    parameters.getNativeImageName().getOrNull());
             Logging.getLogger(DesugarLambdasAction.class).info(summary);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -97,5 +99,12 @@ public abstract class DesugarLambdasAction implements WorkAction<DesugarLambdasA
          * @return the file
          */
         RegularFileProperty getReportFile();
+
+        /**
+         * The directory under {@code META-INF/native-image/} for the native image configuration.
+         *
+         * @return the name, such as {@code io.micronaut/micronaut-core}
+         */
+        Property<String> getNativeImageName();
     }
 }

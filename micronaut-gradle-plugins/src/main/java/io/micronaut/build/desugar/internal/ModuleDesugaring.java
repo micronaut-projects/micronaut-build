@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -47,12 +48,21 @@ import java.util.stream.Stream;
  * verify cleanly. When any class of a nest fails, the whole nest is copied as compiled and its sites are reported
  * under {@link LambdaDesugarer.Reason#NEST_FALLBACK}. The step never fails a build over a class it cannot
  * rewrite.</p>
+ *
+ * <p>Native image keeps the instances of a lambda in the image heap when build-time initialized code creates them,
+ * such as the converters of the shared conversion service, because it initializes the classes the JDK spins at build
+ * time. A generated class is an ordinary class, initialized at run time by default, and such an instance would fail
+ * the image build. So the copy also holds a {@code native-image.properties} that initializes the generated classes
+ * at build time: they have no static state but the singleton of a capture-free site.</p>
  */
 final class ModuleDesugaring {
 
     private static final String CLASS_SUFFIX = ".class";
 
     private static final String META_INF = "META-INF/";
+
+    /** Where, under the module's native image directory, the configuration of the generated classes goes. */
+    static final String NATIVE_IMAGE_PROPERTIES = "desugared-lambdas/native-image.properties";
 
     private static final ClassFile REWRITER = ClassFile.of(ClassFile.ConstantPoolSharingOption.SHARED_POOL,
             ClassFile.DebugElementsOption.PASS_DEBUG,
@@ -72,11 +82,13 @@ final class ModuleDesugaring {
      * @param compileClasspath the module's compile class path
      * @param output           the directory that receives the desugared copy of {@code classes}; emptied first
      * @param report           the report file
+     * @param nativeImageName  the directory under {@code META-INF/native-image/} for the native image
+     *                         configuration, such as {@code io.micronaut/micronaut-core}, or {@code null} for none
      * @return a one-line summary
      * @throws IOException if a class cannot be read or written
      */
     static String run(Path classesDirectory, List<Path> classpath, List<Path> compileClasspath, Path output,
-                      Path report) throws IOException {
+                      Path report, String nativeImageName) throws IOException {
         Path classes = classesDirectory.toAbsolutePath().normalize();
         delete(output);
         Files.createDirectories(output);
@@ -138,6 +150,12 @@ final class ModuleDesugaring {
             Files.createDirectories(target.getParent());
             Files.write(target, entry.getValue());
         }
+        if (nativeImageName != null && !generated.isEmpty()) {
+            String entry = META_INF + "native-image/" + nativeImageName + "/" + NATIVE_IMAGE_PROPERTIES;
+            if (!entries.contains(entry)) {
+                writeNativeImageProperties(output.resolve(entry), generated.keySet());
+            }
+        }
         Map<LambdaDesugarer.Reason, Integer> kept = new EnumMap<>(LambdaDesugarer.Reason.class);
         for (LambdaDesugarer.Site site : plan.sites()) {
             if (site.reason() != null) {
@@ -198,6 +216,24 @@ final class ModuleDesugaring {
         written.putAll(rewritten);
         generated.putAll(classes);
         return null;
+    }
+
+    private static void writeNativeImageProperties(Path file, Collection<String> generated) throws IOException {
+        List<String> names = new ArrayList<>(generated.size());
+        for (String entry : generated) {
+            names.add(entry.substring(0, entry.length() - CLASS_SUFFIX.length()).replace('/', '.'));
+        }
+        names.sort(null);
+        Files.createDirectories(file.getParent());
+        try (Writer out = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            out.write("# The lambda classes micronaut-build generated (micronaut-build#956), initialized at build time as\n");
+            out.write("# native image initializes the lambda classes the JDK spins.\n");
+            out.write("Args = --initialize-at-build-time=");
+            for (int i = 0; i < names.size(); i++) {
+                out.write(names.get(i));
+                out.write(i < names.size() - 1 ? ",\\\n    " : "\n");
+            }
+        }
     }
 
     private static List<String> messages(List<VerifyError> errors) {

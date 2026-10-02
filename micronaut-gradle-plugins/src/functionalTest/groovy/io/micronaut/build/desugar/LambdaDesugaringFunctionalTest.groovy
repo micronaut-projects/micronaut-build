@@ -56,6 +56,9 @@ class LambdaDesugaringFunctionalTest extends AbstractFunctionalTest {
         !jar.containsKey('demo/Host$$Lambda$R7.class')
         sourceFile(jar['demo/Host$$Lambda$R0.class']) == 'Host.java'
 
+        and: 'native image initializes the generated classes at build time'
+        new String(jar['META-INF/native-image/io.micronaut.dummy/lib/desugared-lambdas/native-image.properties']).contains('demo.Host$$Lambda$R6')
+
         and: 'the classes of other compilers go into the jar unchanged'
         jar['demo/GroovyHelper.class'] == Files.readAllBytes(file('lib/build/classes/groovy/main/demo/GroovyHelper.class').toPath())
     }

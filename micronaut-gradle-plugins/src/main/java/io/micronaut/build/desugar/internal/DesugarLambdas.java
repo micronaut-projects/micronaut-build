@@ -93,6 +93,15 @@ public abstract class DesugarLambdas extends DefaultTask {
     public abstract Property<String> getJdkVersion();
 
     /**
+     * The directory under {@code META-INF/native-image/} that receives the native image configuration of the
+     * generated classes, below a {@code desugared-lambdas} directory.
+     *
+     * @return the name, such as {@code io.micronaut/micronaut-core}
+     */
+    @Input
+    public abstract Property<String> getNativeImageName();
+
+    /**
      * The toolchain the module compiles with, when it uses one.
      *
      * @return the launcher
@@ -135,6 +144,7 @@ public abstract class DesugarLambdas extends DefaultTask {
             parameters.getCompileClasspath().from(getCompileClasspath());
             parameters.getOutputDirectory().set(getOutputDirectory());
             parameters.getReportFile().set(getReportFile());
+            parameters.getNativeImageName().set(getNativeImageName());
         });
     }
 

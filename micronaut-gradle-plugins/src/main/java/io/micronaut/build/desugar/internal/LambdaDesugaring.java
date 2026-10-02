@@ -113,6 +113,7 @@ public final class LambdaDesugaring {
                     .orElse(daemonJdk));
             task.getOutputDirectory().set(project.getLayout().getBuildDirectory().dir("desugared-classes/java/main"));
             task.getReportFile().set(project.getLayout().getBuildDirectory().file("reports/desugarLambdas/main.txt"));
+            task.getNativeImageName().convention(project.provider(() -> project.getGroup() + "/" + project.getName()));
         });
         project.getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class, jar -> {
             jar.from(desugar.flatMap(DesugarLambdas::getOutputDirectory));
