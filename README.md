@@ -201,6 +201,17 @@ Toolchains remain opt-in: set `USE_GRADLE_TOOLCHAINS` to an empty value or
 `USE_GRADLE_TOOLCHAINS=false` or leave it unset to keep the default single-JDK
 behavior.
 
+### Lambda desugaring (trial)
+
+The `micronautBuild.desugarLambdas` Gradle property switches on a trial of build-time lambda desugaring
+([#956](https://github.com/micronaut-projects/micronaut-build/issues/956)) in modules that apply
+`io.micronaut.build.internal.base-module`: `true` for every module, or a comma-separated list of project names,
+with or without their `micronaut-` prefix (for example `-PmicronautBuild.desugarLambdas=core,inject`). A
+`desugarLambdas` task writes a copy of `compileJava`'s output in which lambda and method-reference call sites call
+classes generated at build time, the `jar` task packs that copy instead of `compileJava`'s output, and the sites
+rewritten and kept are reported in `build/reports/desugarLambdas/main.txt`. Tests, javadoc, the sources jar and
+the IDE keep the compiler's output. Without the property the build is unchanged.
+
 Also, to pin a dependency to a particular version:
 
 ```groovy
