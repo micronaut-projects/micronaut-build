@@ -15,6 +15,7 @@
  */
 package io.micronaut.build.docs.props;
 
+import io.micronaut.build.utils.LfPrintWriter;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -26,10 +27,7 @@ import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -48,12 +46,12 @@ public abstract class MergeConfigurationReferenceTask extends DefaultTask {
     public abstract RegularFileProperty getOutputFile();
 
     @TaskAction
-    protected void merge() throws FileNotFoundException, UnsupportedEncodingException {
+    protected void merge() throws IOException {
         Set<File> inputFiles = getInputFiles().getAsFileTree().getFiles();
         File outputFile = getOutputFile().getAsFile().get();
         File parentFile = outputFile.getParentFile();
         parentFile.mkdirs();
-        try (PrintWriter prn = new PrintWriter(outputFile, StandardCharsets.UTF_8.name())) {
+        try (var prn = new LfPrintWriter(outputFile, StandardCharsets.UTF_8)) {
             inputFiles.stream()
                     .sorted(Comparator.comparing(File::getName))
                     .forEachOrdered(file -> {

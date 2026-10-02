@@ -15,6 +15,7 @@
  */
 package io.micronaut.build.docs.props;
 
+import io.micronaut.build.utils.LfPrintWriter;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
@@ -29,7 +30,6 @@ import org.gradle.api.tasks.TaskAction;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -69,7 +69,7 @@ public abstract class ProcessConfigPropsTask extends DefaultTask {
                     }
                     if (SEPARATOR.equals(line)) {
                         File outputfile = new File(individualConfigsPropsFolder, configurationPropertyName + ".adoc");
-                        try (PrintWriter writer = new PrintWriter(outputfile, StandardCharsets.UTF_8.name())) {
+                        try (var writer = new LfPrintWriter(outputfile, StandardCharsets.UTF_8)) {
                             for (String s : accumulator) {
                                 writer.print(s);
                                 writer.print('\n');

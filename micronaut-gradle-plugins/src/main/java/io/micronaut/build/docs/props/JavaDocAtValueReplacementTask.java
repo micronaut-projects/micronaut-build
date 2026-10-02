@@ -15,6 +15,7 @@
  */
 package io.micronaut.build.docs.props;
 
+import io.micronaut.build.utils.LfPrintWriter;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -28,7 +29,6 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -64,7 +64,7 @@ public abstract class JavaDocAtValueReplacementTask extends DefaultTask {
                 if (adocFile.exists()) {
                     String configurationPropertiesClassName = null;
                     List<String> lines = Files.readAllLines(adocFile.toPath(), StandardCharsets.UTF_8);
-                    try (PrintWriter prn = new PrintWriter(outputFile, StandardCharsets.UTF_8.name())) {
+                    try (var prn = new LfPrintWriter(outputFile, StandardCharsets.UTF_8)) {
                         for (int i = 0; i < lines.size(); i++) {
                             String line = lines.get(i);
                             if ("++++".equals(line) && lines.get(i + 1).startsWith("<a id=\"")) {

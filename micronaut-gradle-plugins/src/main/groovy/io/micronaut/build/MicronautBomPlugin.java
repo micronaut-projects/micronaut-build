@@ -28,6 +28,7 @@ import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.pom.PomChecker;
 import io.micronaut.build.pom.PomCheckerUtils;
 import io.micronaut.build.pom.VersionCatalogConverter;
+import io.micronaut.build.utils.LfPrintWriter;
 import org.apache.maven.model.building.DefaultModelBuilder;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
 import org.apache.maven.model.building.DefaultModelProcessor;
@@ -449,7 +450,7 @@ public abstract class MicronautBomPlugin implements MicronautPlugin<Project> {
         modelConverter.afterBuildingModel(builderState -> {
             api.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
             runtime.getAllDependencyConstraints().forEach(MicronautBomPlugin::checkVersionConstraint);
-            try (var log = new PrintWriter(Files.newBufferedWriter(logFile))) {
+            try (var log = new LfPrintWriter(Files.newBufferedWriter(logFile))) {
                 maybeInlineNestedCatalogs(log, catalogArtifacts, bomArtifacts, builderState, inlineNestedCatalogs, inlineNestedBOMs, excludedInlinedAliases, includedAliases, inlinedPomProperties, inlinedMavenDependencies, project);
                 performVersionInference(log, project, bomExtension, builderState, libraryDefinitions, inlinedPomProperties, inlinedMavenDependencies, project.getConfigurations().findByName(BOM_VERSION_INFERENCE_CONFIGURATION_NAME), knownLibraries);
                 var unresolvedDependencies = new LinkedHashSet<ComponentSelector>();
