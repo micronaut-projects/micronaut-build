@@ -6,6 +6,7 @@ import spock.lang.TempDir
 
 import javax.tools.ToolProvider
 import java.io.ObjectStreamClass
+import java.lang.classfile.Attributes
 import java.lang.classfile.ClassFile
 import java.lang.classfile.ClassModel
 import java.lang.classfile.instruction.InvokeDynamicInstruction
@@ -103,10 +104,74 @@ public class Host implements Serializable {
         };
     }
 
+    public Function<String, String> capturingAgain() {
+        return s -> s + prefix;
+    }
+
+    public static Supplier<String> withLong(long n) {
+        return () -> "n" + n;
+    }
+
+    public static Supplier<String> withLongAgain(long n) {
+        return () -> n + "m";
+    }
+
     public static class Inner {
         public Supplier<String> get() {
             return () -> "inner";
         }
+    }
+}
+''',
+            'demo/Many.java': '''
+package demo;
+
+import java.util.List;
+import java.util.function.Supplier;
+
+public class Many {
+    public static List<Supplier<String>> all() {
+        return List.of(
+            () -> "0",
+            () -> "1",
+            () -> "2",
+            () -> "3",
+            () -> "4",
+            () -> "5",
+            () -> "6",
+            () -> "7",
+            () -> "8",
+            () -> "9",
+            () -> "10",
+            () -> "11",
+            () -> "12",
+            () -> "13",
+            () -> "14",
+            () -> "15",
+            () -> "16",
+            () -> "17",
+            () -> "18",
+            () -> "19",
+            () -> "20",
+            () -> "21",
+            () -> "22",
+            () -> "23",
+            () -> "24",
+            () -> "25",
+            () -> "26",
+            () -> "27",
+            () -> "28",
+            () -> "29",
+            () -> "30",
+            () -> "31",
+            () -> "32",
+            () -> "33",
+            () -> "34",
+            () -> "35",
+            () -> "36",
+            () -> "37",
+            () -> "38",
+            () -> "39");
     }
 }
 ''']
@@ -149,26 +214,33 @@ public class Host implements Serializable {
         sites['demo/Host.captureFree#0'] == 'rewritten:demo/Host$$Lambda$R0'
         sites['demo/Host.capturing#0'] == 'rewritten:demo/Host$$Lambda$R1'
         sites['demo/Host.methodReference#0'] == 'rewritten:demo/Host$$Lambda$R2'
-        sites['demo/Host.constructorReference#0'] == 'rewritten:demo/Host$$Lambda$R3'
         sites['demo/Host.serializable#0'] == 'kept:altMetafactory'
         sites['demo/Host.$deserializeLambda$#0'] == 'kept:altMetafactory'
         sites['demo/Host.privateImplementation#0'] == 'rewritten:demo/Host$$Lambda$R4'
         sites['demo/Host.primitives#0'] == 'rewritten:demo/Host$$Lambda$R5'
         sites['demo/Host.runtimeInterface#0'] == 'rewritten:demo/Host$$Lambda$R6'
         sites['demo/Host.compileOnly#0'] == 'kept:unresolvedType'
-        sites['demo/Host.failing#0'] == 'rewritten:demo/Host$$Lambda$R7'
         sites['demo/Host$Inner.get#0'] == 'rewritten:demo/Host$Inner$$Lambda$R0'
 
-        and:
+        and: 'sites of one host with the same interface and captured types share the class of the first'
+        sites['demo/Host.constructorReference#0'] == 'rewritten:demo/Host$$Lambda$R0'
+        sites['demo/Host.failing#0'] == 'rewritten:demo/Host$$Lambda$R0'
+        sites['demo/Host.capturingAgain#0'] == 'rewritten:demo/Host$$Lambda$R1'
+        sites['demo/Host.withLong#0'] == 'rewritten:demo/Host$$Lambda$R9'
+        sites['demo/Host.withLongAgain#0'] == 'rewritten:demo/Host$$Lambda$R9'
+        (0..37).every { sites["demo/Many.all#${it}".toString()] == 'rewritten:demo/Many$$Lambda$R0' }
+        (38..39).every { sites["demo/Many.all#${it}".toString()] == 'rewritten:demo/Many$$Lambda$R38' }
+
+        and: 'the report counts sites and classes apart'
         report.readLines().containsAll([
-                'rewrittenSites=9',
-                'generatedClasses=9',
+                'rewrittenSites=52',
+                'generatedClasses=10',
                 'kept.altMetafactory=2',
                 'kept.unresolvedType=1',
                 'kept.unresolvedType.compileOnly=1',
         ])
         report.text.contains('kept\tunresolvedType\topt/OptionalType')
-        summary.startsWith('Desugared 9 lambda call sites into 9 generated classes')
+        summary.startsWith('Desugared 52 lambda call sites into 10 generated classes')
     }
 
     def "the desugared classes behave as compiled"() {
@@ -191,6 +263,10 @@ public class Host implements Serializable {
                 .invoke(loader.loadClass('demo.Host$Inner').getConstructor().newInstance()) as Supplier).get() == 'inner'
         def type = loader.loadClass('opt.OptionalType').getConstructor(String).newInstance('n')
         (host.getMethod('compileOnly', type.class).invoke(null, type) as Supplier).get() == 'n'
+        (host.getMethod('capturingAgain').invoke(instance) as Function).apply('x') == 'xp:'
+        (host.getMethod('withLong', long).invoke(null, 5L) as Supplier).get() == 'n5'
+        (host.getMethod('withLongAgain', long).invoke(null, 6L) as Supplier).get() == '6m'
+        (loader.loadClass('demo.Many').getMethod('all').invoke(null) as List<Supplier>)*.get() == (0..39)*.toString()
 
         and: 'rewritten sites yield named, synthetic classes; kept ones stay hidden'
         def free = host.getMethod('captureFree').invoke(null)
@@ -205,6 +281,75 @@ public class Host implements Serializable {
         loader?.close()
     }
 
+    def "sites that share a class keep their own behaviour and capture-free instances"() {
+        given:
+        def loader = new URLClassLoader([output, runtime, optional].collect { it.toUri().toURL() } as URL[], (ClassLoader) null)
+        Class<?> host = loader.loadClass('demo.Host')
+        def instance = host.getConstructor(String).newInstance('p:')
+        def free = host.getMethod('captureFree').invoke(null)
+        def list = host.getMethod('constructorReference').invoke(null)
+        def failing = host.getMethod('failing').invoke(null)
+        def many = loader.loadClass('demo.Many').getMethod('all').invoke(null) as List
+        def manyAgain = loader.loadClass('demo.Many').getMethod('all').invoke(null) as List
+
+        expect: 'capture-free sites share a class, each still yields one instance of its own'
+        [free, list, failing]*.class.name.unique() == ['demo.Host$$Lambda$R0']
+        free.is(host.getMethod('captureFree').invoke(null))
+        list.is(host.getMethod('constructorReference').invoke(null))
+        failing.is(host.getMethod('failing').invoke(null))
+        !free.is(list) && !list.is(failing) && !free.is(failing)
+        (free as Supplier).get() == 'free'
+        (list as Supplier).get() == []
+        (0..39).every { many[it].is(manyAgain[it]) }
+        many.toSet().size() == 40
+        many*.class.name.unique() == ['demo.Many$$Lambda$R0', 'demo.Many$$Lambda$R38']
+
+        and: 'capturing sites share a class and get a new instance per evaluation, with their own captures'
+        def first = host.getMethod('capturing').invoke(instance)
+        def second = host.getMethod('capturingAgain').invoke(instance)
+        first.class == second.class
+        first.class.name == 'demo.Host$$Lambda$R1'
+        !first.is(host.getMethod('capturing').invoke(instance))
+        (first as Function).apply('a') == 'p:a'
+        (second as Function).apply('a') == 'ap:'
+        def n = host.getMethod('withLong', long).invoke(null, Long.MAX_VALUE)
+        def m = host.getMethod('withLongAgain', long).invoke(null, -1L)
+        n.class == m.class
+        (n as Supplier).get() == 'n' + Long.MAX_VALUE
+        (m as Supplier).get() == '-1m'
+
+        cleanup:
+        loader?.close()
+    }
+
+    def "a shared class takes sites until its interface method would pass FreqInlineSize"() {
+        given:
+        Map<String, Integer> dispatch = [:]
+        Map<String, Integer> fields = [:]
+        files(output).findAll { it.contains('$$Lambda$R') }.each { name ->
+            ClassModel model = ClassFile.of().parse(Files.readAllBytes(output.resolve(name)))
+            def sam = model.methods().find { (it.flags().flagsMask() & ClassFile.ACC_PUBLIC) != 0 }
+            dispatch[model.thisClass().asInternalName()] = sam.findAttribute(Attributes.code()).get().codeLength()
+            fields[model.thisClass().asInternalName()] = model.fields().size()
+        }
+
+        expect: '38 cases of 8 bytes and the 20 bytes of the dispatch make 324, one more would make 332'
+        dispatch['demo/Many$$Lambda$R0'] == 324
+        dispatch['demo/Many$$Lambda$R38'] == 20 + 2 * 8
+        dispatch.values().every { it <= LambdaDesugarer.MAX_DISPATCH_BYTES }
+        LambdaDesugarer.MAX_DISPATCH_BYTES == 325
+
+        and: 'only shared classes have a tag, and capture-free ones an array of instances'
+        fields['demo/Many$$Lambda$R0'] == 2
+        fields['demo/Host$$Lambda$R1'] == 2
+        fields['demo/Host$$Lambda$R9'] == 2
+        fields['demo/Host$$Lambda$R2'] == 1
+        dispatch.keySet().sort() == ['demo/Host$$Lambda$R0', 'demo/Host$$Lambda$R1', 'demo/Host$$Lambda$R2',
+                                     'demo/Host$$Lambda$R4', 'demo/Host$$Lambda$R5', 'demo/Host$$Lambda$R6',
+                                     'demo/Host$$Lambda$R9', 'demo/Host$Inner$$Lambda$R0', 'demo/Many$$Lambda$R0',
+                                     'demo/Many$$Lambda$R38']
+    }
+
     def "a generated class carries the host's source file and synthetic methods"() {
         given:
         def loader = new URLClassLoader([output, runtime, optional].collect { it.toUri().toURL() } as URL[], (ClassLoader) null)
@@ -216,11 +361,11 @@ public class Host implements Serializable {
         then:
         IllegalStateException e = thrown()
         e.stackTrace[0].methodName.startsWith('lambda$failing$')
-        e.stackTrace[1].className == 'demo.Host$$Lambda$R7'
+        e.stackTrace[1].className == 'demo.Host$$Lambda$R0'
         e.stackTrace[1].fileName == 'Host.java'
 
         and:
-        def generated = loader.loadClass('demo.Host$$Lambda$R7')
+        def generated = loader.loadClass('demo.Host$$Lambda$R0')
         generated.declaredMethods.every { it.synthetic }
         generated.declaredConstructors.every { it.synthetic }
         !Modifier.isPublic(generated.modifiers)
@@ -247,7 +392,7 @@ public class Host implements Serializable {
         methodsWithoutCode(classes.resolve('demo/Host.class')) == methodsWithoutCode(output.resolve('demo/Host.class'))
         // serializable() and $deserializeLambda$ (altMetafactory), and compileOnly(), stay invokedynamic
         lambdaSites(output.resolve('demo/Host.class')) == 3
-        lambdaSites(classes.resolve('demo/Host.class')) == 11
+        lambdaSites(classes.resolve('demo/Host.class')) == 14
 
         cleanup:
         original?.close()
@@ -263,8 +408,9 @@ public class Host implements Serializable {
         then:
         parsed.getProperty('Args').split(',')*.trim() == [
                 '--initialize-at-build-time=demo.Host$$Lambda$R0',
-                'demo.Host$$Lambda$R1', 'demo.Host$$Lambda$R2', 'demo.Host$$Lambda$R3', 'demo.Host$$Lambda$R4',
-                'demo.Host$$Lambda$R5', 'demo.Host$$Lambda$R6', 'demo.Host$$Lambda$R7', 'demo.Host$Inner$$Lambda$R0']
+                'demo.Host$$Lambda$R1', 'demo.Host$$Lambda$R2', 'demo.Host$$Lambda$R4', 'demo.Host$$Lambda$R5',
+                'demo.Host$$Lambda$R6', 'demo.Host$$Lambda$R9', 'demo.Host$Inner$$Lambda$R0',
+                'demo.Many$$Lambda$R0', 'demo.Many$$Lambda$R38']
 
         and: 'none without a name, nor without a generated class'
         !Files.exists(work.resolve('alone').resolve('META-INF'))

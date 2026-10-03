@@ -53,7 +53,7 @@ import java.util.stream.Stream;
  * such as the converters of the shared conversion service, because it initializes the classes the JDK spins at build
  * time. A generated class is an ordinary class, initialized at run time by default, and such an instance would fail
  * the image build. So the copy also holds a {@code native-image.properties} that initializes the generated classes
- * at build time: they have no static state but the singleton of a capture-free site.</p>
+ * at build time: they have no static state but the instances of capture-free sites.</p>
  */
 final class ModuleDesugaring {
 
@@ -124,13 +124,13 @@ final class ModuleDesugaring {
             });
             plan = desugarer.plan(hosts);
             for (LambdaDesugarer.Unit unit : plan.units()) {
-                List<String> names = unit.generatedNames();
                 String failure = rewrite(unit, model, written, generated);
+                // Sites, not generated classes: several sites may share a class.
                 if (failure == null) {
-                    rewrittenSites += names.size();
+                    rewrittenSites += unit.siteCount();
                 } else {
-                    fallbackSites += names.size();
-                    fallenBack.addAll(names);
+                    fallbackSites += unit.siteCount();
+                    fallenBack.addAll(unit.generatedNames());
                     notes.add(unit.nestHostEntry() + ": " + failure);
                 }
             }

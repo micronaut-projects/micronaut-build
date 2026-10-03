@@ -20,15 +20,18 @@ import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassBuilder;
 import java.lang.classfile.ClassElement;
 import java.lang.classfile.ClassFile;
+import java.lang.classfile.ClassHierarchyResolver;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
 import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.CodeElement;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.CodeTransform;
+import java.lang.classfile.Label;
 import java.lang.classfile.MethodModel;
 import java.lang.classfile.MethodTransform;
 import java.lang.classfile.TypeKind;
+import java.lang.classfile.attribute.CodeAttribute;
 import java.lang.classfile.attribute.NestHostAttribute;
 import java.lang.classfile.attribute.NestMembersAttribute;
 import java.lang.classfile.attribute.SourceFileAttribute;
@@ -37,6 +40,7 @@ import java.lang.classfile.constantpool.InvokeDynamicEntry;
 import java.lang.classfile.constantpool.MemberRefEntry;
 import java.lang.classfile.constantpool.PoolEntry;
 import java.lang.classfile.instruction.InvokeDynamicInstruction;
+import java.lang.classfile.instruction.SwitchCase;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
@@ -61,16 +65,26 @@ import java.util.Set;
  * next to its host, and points the site at it, so that the runtime links nothing.</p>
  *
  * <h2>What a site becomes</h2>
- * <p>One class per site, {@code <Host>$$Lambda$R<n>}: package-private, final and synthetic, with the host's
+ * <p>A generated class, {@code <Host>$$Lambda$R<n>}: package-private, final and synthetic, with the host's
  * class-file version and {@code SourceFile}, in the host's package, and a member of the host's nest. It
  * implements the site's functional interface, keeps the captured values in final fields, and forwards the
  * interface method to the implementation with the argument and return conversions {@code LambdaMetafactory}
  * would apply. Its methods are synthetic too, so that a debugger that skips synthetic methods steps straight
- * into the lambda body, which stays where the compiler put it. The site itself becomes
- * {@code invokestatic <Host>$$Lambda$R<n>.create}, with the descriptor of the {@code invokedynamic}, followed by
- * two {@code nop}s: the same length and the same stack effect, so every bytecode offset of the method and its
- * frames stay valid. A site that captures nothing always yields the same instance. No member of a host is added,
- * removed or changed: only the nest host's {@code NestMembers} attribute grows.</p>
+ * into the lambda body, which stays where the compiler put it. A site that captures nothing always yields the
+ * same instance. No member of a host is added, removed or changed: only the nest host's {@code NestMembers}
+ * attribute grows.</p>
+ *
+ * <p>The sites of a host that share the functional interface, the interface method and the captured types share
+ * one class, so that a module gains far fewer classes than it has sites: each class is a JAR entry and, with a
+ * JDK AOT cache, a class initialized at run time, where the {@code LambdaMetafactory} class it replaces would
+ * have been archived. Such a site becomes {@code bipush <tag>; invokestatic <Host>$$Lambda$R<n>.create}; the
+ * class keeps the tag in a final field and its interface method dispatches on it with a {@code tableswitch}. A
+ * class stops taking sites when its interface method would exceed {@link #MAX_DISPATCH_BYTES}, HotSpot's
+ * default {@code FreqInlineSize}, so that it can still be inlined where it is hot. A site that shares its shape
+ * with no other becomes {@code invokestatic <Host>$$Lambda$R<n>.create}, with the descriptor of the
+ * {@code invokedynamic}, followed by two {@code nop}s, and its class has no tag. Either way the site keeps the
+ * length of the {@code invokedynamic} and its stack effect after the call, so every bytecode offset of the
+ * method and its frames stay valid.</p>
  *
  * <h2>What stays {@code invokedynamic}</h2>
  * <p>A site is rewritten only when the generated class provably resolves what the site resolved; every
@@ -84,8 +98,9 @@ import java.util.Set;
  * may be absent at run time, and the site then fails at the same point, with the same error, as it does
  * today.</p>
  *
- * <p>The output is deterministic for a given JDK: hosts are planned in entry order, and sites are numbered per
- * host in method order and then bytecode order. Ported from Micronaut Runner's {@code LambdaDesugarer}.</p>
+ * <p>The output is deterministic for a given JDK: hosts are planned in entry order, sites are numbered per host
+ * in method order and then bytecode order, and a shared class takes the name of its first site and gives tags
+ * in site order. Ported from Micronaut Runner's {@code LambdaDesugarer}.</p>
  */
 final class LambdaDesugarer {
 
@@ -124,9 +139,31 @@ final class LambdaDesugarer {
 
     private static final int INTERFACE = 2;
 
+    /**
+     * The largest interface method of a class that several sites share, in bytecode bytes: HotSpot's default
+     * {@code FreqInlineSize}, the largest method C2 inlines at a hot call site.
+     */
+    static final int MAX_DISPATCH_BYTES = 325;
+
+    /**
+     * The bytes of a shared interface method besides its cases: {@code aload_0}, {@code getfield}, and a
+     * {@code tableswitch} at offset 4 with 3 bytes of padding and its default, low and high values.
+     */
+    private static final int DISPATCH_OVERHEAD = 1 + 3 + 1 + 3 + 12;
+
+    /** The bytes a case adds to the {@code tableswitch}. */
+    private static final int DISPATCH_CASE = 4;
+
+    /** The most sites a class can serve: {@code bipush} pushes the tag. */
+    private static final int MAX_TAGS = 128;
+
+    private static final String TAG_FIELD = "tag";
+
+    private static final String INSTANCES_FIELD = "INSTANCES";
+
     private static final ClassFile PARSER = ClassFile.of();
 
-    /** Generated classes have no branch, so they need no frames, and no class hierarchy to compute any. */
+    /** A class for one site has no branch, so it needs no frames, and no class hierarchy to compute any. */
     private static final ClassFile GENERATOR = ClassFile.of(ClassFile.StackMapsOption.DROP_STACK_MAPS);
 
     private final ClassPathModel model;
@@ -134,6 +171,9 @@ final class LambdaDesugarer {
     private final ClassPathModel compileClasspath;
 
     private final ClassReader classes;
+
+    /** Writes the classes that several sites share, whose {@code tableswitch} needs frames. */
+    private final ClassFile sharedGenerator;
 
     /**
      * A desugarer over a module.
@@ -147,6 +187,10 @@ final class LambdaDesugarer {
         this.model = model;
         this.compileClasspath = compileClasspath;
         this.classes = classes;
+        this.sharedGenerator = ClassFile.of(ClassFile.StackMapsOption.GENERATE_STACK_MAPS,
+                ClassFile.ClassHierarchyResolverOption.of(type -> type.descriptorString().contains(GENERATED_INFIX)
+                        ? ClassHierarchyResolver.ClassHierarchyInfo.ofClass(ConstantDescs.CD_Object)
+                        : model.getClassInfo(type)));
     }
 
     /**
@@ -431,28 +475,50 @@ final class LambdaDesugarer {
         /**
          * The internal names of the classes the unit generates.
          *
-         * @return the names, in site order
+         * @return the names, in the order of their first site
          */
         List<String> generatedNames() {
             List<String> names = new ArrayList<>();
             for (ClassPlan plan : classes.values()) {
                 for (SitePlan site : plan.sites) {
-                    names.add(internalName(site.generated));
+                    if (site.firstOfClass()) {
+                        names.add(internalName(site.generatedClass()));
+                    }
                 }
             }
             return names;
         }
 
         /**
+         * The number of sites the unit rewrites, which is more than the number of classes it generates when
+         * sites share a class.
+         *
+         * @return the number of sites
+         */
+        int siteCount() {
+            int count = 0;
+            for (ClassPlan plan : classes.values()) {
+                count += plan.sites.size();
+            }
+            return count;
+        }
+
+        /**
          * Generates the unit's classes.
          *
-         * @return the generated classes, keyed by entry name, in site order
+         * @return the generated classes, keyed by entry name, in the order of their first site
          */
         Map<String, byte[]> generate() {
             Map<String, byte[]> generated = new LinkedHashMap<>();
             for (ClassPlan plan : classes.values()) {
                 for (SitePlan site : plan.sites) {
-                    generated.put(internalName(site.generated) + CLASS_SUFFIX, site.generate());
+                    if (site.group != null) {
+                        if (site.tag == 0) {
+                            generated.put(internalName(site.group.generated) + CLASS_SUFFIX, site.group.generate());
+                        }
+                    } else {
+                        generated.put(internalName(site.generated) + CLASS_SUFFIX, site.generate());
+                    }
                 }
             }
             return generated;
@@ -546,6 +612,13 @@ final class LambdaDesugarer {
                         throw new IllegalStateException("The call site of " + site.generated.displayName()
                                 + " is not where it was planned");
                     }
+                    if (site.group != null) {
+                        // 2 + 3 bytes, as the invokedynamic; the call consumes the tag, so the stack after it is
+                        // the same.
+                        builder.bipush(site.tag).invokestatic(site.group.generated, FACTORY_METHOD,
+                                site.group.createType);
+                        return;
+                    }
                     // 3 + 1 + 1 bytes, as the invokedynamic, with the same stack effect.
                     builder.invokestatic(site.generated, FACTORY_METHOD, site.factoryType).nop().nop();
                     return;
@@ -611,6 +684,10 @@ final class LambdaDesugarer {
         private final MethodTypeDesc samType;
         private final MethodTypeDesc instantiatedType;
         private final Target target;
+        /** The class this site shares with others of its host, or {@code null} when it has its own. */
+        private Group group;
+        /** The site's tag in its {@link #group}. */
+        private int tag;
 
         private SitePlan(Home home, ClassDesc generated, Shape shape, Target target) {
             this.home = home;
@@ -623,7 +700,40 @@ final class LambdaDesugarer {
         }
 
         /**
-         * Writes the generated class.
+         * The class the site calls.
+         */
+        private ClassDesc generatedClass() {
+            return group != null ? group.generated : generated;
+        }
+
+        /**
+         * Whether the site is the first of its class, which names the class.
+         */
+        private boolean firstOfClass() {
+            return group == null || tag == 0;
+        }
+
+        /**
+         * What sites of one host must have in common to share a class: the functional interface, the captured
+         * types and the interface method.
+         */
+        private String shareKey() {
+            return factoryType.descriptorString() + ' ' + samName + samType.descriptorString();
+        }
+
+        /**
+         * The length of the interface method's body for this site alone, which is the case it adds to a shared
+         * class.
+         */
+        private int forwardLength() {
+            byte[] probe = GENERATOR.build(generated, builder -> builder.withMethodBody(samName, samType,
+                    ClassFile.ACC_PUBLIC, code -> forward(code, generated)));
+            return PARSER.parse(probe).methods().get(0).findAttribute(Attributes.code())
+                    .map(CodeAttribute::codeLength).orElseThrow();
+        }
+
+        /**
+         * Writes the generated class of a site that has its own.
          */
         private byte[] generate() {
             int captured = factoryType.parameterCount();
@@ -676,7 +786,7 @@ final class LambdaDesugarer {
                             code.invokespecial(generated, CONSTRUCTOR, constructorType).areturn();
                         });
                 builder.withMethodBody(samName, samType, ClassFile.ACC_PUBLIC | ClassFile.ACC_SYNTHETIC,
-                        this::forward);
+                        code -> forward(code, generated));
                 builder.with(NestHostAttribute.of(home.nestHost()));
                 if (home.sourceFile() != null) {
                     builder.with(SourceFileAttribute.of(home.sourceFile()));
@@ -687,15 +797,17 @@ final class LambdaDesugarer {
         /**
          * The body of the interface method: the captured values, then each argument adapted to the
          * implementation, the call, and the result adapted back.
+         *
+         * @param owner the class that holds the captured values
          */
-        private void forward(CodeBuilder code) {
+        private void forward(CodeBuilder code, ClassDesc owner) {
             int captured = factoryType.parameterCount();
             MethodTypeDesc implType = target.type();
             if (target.invocation() == Invocation.CONSTRUCTOR) {
                 code.new_(target.owner()).dup();
             }
             for (int i = 0; i < captured; i++) {
-                code.aload(0).getfield(generated, "f" + i, factoryType.parameterType(i));
+                code.aload(0).getfield(owner, "f" + i, factoryType.parameterType(i));
             }
             int slot = 1;
             for (int i = 0; i < samType.parameterCount(); i++) {
@@ -729,6 +841,113 @@ final class LambdaDesugarer {
             }
             Conversions.convert(code, result, expected, expected);
             code.return_(TypeKind.from(expected));
+        }
+    }
+
+    /**
+     * One generated class for several sites of a host that share the functional interface, the interface method
+     * and the captured types. A site passes its tag, {@code bipush tag; invokestatic create}, the instance keeps
+     * it, and the interface method dispatches on it. A class whose sites capture nothing creates one instance per
+     * tag when it is initialized, so that each site still always yields the same instance.
+     */
+    private static final class Group {
+
+        private final ClassDesc generated;
+        private final List<SitePlan> members;
+        private final ClassFile generator;
+        /** The captured types and the tag, to the functional interface. */
+        private final MethodTypeDesc createType;
+
+        private Group(ClassDesc generated, List<SitePlan> members, ClassFile generator) {
+            this.generated = generated;
+            this.members = members;
+            this.generator = generator;
+            List<ClassDesc> parameters = new ArrayList<>(members.get(0).factoryType.parameterList());
+            parameters.add(ConstantDescs.CD_int);
+            this.createType = MethodTypeDesc.of(members.get(0).factoryType.returnType(), parameters);
+        }
+
+        private byte[] generate() {
+            SitePlan first = members.get(0);
+            Home home = first.home;
+            MethodTypeDesc factoryType = first.factoryType;
+            int captured = factoryType.parameterCount();
+            int count = members.size();
+            MethodTypeDesc constructorType = MethodTypeDesc.of(ConstantDescs.CD_void, createType.parameterList());
+            return generator.build(generated, builder -> {
+                builder.withVersion(home.major(), home.minor());
+                builder.withFlags(ClassFile.ACC_FINAL | ClassFile.ACC_SYNTHETIC | ClassFile.ACC_SUPER);
+                builder.withSuperclass(ConstantDescs.CD_Object);
+                builder.withInterfaceSymbols(factoryType.returnType());
+                if (captured == 0) {
+                    builder.withField(INSTANCES_FIELD, generated.arrayType(),
+                            ClassFile.ACC_PRIVATE | ClassFile.ACC_STATIC | ClassFile.ACC_FINAL | ClassFile.ACC_SYNTHETIC);
+                    builder.withMethodBody(ConstantDescs.CLASS_INIT_NAME, ConstantDescs.MTD_void, ClassFile.ACC_STATIC,
+                            code -> {
+                                code.loadConstant(count).anewarray(generated);
+                                for (int i = 0; i < count; i++) {
+                                    code.dup().loadConstant(i).new_(generated).dup().loadConstant(i)
+                                            .invokespecial(generated, CONSTRUCTOR, constructorType).aastore();
+                                }
+                                code.putstatic(generated, INSTANCES_FIELD, generated.arrayType()).return_();
+                            });
+                }
+                for (int i = 0; i < captured; i++) {
+                    builder.withField("f" + i, factoryType.parameterType(i),
+                            ClassFile.ACC_PRIVATE | ClassFile.ACC_FINAL | ClassFile.ACC_SYNTHETIC);
+                }
+                builder.withField(TAG_FIELD, ConstantDescs.CD_int,
+                        ClassFile.ACC_PRIVATE | ClassFile.ACC_FINAL | ClassFile.ACC_SYNTHETIC);
+                builder.withMethodBody(CONSTRUCTOR, constructorType, ClassFile.ACC_PRIVATE | ClassFile.ACC_SYNTHETIC,
+                        code -> {
+                            code.aload(0).invokespecial(ConstantDescs.CD_Object, CONSTRUCTOR, ConstantDescs.MTD_void);
+                            int slot = 1;
+                            for (int i = 0; i < captured; i++) {
+                                ClassDesc type = factoryType.parameterType(i);
+                                TypeKind kind = TypeKind.from(type);
+                                code.aload(0).loadLocal(kind, slot).putfield(generated, "f" + i, type);
+                                slot += kind.slotSize();
+                            }
+                            code.aload(0).iload(slot).putfield(generated, TAG_FIELD, ConstantDescs.CD_int).return_();
+                        });
+                builder.withMethodBody(FACTORY_METHOD, createType, ClassFile.ACC_STATIC | ClassFile.ACC_SYNTHETIC,
+                        code -> {
+                            if (captured == 0) {
+                                code.getstatic(generated, INSTANCES_FIELD, generated.arrayType()).iload(0).aaload()
+                                        .areturn();
+                                return;
+                            }
+                            code.new_(generated).dup();
+                            int slot = 0;
+                            for (ClassDesc parameter : createType.parameterList()) {
+                                TypeKind kind = TypeKind.from(parameter);
+                                code.loadLocal(kind, slot);
+                                slot += kind.slotSize();
+                            }
+                            code.invokespecial(generated, CONSTRUCTOR, constructorType).areturn();
+                        });
+                builder.withMethodBody(first.samName, first.samType, ClassFile.ACC_PUBLIC | ClassFile.ACC_SYNTHETIC,
+                        code -> {
+                            List<Label> labels = new ArrayList<>(count);
+                            List<SwitchCase> cases = new ArrayList<>(count);
+                            for (int i = 0; i < count; i++) {
+                                Label label = code.newLabel();
+                                labels.add(label);
+                                cases.add(SwitchCase.of(i, label));
+                            }
+                            // Every tag is a case; the last one doubles as the default.
+                            code.aload(0).getfield(generated, TAG_FIELD, ConstantDescs.CD_int)
+                                    .tableswitch(0, count - 1, labels.get(count - 1), cases);
+                            for (int i = 0; i < count; i++) {
+                                code.labelBinding(labels.get(i));
+                                members.get(i).forward(code, generated);
+                            }
+                        });
+                builder.with(NestHostAttribute.of(home.nestHost()));
+                if (home.sourceFile() != null) {
+                    builder.with(SourceFileAttribute.of(home.sourceFile()));
+                }
+            });
         }
     }
 
@@ -1022,10 +1241,8 @@ final class LambdaDesugarer {
                 Unit unit = entry.getValue();
                 Nest nest = unitNests.get(entry.getKey());
                 List<ClassDesc> members = new ArrayList<>(nest.members);
-                for (ClassPlan plan : unit.classes.values()) {
-                    for (SitePlan site : plan.sites) {
-                        members.add(site.generated);
-                    }
+                for (String generatedName : unit.generatedNames()) {
+                    members.add(ClassDesc.ofInternalName(generatedName));
                 }
                 ClassPlan host = unit.classes.get(unit.nestHostEntry);
                 if (host == null) {
@@ -1109,6 +1326,7 @@ final class LambdaDesugarer {
                     .map(attribute -> attribute.sourceFile().stringValue()).orElse(null);
             Host context = new Host(hostName, new Home(host.majorVersion(), host.minorVersion(),
                     ClassDesc.ofInternalName(nest.name), sourceFile), nest);
+            Map<SitePlan, Found> rewritten = new LinkedHashMap<>();
             for (Found site : found) {
                 Object outcome = context.site(site.indy);
                 if (outcome instanceof Kept kept) {
@@ -1119,13 +1337,60 @@ final class LambdaDesugarer {
                 plan.sites.add(planned);
                 plan.sitesByMethod.computeIfAbsent(site.method,
                         method -> new SitePlan[sitesPerMethod.get(method)])[site.ordinal] = planned;
-                report.add(new Site(hostName, site.method, site.ordinal, internalName(planned.generated), null, null));
+                rewritten.put(planned, site);
+            }
+            share(plan.sites);
+            for (Map.Entry<SitePlan, Found> entry : rewritten.entrySet()) {
+                Found site = entry.getValue();
+                report.add(new Site(hostName, site.method, site.ordinal,
+                        internalName(entry.getKey().generatedClass()), null, null));
             }
             report.sort((left, right) -> {
                 int byMethod = Integer.compare(methodOrder.get(left.method), methodOrder.get(right.method));
                 return byMethod != 0 ? byMethod : Integer.compare(left.ordinal, right.ordinal);
             });
             return plan;
+        }
+
+        /**
+         * Lets the rewritten sites of one host that have the same {@link SitePlan#shareKey()} share classes: in site
+         * order, each class takes sites until one more would push its interface method past
+         * {@link #MAX_DISPATCH_BYTES}, or past {@link #MAX_TAGS} sites. A site left alone keeps its own class.
+         */
+        private void share(List<SitePlan> sites) {
+            Map<String, List<SitePlan>> byKey = new LinkedHashMap<>();
+            for (SitePlan site : sites) {
+                byKey.computeIfAbsent(site.shareKey(), key -> new ArrayList<>()).add(site);
+            }
+            for (List<SitePlan> sameShape : byKey.values()) {
+                if (sameShape.size() < 2) {
+                    continue;
+                }
+                List<SitePlan> members = new ArrayList<>();
+                int length = DISPATCH_OVERHEAD;
+                for (SitePlan site : sameShape) {
+                    int added = DISPATCH_CASE + site.forwardLength();
+                    if (!members.isEmpty() && (members.size() == MAX_TAGS || length + added > MAX_DISPATCH_BYTES)) {
+                        group(members);
+                        members = new ArrayList<>();
+                        length = DISPATCH_OVERHEAD;
+                    }
+                    members.add(site);
+                    length += added;
+                }
+                group(members);
+            }
+        }
+
+        private void group(List<SitePlan> members) {
+            if (members.size() < 2) {
+                return;
+            }
+            Group group = new Group(members.get(0).generated, List.copyOf(members), sharedGenerator);
+            for (int i = 0; i < members.size(); i++) {
+                members.get(i).group = group;
+                members.get(i).tag = i;
+            }
         }
 
         /**

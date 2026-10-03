@@ -43,6 +43,8 @@ class LambdaDesugaringFunctionalTest extends AbstractFunctionalTest {
         sites['compileOnly#0'] == 'unresolvedType'
         report().contains('kept.unresolvedType.compileOnly=1')
         report().contains('rewrittenSites=7')
+        // captureFree and constructorReference share R0, privateImplementation and inherited share R4
+        report().contains('generatedClasses=5')
 
         and: "the compiler's output is untouched"
         Path compiled = file('lib/build/classes/java/main').toPath()
@@ -52,12 +54,11 @@ class LambdaDesugaringFunctionalTest extends AbstractFunctionalTest {
         and: 'the jar holds the rewritten host and the generated classes, with the host source file'
         Map<String, byte[]> jar = entries(file(JAR))
         lambdaSites(jar['demo/Host.class']) == 3
-        (0..6).every { jar.containsKey("demo/Host\$\$Lambda\$R${it}.class".toString()) }
-        !jar.containsKey('demo/Host$$Lambda$R7.class')
+        jar.keySet().findAll { it.contains('$$Lambda$') }.sort() == [0, 1, 2, 4, 5].collect { "demo/Host\$\$Lambda\$R${it}.class".toString() }
         sourceFile(jar['demo/Host$$Lambda$R0.class']) == 'Host.java'
 
         and: 'native image initializes the generated classes at build time'
-        new String(jar['META-INF/native-image/io.micronaut.dummy/lib/desugared-lambdas/native-image.properties']).contains('demo.Host$$Lambda$R6')
+        new String(jar['META-INF/native-image/io.micronaut.dummy/lib/desugared-lambdas/native-image.properties']).contains('demo.Host$$Lambda$R5')
 
         and: 'the classes of other compilers go into the jar unchanged'
         jar['demo/GroovyHelper.class'] == Files.readAllBytes(file('lib/build/classes/groovy/main/demo/GroovyHelper.class').toPath())
