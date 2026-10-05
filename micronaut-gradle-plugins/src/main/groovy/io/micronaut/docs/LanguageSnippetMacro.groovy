@@ -10,21 +10,28 @@ import org.asciidoctor.extension.BlockMacroProcessor
 public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAtAttributes {
     final Asciidoctor asciidoctor
 
-    private static final String LANG_JAVA = 'java'
-    private static final String LANG_GROOVY = 'groovy'
-    private static final String LANG_KOTLIN = 'kotlin'
-    private static final String LANG_PYTHON = 'python'
-    public static final List<String> LANGS = [LANG_JAVA, LANG_PYTHON, LANG_KOTLIN, LANG_GROOVY]
+    public static final List<String> LANGS = SnippetSourceResolver.languages
 
     LanguageSnippetMacro(String macroName, Map<String, Object> config, Asciidoctor asciidoctor) {
         super(macroName, config)
         this.asciidoctor = asciidoctor
     }
 
-    private File snippetFile(StructuralNode parent, String lang, String fileName, Map<String, Object> attributes) {
+    private static File baseDir(StructuralNode parent) {
         String sourceDir = parent.document.getAttribute('sourcedir') ?: parent.document.getAttribute('sourceDir')
-        File baseDir = sourceDir ? new File(sourceDir) : System.getProperty("user.dir") ? new File(System.getProperty("user.dir")) : new File("")
-        SnippetSourceResolver.resolveSnippetFile(baseDir, lang, fileName, attributes)
+        sourceDir ? new File(sourceDir) : System.getProperty("user.dir") ? new File(System.getProperty("user.dir")) : new File("")
+    }
+
+    private File snippetFile(StructuralNode parent, String lang, String fileName, Map<String, Object> attributes) {
+        SnippetSourceResolver.resolveSnippetFile(baseDir(parent), lang, fileName, attributes)
+    }
+
+    /**
+     * A missing snippet is only worth a warning when the module has a project for that language at all:
+     * a module without, say, Scala sources would otherwise log a warning for every single snippet.
+     */
+    private boolean hasLanguageProject(StructuralNode parent, String lang, Map<String, Object> attributes) {
+        SnippetSourceResolver.projectDirectory(baseDir(parent), lang, attributes).isDirectory()
     }
 
     @Override
@@ -41,10 +48,11 @@ public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAt
 
         // If a specific target language is requested and it is one of the known code languages,
         // only render that language, and do NOT use the multi-language-sample selector class.
-        List<String> languagesToRender = LANGS
-        if (defaultLanguage && LANGS.contains(defaultLanguage)) {
-            languagesToRender = [defaultLanguage]
-        }
+        List<String> languagesToRender = SnippetSourceResolver.languagesToRender(
+                defaultLanguage,
+                valueAtAttributes('language', attributes),
+                valueAtAttributes('languages', attributes)
+        )
 
         String[] files = target.split(",")
         for (lang in languagesToRender) {
@@ -54,7 +62,9 @@ public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAt
             for (fileName in files) {
                 File file = snippetFile(parent, lang, fileName, attributes)
                 if (!file.exists()) {
-                    println "!!!! WARNING: NO FILE FOUND MATCHING TARGET PASSED IN AT PATH : $file.path"
+                    if (hasLanguageProject(parent, lang, attributes)) {
+                        println "!!!! WARNING: NO FILE FOUND MATCHING TARGET PASSED IN AT PATH : $file.path"
+                    }
                     continue
                 }
 

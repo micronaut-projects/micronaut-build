@@ -67,6 +67,10 @@ Then apply the individual plugins as needed.
     * Configures root-project publishing conventions.
 * `io.micronaut.build.internal.publishing`
     * Configures publishing to Sonatype OSSRH and Maven Central.
+* `io.micronaut.build.internal.python`
+    * Adds Python (Pyronaut) compilation support: every source set gets a `src/<sourceSet>/python` source directory
+      compiled by a `compile<SourceSet>Python` task (`compilePython` for `main`) into the source set output.
+      See [Python support](#python-support).
 * `io.micronaut.build.internal.quality-checks`
     * Applied automatically by the `common` plugin; configures Checkstyle, Jacoco and Sonar.
 * `io.micronaut.build.internal.quality-reporting`
@@ -84,6 +88,91 @@ Then apply the individual plugins as needed.
     * Configures Kotlin annotation processing with KAPT.
 * `io.micronaut.build.internal.kotlin-ksp`
     * Configures Kotlin symbol processing with KSP.
+
+### Python support
+
+The `io.micronaut.build.internal.python` plugin compiles Python sources with the Pyronaut compiler shipped with
+Micronaut core (`io.micronaut:micronaut-inject-python` and `io.micronaut:micronaut-context-python`). It is typically
+applied to a `test-suite-python` project so that the user guide can include Python snippets next to the Java, Kotlin
+and Groovy ones:
+
+```groovy
+plugins {
+    id("io.micronaut.build.internal.convention-test-library")
+    id("io.micronaut.build.internal.python")
+}
+```
+
+The compiler dependencies are added to the `pyronautCompiler` configuration using the `micronaut` version of the
+version catalog (or the `micronautVersion` property). The version can be changed, or set to an empty string to
+declare the `pyronautCompiler` dependencies manually, which is what Micronaut core does since it builds the compiler:
+
+```groovy
+micronautBuild {
+    python {
+        compilerVersion = "" // declare the compiler dependencies manually
+    }
+}
+
+dependencies {
+    pyronautCompiler(projects.micronautInjectPython)
+    pyronautCompiler(projects.micronautContextPython)
+}
+```
+
+Python tests need a GraalVM runtime and are slow, so the `Test` tasks of a project applying the plugin only run
+when the `python-ci` Gradle property is set. The dedicated "Python CI" GitHub workflow of the project template runs
+`./gradlew pythonCheck -Ppython-ci` on GraalVM: `pythonCheck` is a root project task aggregating the `check` task
+of every project applying the plugin (a build can register `pythonCheck` in its root project itself to add other
+projects to it). The regular CI still compiles the Python sources. The test convention can be changed with:
+
+```groovy
+micronautBuild {
+    python {
+        testsEnabled = true
+    }
+}
+```
+
+A large Python test suite can be split across several CI jobs: the workflow runs one job per shard with
+`./gradlew pythonCheck -Ppython-ci -Ppython-ci-shard=<index>/<count>` (a 1-based index, for example `2/4` for the
+second of four jobs), and every `Test` task then only runs the test classes assigned to that shard. Classes are
+assigned by the hash of their top level class name, so nested classes run with their declaring class and every job
+computes the same partition. The `micronautBuild.python.testShard` property overrides the Gradle property, and a
+build which adds projects without Python sources to `pythonCheck` itself shards their tests with
+`MicronautPythonPlugin.shardTests(project)`.
+
+Annotation processor options (the `-Akey=value` arguments `JavaCompile` takes through `options.compilerArgs`) can
+be passed to the Python compiler for every compile task of the project, or per task. They are appended after the
+options the plugin sets itself, and reach type element visitors through `VisitorContext.getOptions()`:
+
+```groovy
+micronautBuild {
+    python {
+        compilerArgs.add("-Amicronaut.jsonschema.baseUri=https://example.com/schemas")
+    }
+}
+
+tasks.named("compileTestPython") {
+    compilerArgs.add("-Amicronaut.openapi.project.dir=${projectDir}")
+}
+```
+
+Python sources are compiled after the Java classes of the source set, so a test suite whose Python sources use
+Java classes of the same project should declare:
+
+```groovy
+tasks.named("compileTestPython") {
+    dependsOn(tasks.named("classes"))
+    classpath.from(sourceSets.main.output)
+}
+```
+
+The documentation `snippet::` macro looks up Python snippets in `test-suite-python/src/test/python`, with the
+`io/` prefix of the package removed (`snippet::io.micronaut.docs.Foo` resolves to
+`test-suite-python/src/test/python/micronaut/docs/Foo.py`), and the `dependency:` macro renders a `pyproject.toml`
+snippet for Pyronaut next to the Gradle and Maven ones (see the `BuildDependencyMacro` documentation for the
+`pyronautScope` and `pyronaut` attributes).
 
 ## Configuration options
 

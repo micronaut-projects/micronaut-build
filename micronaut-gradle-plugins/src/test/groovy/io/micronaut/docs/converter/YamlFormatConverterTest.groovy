@@ -419,6 +419,76 @@ logger.levels.io.github.jhipster=INFO
 }"""
     }
 
+    def "renders idiomatic toml"() {
+        when:
+        yaml = """
+micronaut:
+  application:
+    name: demo
+test-resources:
+  containers:
+    kafka:
+      topics:
+        - orders
+        - shipments
+      partitions: 3
+      env:
+        KAFKA_LOG_RETENTION_HOURS: 1
+logger:
+  levels:
+    io.micronaut.http: DEBUG
+servers:
+  - name: front
+    tags: [js, react]
+    limits:
+      max: 10
+  - name: back
+    services:
+      - id: proxy
+        port: 8080
+long:
+  - a-very-long-value-that-takes-up-space
+  - another-very-long-value-that-takes-up-space
+  - yet-another-one
+"""
+
+        then:
+        toml == '''long = [
+  "a-very-long-value-that-takes-up-space",
+  "another-very-long-value-that-takes-up-space",
+  "yet-another-one",
+]
+
+[micronaut.application]
+name = "demo"
+
+[test-resources.containers.kafka]
+topics = ["orders", "shipments"]
+partitions = 3
+
+[test-resources.containers.kafka.env]
+KAFKA_LOG_RETENTION_HOURS = 1
+
+[logger.levels]
+"io.micronaut.http" = "DEBUG"
+
+[[servers]]
+name = "front"
+tags = ["js", "react"]
+
+[servers.limits]
+max = 10
+
+[[servers]]
+name = "back"
+
+[[servers.services]]
+id = "proxy"
+port = 8080
+'''
+        hasToml toml
+    }
+
     private void hasToml(String toml) {
         def actual = Toml.parse(this.toml)
         def expected = Toml.parse(toml)
