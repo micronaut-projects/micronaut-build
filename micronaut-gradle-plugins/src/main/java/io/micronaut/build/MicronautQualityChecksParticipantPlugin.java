@@ -1,5 +1,6 @@
 package io.micronaut.build;
 
+import io.micronaut.build.sonarlint.SonarLintSupport;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -31,6 +32,7 @@ public class MicronautQualityChecksParticipantPlugin implements Plugin<Project> 
         configureCheckstyle(project, micronautBuild);
         configureSonar(project);
         configureJacoco(project, micronautBuild);
+        SonarLintSupport.configure(project, micronautBuild.getSonarLint());
     }
 
     private void configureCheckstyle(final Project project, final MicronautBuildExtension micronautBuildExtension) {

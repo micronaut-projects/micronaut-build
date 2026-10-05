@@ -72,7 +72,8 @@ Then apply the individual plugins as needed.
       compiled by a `compile<SourceSet>Python` task (`compilePython` for `main`) into the source set output.
       See [Python support](#python-support).
 * `io.micronaut.build.internal.quality-checks`
-    * Applied automatically by the `common` plugin; configures Checkstyle, Jacoco and Sonar.
+    * Applied automatically by the `common` plugin; configures Checkstyle, Jacoco and Sonar, and registers the
+      `sonarLint` task on Java projects. See [Offline Sonar check](#offline-sonar-check).
 * `io.micronaut.build.internal.quality-reporting`
     * To be applied to the root project only; it consumes and aggregates the reports produced by the `quality-checks` plugin. 
 * `io.micronaut.build.internal.version-catalog-updates`
@@ -173,6 +174,91 @@ The documentation `snippet::` macro looks up Python snippets in `test-suite-pyth
 `test-suite-python/src/test/python/micronaut/docs/Foo.py`), and the `dependency:` macro renders a `pyproject.toml`
 snippet for Pyronaut next to the Gradle and Maven ones (see the `BuildDependencyMacro` documentation for the
 `pyronautScope` and `pyronaut` attributes).
+
+## Offline Sonar check
+
+Every Java project gets a `sonarLint` task: it runs SonarSource's Java analyzer (the `sonar-java` plugin build
+SonarCloud runs, with its symbolic execution plugin) locally, offline, with the rules of the SonarCloud
+"Micronaut Profile". No server, token or Docker is needed.
+
+```
+./gradlew :micronaut-router:sonarLint -PsonarLint.baseRef=origin/5.3.x
+```
+
+By default it analyses only the Java files changed in the working tree (committed, uncommitted and untracked)
+since the merge base of `HEAD` and the base ref, and reports only the issues on changed lines. The main and test
+sources are analysed, with the compiled classes and the compile classpath of each source set, so it compiles the
+project first.
+
+Each issue is printed on its own line, followed by a summary line:
+
+```
+sonarlint: router/src/main/java/io/micronaut/web/router/RouteConditionContext.java:105:13: MAJOR BUG java:S2583 Change this condition so that it does not always evaluate to "false"
+sonarlint: 2 gate-failing issues (BUG 2), 128 other issues on changed lines in 132 analysed files
+```
+
+The format is `sonarlint: <file>:<line>:<column>: <SEVERITY> <TYPE> <rule> <message>`, with the path relative to
+the root project directory. The task fails when a gate-failing issue is reported: an issue of type `BUG` or
+`VULNERABILITY`, or of severity `BLOCKER` or `CRITICAL`, which are the issue conditions of the Micronaut Quality
+Gate. The failure message lists the gate-failing issues. The reports are written to
+`build/reports/sonarlint/sonarlint.json` (the issues, with `file`, `line`, `column`, `endLine`, `endColumn`,
+`rule`, `type`, `severity`, `message` and `gateFailing`, and a `summary`) and `build/reports/sonarlint/sonarlint.sarif`.
+
+Gradle properties:
+
+* `-PsonarLint.baseRef=<ref>`: the base ref. Defaults to `micronautBuild.sonarLint.baseRef`, else `origin/HEAD`
+  (the default branch of the remote).
+* `-PsonarLint.all`: analyses every file and reports every issue.
+
+Configuration, with the defaults:
+
+```groovy
+micronautBuild {
+    sonarLint {
+        enabled = false               // whether `check` depends on `sonarLint`
+        baseRef = 'origin/5.3.x'      // no default: -PsonarLint.baseRef, else origin/HEAD
+        allFiles = false
+        includeTests = true
+        failOnIssues = true
+        showAllIssues = true          // false prints the gate-failing issues only
+        gateTypes = ['BUG', 'VULNERABILITY']
+        gateSeverities = ['BLOCKER', 'CRITICAL']
+        rulesFile = rootProject.file('config/sonarlint/rules.json') // defaults to the bundled Micronaut Profile
+        skippedRules = ['java:S1452': '...']
+        excludes = ['**/tck/**']      // globs relative to the root project directory, like sonar.exclusions
+    }
+}
+```
+
+`check` does not depend on `sonarLint` by default: the analysis takes seconds to minutes per project, needs the
+base branch fetched (CI checkouts are often shallow), and SonarCloud stays the reference on CI. Set `enabled = true`
+to add it to `check`.
+
+The task is cacheable: its inputs are the sources, the classpaths, the rules, the settings and the changed lines.
+The analysis runs in a Gradle worker with an isolated class loader, so the engine's dependencies do not leak into
+the build. The versions can be overridden in the version catalog: `sonarlint-engine`, `sonar-java`,
+`sonar-java-symbolic-execution`.
+
+### Rules
+
+The plugin bundles the 490 active rules of the SonarCloud quality profile `AYFHlJjqlBO-fp5MP_nD` ("Micronaut
+Profile", organization `micronaut-projects`), regenerated with `scripts/update-sonarlint-rules.py`. A project can
+export another profile with the `sonarLintExportRules` task of the root project, and point `rulesFile` to it:
+
+```
+./gradlew sonarLintExportRules -PsonarLint.organization=micronaut-projects -PsonarLint.qualityProfile=<key>
+```
+
+It writes `config/sonarlint/rules.json` through the public SonarCloud API.
+
+`java:S1452` is skipped by default: SonarCloud never raises it on Micronaut projects, while the local analyzer raises
+it on every `Foo<?>` return type, including unchanged code.
+
+Limits:
+
+* 28 rules of the profile need commercial analyzers and are not run locally: the 22 `javasecurity` taint analysis
+  rules and the 6 `javabugs` rules.
+* No coverage or duplication checks: only the issue conditions of the quality gate.
 
 ## Configuration options
 

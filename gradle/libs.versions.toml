@@ -35,8 +35,13 @@ checkstyle = "13.6.0"
 kotlin = "2.3.21"
 kotlin-ksp = "2.3.12"
 nullaway = "0.13.4"
+sonarlint-engine = "11.10.0.86299"
+sonarlint-java = "8.44.0.48651"
+sonarlint-java-se = "8.24.0.2319"
+sonarlint-slf4j = "2.0.17"
 
 [libraries]
+sonarlint-analysis-engine = { module = "org.sonarsource.sonarlint.core:sonarlint-analysis-engine", version.ref = "sonarlint-engine" }
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 bytebuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
