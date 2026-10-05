@@ -1,5 +1,6 @@
 package io.micronaut.build;
 
+import io.micronaut.build.sonarlint.SonarLintSupport;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -29,6 +30,7 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
 
         configureSonar(rootProject);
         configureJacoco(rootProject);
+        SonarLintSupport.registerExportRules(rootProject);
     }
 
 
