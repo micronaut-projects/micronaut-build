@@ -1,0 +1,15 @@
+plugins {
+    id 'io.micronaut.build.shared.settings'
+}
+
+rootProject.name = 'test-desugar-lambdas'
+
+buildCache {
+    local {
+        directory = file('build-cache')
+    }
+}
+
+include 'optional'
+include 'api'
+include 'lib'
