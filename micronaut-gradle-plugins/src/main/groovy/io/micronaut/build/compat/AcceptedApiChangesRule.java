@@ -19,9 +19,12 @@ import me.champeau.gradle.japicmp.report.Violation;
 import me.champeau.gradle.japicmp.report.ViolationTransformer;
 import org.gradle.api.GradleException;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,24 +34,39 @@ import java.util.stream.Collectors;
 import static io.micronaut.build.compat.AcceptanceHelper.formatAcceptance;
 
 public class AcceptedApiChangesRule implements ViolationTransformer {
+    /**
+     * The path of the accepted changes file. A relative path is resolved against the
+     * working directory of the japicmp worker process, which is not the project directory.
+     */
     public static final String CHANGES_FILE = "changesFile";
+    /**
+     * The contents of the accepted changes file, which, unlike an absolute path, keep the
+     * task relocatable.
+     */
+    public static final String CHANGES = "changes";
 
     private final Map<String, List<AcceptedApiChange>> changes;
 
     public AcceptedApiChangesRule(Map<String, String> params) {
+        String json = params.get(CHANGES);
         String filePath = params.get(CHANGES_FILE);
-        File changesFile = new File(filePath);
-        if (changesFile.exists()) {
+        if (json != null && !json.isBlank()) {
+            this.changes = parse(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
+        } else if (filePath != null && new File(filePath).exists()) {
             try (FileInputStream fis = new FileInputStream(filePath)) {
-                this.changes = AcceptedApiChangesParser.parse(fis)
-                        .stream()
-                        .collect(Collectors.groupingBy(AcceptedApiChange::getType));
+                this.changes = parse(fis);
             } catch (IOException e) {
                 throw new GradleException("Unable to parse accepted regressions file", e);
             }
         } else {
             this.changes = Collections.emptyMap();
         }
+    }
+
+    private static Map<String, List<AcceptedApiChange>> parse(InputStream changes) {
+        return AcceptedApiChangesParser.parse(changes)
+                .stream()
+                .collect(Collectors.groupingBy(AcceptedApiChange::getType));
     }
 
     @Override
