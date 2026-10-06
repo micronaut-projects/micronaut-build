@@ -21,6 +21,7 @@ import io.micronaut.build.MicronautPublishingPlugin;
 import io.micronaut.build.pom.MicronautBomExtension;
 import io.micronaut.build.utils.ExternalURLService;
 import me.champeau.gradle.japicmp.JapicmpTask;
+import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -82,8 +83,11 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                     task.onlyIf(t -> binaryCompatibility.getEnabled().getOrElse(true));
                     task.dependsOn(baselineTask);
                     task.getNewClasspath().from(project.getConfigurations().getByName("runtimeClasspath"));
-                    task.getOldClasspath().from(oldClasspath);
-                    task.getOldArchives().from(oldJar);
+                    // The baseline dependency is only realized once findBaseline has written
+                    // the version: realized while the task graph is built, as plain configurations
+                    // would be, it is silently dropped in a fresh checkout
+                    task.getOldClasspath().from(baselineTask.map(findBaseline -> oldClasspath));
+                    task.getOldArchives().from(baselineTask.map(findBaseline -> oldJar));
                     task.richReport(report -> {
                         report.getReportName().set("binary-compatibility-" + project.getName() + ".html");
                         report.getTitle().set(baseline.map(version -> "Binary compatibility report for Micronaut " + project.getName() + " " + project.getVersion() + " against " + version));
@@ -94,6 +98,12 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                         report.addPostProcessRule(InternalAnnotationPostProcessRule.class);
                     });
                     task.getIgnoreMissingClasses().set(true);
+                    task.doFirst("checkBaselineResolved", t -> {
+                        if (((JapicmpTask) t).getOldArchives().isEmpty()) {
+                            throw new GradleException("No baseline was resolved for " + groupAndArtifact
+                                + ", so there is nothing to compare against. With the configuration cache the baseline is resolved before findBaseline runs: run the build again now that it has.");
+                        }
+                    });
                 });
                 tasks.named("check").configure(task -> task.dependsOn(japicmpTask));
                 project.afterEvaluate(p -> {
