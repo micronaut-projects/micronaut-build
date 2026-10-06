@@ -28,29 +28,33 @@ import me.champeau.gradle.japicmp.report.ViolationTransformer;
 import java.util.Optional;
 
 /**
- * This rule turns errors on internal Java bridge methods into warnings
- * and ignores synthetic classes.
+ * This rule turns errors on internal Java bridge methods and synthetic
+ * classes into warnings.
  */
 public class JavaBridgeAndSyntheticRule implements ViolationTransformer {
 
     @Override
     public Optional<Violation> transform(String type, Violation violation) {
         JApiCompatibility violationMember = violation.getMember();
-        if (violationMember instanceof JApiMethod) {
-            JApiMethod method = (JApiMethod) violationMember;
-            JApiModifier<BridgeModifier> bridgeModifier = method.getBridgeModifier();
-            if (bridgeModifier != null) {
-                return Optional.of(violation.withSeverity(Severity.warning));
-            }
+        if (violationMember instanceof JApiMethod method
+            && hasModifier(method.getBridgeModifier(), BridgeModifier.BRIDGE)) {
+            return Optional.of(violation.withSeverity(Severity.warning));
         }
-        if (violationMember instanceof JApiClass) {
-            JApiClass clazz = (JApiClass) violationMember;
-            JApiModifier<SyntheticModifier> bridgeModifier = clazz.getSyntheticModifier();
-            if (bridgeModifier != null) {
-                return Optional.of(violation.withSeverity(Severity.warning));
-            }
+        if (violationMember instanceof JApiClass clazz
+            && hasModifier(clazz.getSyntheticModifier(), SyntheticModifier.SYNTHETIC)) {
+            return Optional.of(violation.withSeverity(Severity.warning));
         }
         return Optional.of(violation);
+    }
+
+    /**
+     * japicmp always reports a modifier, using the NON_ variant when the
+     * member doesn't carry it, so the value must be checked on either side.
+     */
+    private static <T> boolean hasModifier(JApiModifier<T> modifier, T expected) {
+        return modifier != null
+            && (modifier.getOldModifier().filter(expected::equals).isPresent()
+            || modifier.getNewModifier().filter(expected::equals).isPresent());
     }
 
 }
