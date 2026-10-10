@@ -7,6 +7,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
@@ -25,13 +26,23 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @DisableCachingByDefault(because = "Publishes artifacts to Maven Central")
 public abstract class MavenCentralPublishTask extends DefaultTask {
 
+    private static final Pattern DEPLOYMENT_STATE = Pattern.compile("\"deploymentState\"\\s*:\\s*\"([A-Z_]+)\"");
+
     public enum PublishingType {
         AUTOMATIC,
         USER_MANAGED
+    }
+
+    enum DeploymentStatus {
+        IN_PROGRESS,
+        VALIDATED,
+        PUBLISHED,
+        FAILED
     }
 
     @InputFile
@@ -49,9 +60,17 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
     @Option(option = "publishing-type", description = "Configures the Maven Central publishing type.")
     public abstract Property<PublishingType> getPublishingType();
 
+    /**
+     * The file the deployment id returned by the Publisher API is written to,
+     * so that CI can later publish or drop a USER_MANAGED deployment.
+     */
+    @OutputFile
+    public abstract RegularFileProperty getDeploymentIdFile();
+
     public MavenCentralPublishTask() {
         super();
         setDescription("Publishes a bundle using Maven Central's Publisher API");
+        getOutputs().upToDateWhen(t -> false);
     }
 
     private String getBearerToken() {
@@ -85,7 +104,8 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
             .put(suffix)
             .array();
 
-        var uriBuilder = "https://central.sonatype.com/api/v1/publisher/upload?publishingType=" + getPublishingType().getOrElse(PublishingType.USER_MANAGED);
+        var publishingType = getPublishingType().getOrElse(PublishingType.USER_MANAGED);
+        var uriBuilder = "https://central.sonatype.com/api/v1/publisher/upload?publishingType=" + publishingType;
 
         var request = HttpRequest.newBuilder()
             .uri(new URI(uriBuilder))
@@ -99,9 +119,13 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
         getLogger().lifecycle("Upload response: {} {}", response.statusCode(), response.body());
 
         if (response.statusCode() >= 200 && response.statusCode() < 300) {
-            var deploymentId = response.body();
+            var deploymentId = response.body() == null ? null : response.body().trim();
             if (deploymentId != null && !deploymentId.isEmpty()) {
-                verifyDeploymentStatus(client, deploymentId);
+                var deploymentIdFile = getDeploymentIdFile().get().getAsFile().toPath();
+                Files.createDirectories(deploymentIdFile.getParent());
+                Files.writeString(deploymentIdFile, deploymentId, StandardCharsets.UTF_8);
+                getLogger().lifecycle("Deployment id {} written to {}", deploymentId, deploymentIdFile);
+                verifyDeploymentStatus(client, deploymentId, publishingType);
             } else {
                 throw new GradleException("Could not extract deploymentId from response: " + response.body());
             }
@@ -110,7 +134,7 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
         }
     }
 
-    private void verifyDeploymentStatus(HttpClient client, String deploymentId) throws IOException, InterruptedException {
+    private void verifyDeploymentStatus(HttpClient client, String deploymentId, PublishingType publishingType) throws IOException, InterruptedException {
         var statusUrl = "https://central.sonatype.com/api/v1/publisher/status?id=" + deploymentId;
         getLogger().lifecycle("Checking deployment status for {}", deploymentId);
         int maxLookups = 100;
@@ -127,12 +151,19 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
 
             var body = response.body();
             if (response.statusCode() == 200) {
-                if (body.contains("\"deploymentState\":\"COMPLETE\"") || body.contains("\"deploymentState\":\"PUBLISHED\"")) {
-                    getLogger().lifecycle("Deployment {} completed successfully!", deploymentId);
-                    return;
-                }
-                if (body.contains("\"deploymentState\":\"FAILED\"")) {
-                    throw new GradleException("Deployment " + deploymentId + " failed: " + body);
+                switch (deploymentStatus(body, publishingType)) {
+                    case PUBLISHED -> {
+                        getLogger().lifecycle("Deployment {} completed successfully!", deploymentId);
+                        return;
+                    }
+                    case VALIDATED -> {
+                        getLogger().lifecycle("Deployment {} validated successfully, awaiting publication on https://central.sonatype.com/publishing", deploymentId);
+                        return;
+                    }
+                    case FAILED -> throw new GradleException("Deployment " + deploymentId + " failed: " + body);
+                    case IN_PROGRESS -> {
+                        // keep polling
+                    }
                 }
             } else if (response.statusCode() < 200 || response.statusCode() > 300) {
                 getLogger().warn("Status check for deployment " + deploymentId + " failed with: " + body + ". This doesn't necessarily mean that deployment failed, please check status on https://central.sonatype.com/publishing");
@@ -141,5 +172,23 @@ public abstract class MavenCentralPublishTask extends DefaultTask {
 
             Thread.sleep(30_000);
         }
+    }
+
+    /**
+     * Determines the outcome of a deployment from a status response body.
+     * A USER_MANAGED deployment is complete once it is VALIDATED, since it
+     * then waits for an explicit publish (or drop) request.
+     */
+    static DeploymentStatus deploymentStatus(String body, PublishingType publishingType) {
+        var matcher = DEPLOYMENT_STATE.matcher(body == null ? "" : body);
+        if (!matcher.find()) {
+            return DeploymentStatus.IN_PROGRESS;
+        }
+        return switch (matcher.group(1)) {
+            case "COMPLETE", "PUBLISHED" -> DeploymentStatus.PUBLISHED;
+            case "VALIDATED" -> publishingType == PublishingType.USER_MANAGED ? DeploymentStatus.VALIDATED : DeploymentStatus.IN_PROGRESS;
+            case "FAILED" -> DeploymentStatus.FAILED;
+            default -> DeploymentStatus.IN_PROGRESS;
+        };
     }
 }
