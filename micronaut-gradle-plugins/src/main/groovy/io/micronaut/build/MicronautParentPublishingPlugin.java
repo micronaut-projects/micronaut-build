@@ -55,6 +55,7 @@ public class MicronautParentPublishingPlugin implements Plugin<Project> {
             task.getUsername().convention(envVarOrSystemProp(providers, "SONATYPE_USERNAME", "sonatypeOssUsername"));
             task.getPassword().convention(envVarOrSystemProp(providers, "SONATYPE_PASSWORD", "sonatypeOssPassword"));
             task.getPublishingType().convention(MavenCentralPublishTask.PublishingType.USER_MANAGED);
+            task.getDeploymentIdFile().convention(layout.getBuildDirectory().file("central-deployment-id.txt"));
         });
     }
 
