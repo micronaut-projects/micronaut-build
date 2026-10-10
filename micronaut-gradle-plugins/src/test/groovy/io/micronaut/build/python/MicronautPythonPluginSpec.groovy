@@ -121,6 +121,27 @@ class MicronautPythonPluginSpec extends Specification {
             .collectMany { it.variants*.displayName }
     }
 
+    def "compile tasks compile the filtered tree of the source directory set"() {
+        given:
+        def project = ProjectBuilder.builder().build()
+        project.pluginManager.apply(MicronautPythonPlugin)
+        def testPython = project.extensions.getByType(SourceSetContainer).getByName("test").extensions.getByName("python") as SourceDirectorySet
+        testPython.exclude("excluded/**")
+        def included = project.file("src/test/python/included/a.py")
+        def excluded = project.file("src/test/python/excluded/b.py")
+        [included, excluded].each {
+            it.parentFile.mkdirs()
+            it.text = ""
+        }
+
+        when:
+        def compileTestPython = project.tasks.named("compileTestPython", PythonCompile).get()
+
+        then:
+        compileTestPython.source.files == [included] as Set
+        compileTestPython.sourceRoots.files == [project.file("src/test/python")] as Set
+    }
+
     def "the pyronaut compiler is resolved from the micronaut version"() {
         given:
         def project = ProjectBuilder.builder().build()
@@ -210,6 +231,8 @@ class MicronautPythonPluginSpec extends Specification {
         def compilePython = project.tasks.named("compilePython", PythonCompile).get()
         compilePython.compilerArgs.add("-Abaz=qux")
         project.file("src/main/python").mkdirs()
+        // a root without Python files is not compiled
+        project.file("src/main/python/app.py").text = "x = 1\n"
         def projectDir = project.projectDir.toPath().toAbsolutePath().normalize().toString()
 
         when:
