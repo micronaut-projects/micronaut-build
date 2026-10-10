@@ -33,6 +33,10 @@ public final class SnippetSourceResolver {
     private static final String DEFAULT_SCALA_PROJECT = "test-suite-scala";
     private static final String ATTR_PROJECT = "project";
     private static final String ATTR_SOURCE = "source";
+    /**
+     * Prefix of the per-language override of {@link #ATTR_SOURCE}, for example {@code source-python="jsonSchemaTest"}.
+     */
+    private static final String ATTR_SOURCE_LANGUAGE_PREFIX = ATTR_SOURCE + "-";
     private static final String ATTR_PROJECT_BASE = "project-base";
     private static final String ATTR_LANGUAGE = "language";
     private static final String ATTR_LANGUAGES = "languages";
@@ -142,6 +146,17 @@ public final class SnippetSourceResolver {
         return result;
     }
 
+    /**
+     * Resolves the file of a snippet in one language. The file is looked up in the {@code src/<source>/<language>}
+     * directory of the language's project, where the source set directory is the {@code source-<language>} attribute,
+     * else the {@code source} attribute, else {@code test}.
+     *
+     * @param baseDir    The directory containing the snippet projects
+     * @param language   The snippet language
+     * @param fileName   The snippet target, a class name
+     * @param attributes The snippet attributes
+     * @return The snippet file
+     */
     public static File resolveSnippetFile(File baseDir, String language, String fileName, Map<String, Object> attributes) {
         String baseName = fileName.trim().replace(".", File.separator);
         if (LANG_PYTHON.equals(language) && baseName.startsWith("io" + File.separator)) {
@@ -149,7 +164,7 @@ public final class SnippetSourceResolver {
         }
         return new File(baseDir, projectDir(language, attributes)
             + File.separator + "src"
-            + File.separator + sourceType(attributes)
+            + File.separator + sourceType(language, attributes)
             + File.separator + language
             + File.separator + baseName + "." + extension(language));
     }
@@ -240,7 +255,11 @@ public final class SnippetSourceResolver {
         return DEFAULT_JAVA_PROJECT;
     }
 
-    private static String sourceType(Map<String, Object> attributes) {
+    private static String sourceType(String language, Map<String, Object> attributes) {
+        String languageSourceType = valueAtAttributes(ATTR_SOURCE_LANGUAGE_PREFIX + language, attributes);
+        if (languageSourceType != null && !languageSourceType.isEmpty()) {
+            return languageSourceType;
+        }
         String sourceType = valueAtAttributes(ATTR_SOURCE, attributes);
         return sourceType == null || sourceType.isEmpty() ? "test" : sourceType;
     }

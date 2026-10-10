@@ -38,13 +38,20 @@ import org.gradle.workers.WorkerExecutor;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Compiles Python sources with the Pyronaut compiler.
@@ -54,13 +61,28 @@ import java.util.Map;
  * The project directory itself reaches the annotation processor as a compiler option, because a
  * worker daemon does not run in the project directory. That keeps the outputs relocatable and
  * therefore cacheable.
+ * <p>
+ * The compiler walks whole directories, so include and exclude patterns on the sources (for example on the
+ * {@code python} source directory set) are applied by the task: a source root whose Python files are not all
+ * included is replaced by a copy of its included files under the task's temporary directory.
  */
 @CacheableTask
 public abstract class PythonCompile extends DefaultTask {
 
+    /**
+     * The Python sources to compile, usually the filtered file tree of the {@code python} source directory set.
+     * A directory added to it is compiled as a whole.
+     */
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
     public abstract ConfigurableFileCollection getSource();
+
+    /**
+     * The root directories of the {@link #getSource() sources}, which define their package names. Their contents
+     * are tracked through the sources.
+     */
+    @Internal
+    public abstract ConfigurableFileCollection getSourceRoots();
 
     @Input
     @Optional
@@ -145,12 +167,8 @@ public abstract class PythonCompile extends DefaultTask {
         });
         var destDir = getDestinationDir().getAsFile().get().getAbsolutePath();
         var sourceDirs = new ArrayList<String>();
-        for (var location : getSource().getElements().get()) {
-            // Compiler currently accepts a single directory, but maybe it should
-            // accept a list of .py files instead
-            if (location.getAsFile().isDirectory()) {
-                sourceDirs.add(relocatableSourcePath(projectDir, location.getAsFile().toPath()));
-            }
+        for (var sourceDir : compilerSourceDirs()) {
+            sourceDirs.add(relocatableSourcePath(projectDir, sourceDir));
         }
         if (sourceDirs.isEmpty()) {
             return;
@@ -163,6 +181,94 @@ public abstract class PythonCompile extends DefaultTask {
             parameters.getClasspath().from(getCompilerClasspath(), getClasspath());
         });
         queue.await();
+    }
+
+    /**
+     * Returns the directories to hand to the compiler. The compiler takes directories and compiles every Python file
+     * below them, so a root is passed as is only when all of its Python files are included; otherwise its included
+     * files are copied to a staging directory which is passed instead, and a root without included files is dropped.
+     */
+    private List<Path> compilerSourceDirs() throws IOException {
+        var roots = new LinkedHashSet<Path>();
+        for (var root : getSourceRoots().getFiles()) {
+            roots.add(root.toPath().toAbsolutePath().normalize());
+        }
+        for (var file : getSource().getFiles()) {
+            // a directory added to the sources directly is a root of its own
+            if (file.isDirectory()) {
+                roots.add(file.toPath().toAbsolutePath().normalize());
+            }
+        }
+        roots.removeIf(root -> !Files.isDirectory(root));
+        var includedByRoot = new LinkedHashMap<Path, Set<Path>>();
+        roots.forEach(root -> includedByRoot.put(root, new TreeSet<>()));
+        for (var file : getSource().getAsFileTree().getFiles()) {
+            var path = file.toPath().toAbsolutePath().normalize();
+            if (isPythonSource(path)) {
+                ownerRoot(roots, path).ifPresent(root -> includedByRoot.get(root).add(path));
+            }
+        }
+        var stagingDir = getTemporaryDir().toPath().resolve("python-sources");
+        getFileSystemOperations().delete(spec -> spec.delete(stagingDir));
+        var sourceDirs = new ArrayList<Path>();
+        int index = 0;
+        for (var entry : includedByRoot.entrySet()) {
+            var root = entry.getKey();
+            var included = entry.getValue();
+            if (included.isEmpty()) {
+                continue;
+            }
+            if (included.equals(compiledPythonSources(root))) {
+                sourceDirs.add(root);
+            } else {
+                var staged = stagingDir.resolve(String.valueOf(index++));
+                for (var source : included) {
+                    var target = staged.resolve(root.relativize(source).toString());
+                    Files.createDirectories(target.getParent());
+                    Files.copy(source, target);
+                }
+                sourceDirs.add(staged);
+            }
+        }
+        return sourceDirs;
+    }
+
+    /**
+     * Returns the innermost root containing the file.
+     */
+    private static java.util.Optional<Path> ownerRoot(Set<Path> roots, Path file) {
+        return roots.stream()
+            .filter(file::startsWith)
+            .max(Comparator.comparingInt(Path::getNameCount));
+    }
+
+    /**
+     * Returns the Python files the compiler would find below a root: it skips hidden directories.
+     */
+    private static Set<Path> compiledPythonSources(Path root) throws IOException {
+        var sources = new TreeSet<Path>();
+        Files.walkFileTree(root, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                if (!dir.equals(root) && (Files.isHidden(dir) || dir.getFileName().toString().startsWith("."))) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                if (isPythonSource(file)) {
+                    sources.add(file.toAbsolutePath().normalize());
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        return sources;
+    }
+
+    private static boolean isPythonSource(Path file) {
+        return file.getFileName().toString().endsWith(".py");
     }
 
     /**
