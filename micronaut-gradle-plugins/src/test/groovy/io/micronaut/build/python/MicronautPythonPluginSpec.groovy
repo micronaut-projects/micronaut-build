@@ -231,6 +231,8 @@ class MicronautPythonPluginSpec extends Specification {
         def compilePython = project.tasks.named("compilePython", PythonCompile).get()
         compilePython.compilerArgs.add("-Abaz=qux")
         project.file("src/main/python").mkdirs()
+        // a root without Python files is not compiled
+        project.file("src/main/python/app.py").text = "x = 1\n"
         def projectDir = project.projectDir.toPath().toAbsolutePath().normalize().toString()
 
         when:

@@ -180,11 +180,13 @@ public abstract class PythonCompile extends DefaultTask {
                 fork.jvmArgs(getMergedJvmArgs());
             });
         });
-        if (relocatableSourceDirs(projectDir).isEmpty()) {
+        // staged once: computing the directories copies the included files of partially included roots
+        var sourceDirs = relocatableSourceDirs(projectDir);
+        if (sourceDirs.isEmpty()) {
             return;
         }
         // one work item: the roots share the destination, so they must not compile concurrently
-        queue.submit(PythonCompileWorkAction.class, this::configureWorkParameters);
+        queue.submit(PythonCompileWorkAction.class, parameters -> configureWorkParameters(parameters, sourceDirs));
         queue.await();
     }
 
@@ -194,9 +196,14 @@ public abstract class PythonCompile extends DefaultTask {
      *
      * @param parameters the work parameters
      */
-    void configureWorkParameters(PythonCompileParameters parameters) {
+    void configureWorkParameters(PythonCompileParameters parameters) throws IOException {
         var projectDir = getLayout().getProjectDirectory().getAsFile().toPath().toAbsolutePath().normalize();
-        parameters.getSourceDirs().set(relocatableSourceDirs(projectDir));
+        configureWorkParameters(parameters, relocatableSourceDirs(projectDir));
+    }
+
+    private void configureWorkParameters(PythonCompileParameters parameters, List<String> sourceDirs) {
+        var projectDir = getLayout().getProjectDirectory().getAsFile().toPath().toAbsolutePath().normalize();
+        parameters.getSourceDirs().set(sourceDirs);
         parameters.getSourceRoot().set(projectDir.toString());
         parameters.getDestinationDir().set(getDestinationDir().getAsFile().get().getAbsolutePath());
         parameters.getClasspath().from(getCompilerClasspath(), getClasspath());
@@ -209,7 +216,7 @@ public abstract class PythonCompile extends DefaultTask {
      * @param projectDir the absolute project directory
      * @return the source directories to compile
      */
-    private List<String> relocatableSourceDirs(Path projectDir) {
+    private List<String> relocatableSourceDirs(Path projectDir) throws IOException {
         var sourceDirs = new ArrayList<String>();
         for (var sourceDir : compilerSourceDirs()) {
             sourceDirs.add(relocatableSourcePath(projectDir, sourceDir));
