@@ -183,6 +183,31 @@ ${includes.join("\n\n")}
         asciidoctor.shutdown()
     }
 
+    void "live asciidoctor macro resolves a language from its own source set"() {
+        given:
+        Asciidoctor asciidoctor = Asciidoctor.Factory.create()
+        asciidoctor.javaExtensionRegistry().blockMacro(new LanguageSnippetMacro("snippet", [:], asciidoctor))
+        String baseDir = "build/live-macro-language-source"
+        file("$baseDir/test-suite/src/test/java/example/Schema.java").text = "class JavaSchema {}"
+        file("$baseDir/test-suite-python/src/test/python/example/Schema.py").text = "class WrongPythonSchema: pass"
+        file("$baseDir/test-suite-python/src/jsonSchemaTest/python/example/Schema.py").text = "class PythonSchema: pass"
+        Options options = Options.builder()
+                .attributes(Attributes.builder().attribute("sourcedir", new File(baseDir).absolutePath).build())
+                .safe(SafeMode.UNSAFE)
+                .build()
+
+        when:
+        String rendered = asciidoctor.convert('snippet::example.Schema[languages="java,python",source-python="jsonSchemaTest"]', options)
+
+        then: 'python is read from the jsonSchemaTest source set while java keeps the default one'
+        rendered.contains("JavaSchema")
+        rendered.contains("PythonSchema")
+        !rendered.contains("WrongPythonSchema")
+
+        cleanup:
+        asciidoctor.shutdown()
+    }
+
     private static File file(String path) {
         File f = new File(System.getProperty("user.dir"), path)
         if (!f.parentFile.exists()) {

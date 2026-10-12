@@ -81,6 +81,26 @@ snippet::io.micronaut.Sample[project-base=base]
         ) == [customJavaFile, baseJavaFile, basePythonFile, baseKotlinFile, baseGroovyFile, baseScalaFile] as Set
     }
 
+    void "honors a per-language source override"() {
+        given:
+        file("src/main/docs/guide/index.adoc") << """
+snippet::example.Schema[languages="java,python",source=main,source-python=jsonSchemaTest]
+""".stripIndent()
+        def javaFile = file("test-suite/src/main/java/example/Schema.java")
+        file("test-suite-python/src/main/python/example/Schema.py")
+        def pythonFile = file("test-suite-python/src/jsonSchemaTest/python/example/Schema.py")
+
+        expect:
+        SnippetSourceResolver.resolveSnippetFile(testDirectory.toFile(), "python", "example.Schema", ["source-python": "jsonSchemaTest"]) == pythonFile
+        SnippetSourceResolver.resolveSnippetFile(testDirectory.toFile(), "java", "example.Schema", ["source-python": "jsonSchemaTest"]) ==
+                testDirectory.resolve("test-suite/src/test/java/example/Schema.java").toFile()
+        SnippetSourceResolver.findSnippetSourceFiles(
+                testDirectory.resolve("src/main/docs").toFile(),
+                testDirectory.toFile(),
+                ""
+        ) == [javaFile, pythonFile] as Set
+    }
+
     private File file(String path) {
         File f = testDirectory.resolve(path).toFile()
         f.parentFile.mkdirs()
