@@ -43,6 +43,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static io.micronaut.build.MicronautPlugin.moduleNameOf;
 
@@ -104,15 +105,15 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
                     Task effectiveJar = jar;
                     japicmpTask.configure(task -> {
                         File changesFile = binaryCompatibility.getAcceptedRegressionsFile().get().getAsFile();
-                        String changesFileRelativePath = changesFile.toPath().relativize(p.getBuildFile().toPath()).toString();
+                        String changes = "";
                         if (changesFile.exists()) {
                             task.getInputs().file(changesFile).withPropertyName("accepted-api-changes").withPathSensitivity(PathSensitivity.NONE).optional(true);
+                            changes = providers.fileContents(binaryCompatibility.getAcceptedRegressionsFile()).getAsText().get();
                         }
                         task.getNewArchives().from(effectiveJar);
+                        Map<String, String> params = Collections.singletonMap(AcceptedApiChangesRule.CHANGES, changes);
                         task.richReport(report ->
-                            report.addViolationTransformer(AcceptedApiChangesRule.class,
-                                Collections.singletonMap(AcceptedApiChangesRule.CHANGES_FILE, changesFileRelativePath)
-                            )
+                            report.addViolationTransformer(AcceptedApiChangesRule.class, params)
                         );
                     });
                 });
