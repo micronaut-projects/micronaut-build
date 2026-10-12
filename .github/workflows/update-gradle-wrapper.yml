@@ -5,9 +5,11 @@ on:
 jobs:
   update-wrapper:
     if: github.repository == 'micronaut-projects/micronaut-project-template'
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           token: ${{ secrets.GH_TOKEN }}
       - name: "Update Gradle Wrapper"
@@ -16,8 +18,8 @@ jobs:
           latest=`curl -s https://services.gradle.org/versions/current | jq -cr ".version"`
           echo ::set-output name=latest_version::${latest}
           ./gradlew wrapper --gradle-version $latest
-      - uses: gradle/wrapper-validation-action@v3.5.0
-      - uses: stefanzweifel/git-auto-commit-action@v7.1.0
+      - uses: gradle/wrapper-validation-action@f9c9c575b8b21b6485636a91ffecd10e558c62f6 # v3.5.0
+      - uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
         with:
           commit_message: Upgrade Gradle Wrapper to ${{ steps.update.outputs.latest_version }}
           commit_user_name: micronaut-build
