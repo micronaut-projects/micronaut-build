@@ -241,7 +241,9 @@ public class MicronautPythonPlugin implements Plugin<Project> {
         return project.getTasks().register(taskName, PythonCompile.class, task -> {
             task.setGroup("build");
             task.setDescription("Compiles the " + sourceSet.getName() + " Python sources with the Pyronaut compiler.");
-            task.getSource().convention(sourceDirectorySet.getSourceDirectories());
+            // the filtered tree, so that include and exclude patterns of the source directory set apply
+            task.getSource().convention(sourceDirectorySet);
+            task.getSourceRoots().convention(sourceDirectorySet.getSourceDirectories());
             task.getDestinationDir()
                 .convention(project.getLayout().getBuildDirectory().dir("classes/python/" + sourceSet.getName()));
             task.getCompilerClasspath().from(pyronautCompilerClasspath);
