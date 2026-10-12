@@ -22,10 +22,12 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
+import org.jspecify.annotations.NonNull;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.util.Locale;
 import java.util.Map;
@@ -50,17 +52,28 @@ public abstract class VersionsWriterTask extends DefaultTask {
         var simpleClassName = className.substring(className.lastIndexOf(".") + 1);
         var parentDir = outputDir.toPath().resolve(packageName.replace('.', '/'));
         Files.createDirectories(parentDir);
-        try (PrintWriter prn = new PrintWriter(new FileWriter(parentDir.resolve(simpleClassName + ".java").toFile()))) {
+        try (var prn = new LfPrintWriter(new FileWriter(parentDir.resolve(simpleClassName + ".java").toFile()))) {
             prn.println("package " + packageName + ";");
             prn.println();
             prn.println("public class " + simpleClassName + " {");
             for (Map.Entry<String, String> entry : versions.entrySet()) {
                 var key = entry.getKey();
-                key = (key + "_VERSION").toUpperCase(Locale.US);
+                key = (key + "_VERSION").toUpperCase(Locale.ENGLISH);
                 prn.println("    public final static String " + key + " = \"" + entry.getValue() + "\";");
             }
             prn.println("}");
         }
+    }
 
+    public static class LfPrintWriter extends PrintWriter {
+
+        public LfPrintWriter(@NonNull Writer out) {
+            super(out);
+        }
+
+        @Override
+        public void println() {
+            print("\n");
+        }
     }
 }

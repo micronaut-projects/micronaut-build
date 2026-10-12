@@ -15,6 +15,7 @@
  */
 package io.micronaut.build.info;
 
+import io.micronaut.build.utils.LfPrintWriter;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileSystemOperations;
@@ -28,7 +29,6 @@ import org.gradle.api.tasks.TaskAction;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.stream.Collectors;
@@ -102,13 +102,16 @@ public abstract class MicronautModuleInfoGeneratorTask extends DefaultTask {
         }).getOrElse("null");
         var tags = "Set.of(" + getTags().get().stream().map(tag -> "\"" + escapeJava(tag) + "\"").collect(Collectors.joining(",")) + ")";
 
-        try (var writer = new PrintWriter(Files.newBufferedWriter(outputDir.resolve(fileName), StandardCharsets.UTF_8))) {
+        try (var writer = new LfPrintWriter(Files.newBufferedWriter(outputDir.resolve(fileName), StandardCharsets.UTF_8))) {
             writer.println("package " + packageName + ";");
             writer.println();
             writer.println("import io.micronaut.module.info.AbstractMicronautModuleInfo;");
             writer.println("import io.micronaut.module.info.MavenCoordinates;");
             writer.println("import java.util.Set;");
             writer.println();
+            writer.println("/**");
+            writer.println(" * Generated Micronaut module info class for " + name + ".");
+            writer.println(" */");
             writer.println("public class " + className + " extends AbstractMicronautModuleInfo {");
             writer.println("    public " + className + "() {");
             writer.println("        super(\"" + ga + "\", ");
@@ -121,11 +124,12 @@ public abstract class MicronautModuleInfoGeneratorTask extends DefaultTask {
             writer.println("        );");
             writer.println("    }");
             writer.println("}");
+            writer.println();
         }
 
         var metaInfDir = outputDir.resolve("META-INF/services");
         Files.createDirectories(metaInfDir);
-        try (var writer = new PrintWriter(Files.newBufferedWriter(metaInfDir.resolve("io.micronaut.module.info.MicronautModuleInfo"), StandardCharsets.UTF_8))) {
+        try (var writer = new LfPrintWriter(Files.newBufferedWriter(metaInfDir.resolve("io.micronaut.module.info.MicronautModuleInfo"), StandardCharsets.UTF_8))) {
             writer.println(packageName + "." + className);
         }
     }
