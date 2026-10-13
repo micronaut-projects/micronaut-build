@@ -2,6 +2,7 @@ package io.micronaut.build
 
 import groovy.transform.CompileStatic
 import io.micronaut.build.compat.MicronautBinaryCompatibilityPlugin
+import io.micronaut.build.desugar.internal.LambdaDesugaring
 import io.micronaut.build.info.MicronautModuleInfoPlugin
 import io.micronaut.build.pom.PomCheckerUtils
 import org.gradle.api.Plugin
@@ -27,6 +28,7 @@ class MicronautBaseModulePlugin implements Plugin<Project> {
         project.pluginManager.apply(SonatypeConfigurationPlugin)
         project.pluginManager.apply(MicronautModuleInfoPlugin)
         configureNullAway(project)
+        LambdaDesugaring.configure(project)
         configureJUnit(project)
         assertSettingsPluginApplied(project)
         project.pluginManager.withPlugin("maven-publish") {

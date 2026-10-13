@@ -1,0 +1,8 @@
+plugins {
+    id 'java-library'
+}
+
+// lib targets Java 25 through the module convention, whatever JDK runs Gradle
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+}
