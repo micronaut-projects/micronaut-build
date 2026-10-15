@@ -94,17 +94,7 @@ class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
     void "SonarCloud raises no issue on test sources, which stay test sources"() {
         given:
         withSample("test-micronaut-module")
-        environment.SONAR_TOKEN = "dummy"
-        buildFile << """
-            tasks.register("printSonarProperties") {
-                def sonarProperties = tasks.named("sonar").flatMap { it.properties }
-                doLast {
-                    sonarProperties.get().findAll { k, v -> k.contains("sonar.issue.ignore") || k.endsWith("sonar.sources") || k.endsWith("sonar.tests") }
-                        .sort()
-                        .each { k, v -> println "SONAR \${k}=\${v}" }
-                }
-            }
-        """
+        withSonarPropertiesTask()
 
         when:
         run 'printSonarProperties'
@@ -121,6 +111,29 @@ class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
         // The Groovy test sources stay test sources, which coverage needs, and never become main ones
         directories(':subproject1.sonar.tests').contains(new File(subproject1, 'src/test/groovy'))
         directories(':subproject1.sonar.sources').every { !it.path.contains("${File.separator}src${File.separator}test") }
+    }
+
+    void "the test sources criterion adds to the criteria a project declares"() {
+        given:
+        withSample("test-micronaut-module")
+        withSonarPropertiesTask()
+        buildFile << """
+            sonar {
+                properties {
+                    property "sonar.issue.ignore.multicriteria", "e1"
+                    property "sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S1192"
+                    property "sonar.issue.ignore.multicriteria.e1.resourceKey", "**/Generated*.java"
+                }
+            }
+        """
+
+        when:
+        run 'printSonarProperties'
+
+        then:
+        outputContains 'SONAR sonar.issue.ignore.multicriteria=e1,micronautTestSources'
+        outputContains 'SONAR sonar.issue.ignore.multicriteria.e1.ruleKey=java:S1192'
+        outputContains 'SONAR sonar.issue.ignore.multicriteria.micronautTestSources.resourceKey=**/src/test/**'
     }
 
     void "it can run Spotless and Checkstyle"() {
@@ -140,6 +153,20 @@ class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
         }
         file("subproject1/build/reports/checkstyle/main.xml").exists()
         file("subproject2/build/reports/checkstyle/main.xml").exists()
+    }
+
+    private void withSonarPropertiesTask() {
+        environment.SONAR_TOKEN = "dummy"
+        buildFile << """
+            tasks.register("printSonarProperties") {
+                def sonarProperties = tasks.named("sonar").flatMap { it.properties }
+                doLast {
+                    sonarProperties.get().findAll { k, v -> k.contains("sonar.issue.ignore") || k.endsWith("sonar.sources") || k.endsWith("sonar.tests") }
+                        .sort()
+                        .each { k, v -> println "SONAR \${k}=\${v}" }
+                }
+            }
+        """
     }
 
     private File aggregateJacocoReport() {
