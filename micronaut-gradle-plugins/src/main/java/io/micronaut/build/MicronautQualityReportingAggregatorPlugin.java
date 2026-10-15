@@ -20,6 +20,7 @@ import java.lang.reflect.InvocationTargetException;
 public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project> {
 
     public static final String COVERAGE_REPORT_TASK_NAME = "testCodeCoverageReport";
+    private static final String TEST_ISSUES_CRITERION = "micronautTestSources";
 
     @Override
     public void apply(final Project rootProject) {
@@ -51,6 +52,12 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                             .resolve("reports/jacoco/" + COVERAGE_REPORT_TASK_NAME + "/" + COVERAGE_REPORT_TASK_NAME + ".xml")
                             .toFile().getAbsolutePath();
                         p.property("sonar.coverage.jacoco.xmlReportPaths", jacocoReportPath);
+                        // Third-party analyzers such as groovydre apply their rules to every file, test files
+                        // included, even though the Sonar plugin already puts the test source directories into
+                        // sonar.tests. Test files stay in sonar.tests, but no issue is raised on them.
+                        p.property("sonar.issue.ignore.multicriteria", TEST_ISSUES_CRITERION);
+                        p.property("sonar.issue.ignore.multicriteria." + TEST_ISSUES_CRITERION + ".ruleKey", "*");
+                        p.property("sonar.issue.ignore.multicriteria." + TEST_ISSUES_CRITERION + ".resourceKey", "**/src/test/**");
                     }
                 });
                 rootProject.getTasks().withType(SonarTask.class).configureEach(t -> t.dependsOn(COVERAGE_REPORT_TASK_NAME));

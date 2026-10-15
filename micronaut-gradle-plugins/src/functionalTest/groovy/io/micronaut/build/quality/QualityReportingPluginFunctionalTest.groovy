@@ -91,6 +91,38 @@ class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
         outputContains 'JaCoCo includes: [io.micronaut.subproject1.*, org.example.*]'
     }
 
+    void "SonarCloud raises no issue on test sources, which stay test sources"() {
+        given:
+        withSample("test-micronaut-module")
+        environment.SONAR_TOKEN = "dummy"
+        buildFile << """
+            tasks.register("printSonarProperties") {
+                def sonarProperties = tasks.named("sonar").flatMap { it.properties }
+                doLast {
+                    sonarProperties.get().findAll { k, v -> k.contains("sonar.issue.ignore") || k.endsWith("sonar.sources") || k.endsWith("sonar.tests") }
+                        .sort()
+                        .each { k, v -> println "SONAR \${k}=\${v}" }
+                }
+            }
+        """
+
+        when:
+        run 'printSonarProperties'
+
+        then:
+        outputContains 'SONAR sonar.issue.ignore.multicriteria=micronautTestSources'
+        outputContains 'SONAR sonar.issue.ignore.multicriteria.micronautTestSources.ruleKey=*'
+        outputContains 'SONAR sonar.issue.ignore.multicriteria.micronautTestSources.resourceKey=**/src/test/**'
+        def subproject1 = file("subproject1").canonicalFile
+        def sonarProperties = result.output.readLines()
+            .findAll { it.startsWith('SONAR ') }
+            .collectEntries { it.substring('SONAR '.length()).split('=', 2) as List }
+        def directories = { String key -> (sonarProperties[key] as String).split(',').collect { new File(it).canonicalFile } }
+        // The Groovy test sources stay test sources, which coverage needs, and never become main ones
+        directories(':subproject1.sonar.tests').contains(new File(subproject1, 'src/test/groovy'))
+        directories(':subproject1.sonar.sources').every { !it.path.contains("${File.separator}src${File.separator}test") }
+    }
+
     void "it can run Spotless and Checkstyle"() {
         given:
         withSample("test-micronaut-module")
