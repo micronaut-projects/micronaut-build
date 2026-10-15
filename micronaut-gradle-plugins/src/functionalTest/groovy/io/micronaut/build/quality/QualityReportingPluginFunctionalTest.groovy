@@ -136,6 +136,36 @@ class QualityReportingPluginFunctionalTest extends AbstractFunctionalTest {
         outputContains 'SONAR sonar.issue.ignore.multicriteria.micronautTestSources.resourceKey=**/src/test/**'
     }
 
+    void "a subproject that declares its own criteria keeps the test sources criterion"() {
+        given:
+        withSample("test-micronaut-module")
+        withSonarPropertiesTask()
+        // The root applies the Sonar plugin after the subprojects are evaluated
+        file("subproject1/build.gradle") << """
+            rootProject.pluginManager.withPlugin("org.sonarqube") {
+                sonar {
+                    properties {
+                        property "sonar.issue.ignore.multicriteria", "s1"
+                        property "sonar.issue.ignore.multicriteria.s1.ruleKey", "java:S1192"
+                        property "sonar.issue.ignore.multicriteria.s1.resourceKey", "**/Generated*.java"
+                    }
+                }
+            }
+        """
+
+        when:
+        run 'printSonarProperties'
+
+        then:
+        outputContains 'SONAR :subproject1.sonar.issue.ignore.multicriteria=s1,micronautTestSources'
+        outputContains 'SONAR :subproject1.sonar.issue.ignore.multicriteria.s1.ruleKey=java:S1192'
+        outputContains 'SONAR :subproject1.sonar.issue.ignore.multicriteria.micronautTestSources.ruleKey=*'
+        outputContains 'SONAR :subproject1.sonar.issue.ignore.multicriteria.micronautTestSources.resourceKey=**/src/test/**'
+        outputContains 'SONAR sonar.issue.ignore.multicriteria=micronautTestSources'
+        // A subproject that declares no criteria inherits the root's
+        outputDoesNotContain ':subproject2.sonar.issue.ignore'
+    }
+
     void "it can run Spotless and Checkstyle"() {
         given:
         withSample("test-micronaut-module")

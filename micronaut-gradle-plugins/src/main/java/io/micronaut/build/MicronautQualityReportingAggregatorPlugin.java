@@ -58,9 +58,16 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                         p.property("sonar.coverage.jacoco.xmlReportPaths", jacocoReportPath);
                     }
                 });
-                // Registered once the build script has run, so that it comes after the project's own sonar
-                // blocks and adds to the criteria they declare instead of being replaced by them
-                rootProject.afterEvaluate(unused -> sonarQubeExtension.properties(MicronautQualityReportingAggregatorPlugin::ignoreIssuesInTestSources));
+                // Registered once every build script has run, so that it comes after the projects' own sonar
+                // blocks and adds to the criteria they declare instead of being replaced by them. A subproject
+                // that declares criteria of its own replaces the root's for its module, so it gets the criterion too.
+                rootProject.getGradle().projectsEvaluated(unused -> rootProject.getAllprojects().forEach(project -> {
+                    SonarExtension sonar = project.getExtensions().findByType(SonarExtension.class);
+                    if (sonar != null) {
+                        boolean root = project == rootProject;
+                        sonar.properties(p -> ignoreIssuesInTestSources(p, root));
+                    }
+                }));
                 rootProject.getTasks().withType(SonarTask.class).configureEach(t -> t.dependsOn(COVERAGE_REPORT_TASK_NAME));
             } else {
                 rootProject.getLogger().warn("Could not find the sonarqube extension");
@@ -73,10 +80,14 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
      * even though the Sonar plugin already puts the test source directories into {@code sonar.tests}.
      * The test files stay in {@code sonar.tests}, which coverage needs, but no issue is raised on them.
      *
-     * @param p the Sonar properties
+     * @param p the Sonar properties of a project
+     * @param always whether to add the criterion when the project declares no criteria, which only the root needs
      */
-    private static void ignoreIssuesInTestSources(SonarProperties p) {
+    private static void ignoreIssuesInTestSources(SonarProperties p, boolean always) {
         Object declared = p.getProperties().get(MULTICRITERIA);
+        if (declared == null && !always) {
+            return;
+        }
         Set<String> criteria = new LinkedHashSet<>();
         if (declared instanceof Iterable<?> iterable) {
             iterable.forEach(criterion -> addCriteria(criteria, criterion));
