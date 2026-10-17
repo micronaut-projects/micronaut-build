@@ -6,6 +6,7 @@ import io.micronaut.build.docs.JavadocAggregatorPlugin
 import io.micronaut.build.docs.PrepareDocResourcesTask
 import io.micronaut.build.docs.PublishGuideTask
 import io.micronaut.build.docs.ValidateAsciidocOutputTask
+import io.micronaut.build.docs.ValidateGuideLinksTask
 import io.micronaut.build.docs.props.MergeConfigurationReferenceTask
 import io.micronaut.build.docs.props.PublishConfigurationReferenceTask
 import io.micronaut.build.utils.GitHubApiService
@@ -236,6 +237,18 @@ abstract class MicronautDocsPlugin implements Plugin<Project> {
                 into('guide') {
                     from(createReleasesDropdown)
                 }
+            }
+
+            tasks.register("checkDocsLinks", ValidateGuideLinksTask) { task ->
+                task.group = DOCUMENTATION_GROUP
+                task.description = "Verify generated guide index and configuration reference links"
+                task.dependsOn assembleFinalDocs
+                task.docsDirectory = layout.buildDirectory.dir("docs")
+                task.htmlFiles.from(
+                        layout.buildDirectory.file("docs/guide/${INDEX_HTML}"),
+                        layout.buildDirectory.file("docs/guide/${CONFIGURATION_REFERENCE_HTML}")
+                )
+                task.report = layout.buildDirectory.file("working/reports/docs-links.txt")
             }
 
             tasks.register("docs") { task ->
