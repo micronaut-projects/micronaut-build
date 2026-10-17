@@ -28,7 +28,14 @@ class BinaryCompatibilityFunctionalTest extends AbstractFunctionalTest {
         errorOutputContains 'Detected binary changes'
 
         when:
+        // japicmp reports the class too, since a class with an incompatible member is not
+        // binary compatible itself, so both are accepted, as the report asks
         file(acceptedFile).text = """[
+            {
+                "type": "io.micronaut.subproject1.Dummy1",
+                "member": "Class io.micronaut.subproject1.Dummy1",
+                "reason": "Removed a constructor on purpose"
+            },
             {
                 "type": "io.micronaut.subproject1.Dummy1",
                 "member": "Constructor io.micronaut.subproject1.Dummy1(java.lang.String)",

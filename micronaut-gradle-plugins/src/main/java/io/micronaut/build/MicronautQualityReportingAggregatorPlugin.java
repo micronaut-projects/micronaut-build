@@ -11,15 +11,20 @@ import org.gradle.testing.jacoco.plugins.JacocoCoverageReport;
 import org.gradle.testing.jacoco.plugins.JacocoReportAggregationPlugin;
 import org.gradle.util.GradleVersion;
 import org.sonarqube.gradle.SonarExtension;
+import org.sonarqube.gradle.SonarProperties;
 import org.sonarqube.gradle.SonarQubePlugin;
 import org.sonarqube.gradle.SonarTask;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @SuppressWarnings("UnstableApiUsage")
 public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project> {
 
     public static final String COVERAGE_REPORT_TASK_NAME = "testCodeCoverageReport";
+    private static final String MULTICRITERIA = "sonar.issue.ignore.multicriteria";
+    private static final String TEST_ISSUES_CRITERION = "micronautTestSources";
 
     @Override
     public void apply(final Project rootProject) {
@@ -53,9 +58,54 @@ public class MicronautQualityReportingAggregatorPlugin implements Plugin<Project
                         p.property("sonar.coverage.jacoco.xmlReportPaths", jacocoReportPath);
                     }
                 });
+                // Registered once every build script has run, so that it comes after the projects' own sonar
+                // blocks and adds to the criteria they declare instead of being replaced by them. A subproject
+                // that declares criteria of its own replaces the root's for its module, so it gets the criterion too.
+                rootProject.getGradle().projectsEvaluated(unused -> rootProject.getAllprojects().forEach(project -> {
+                    SonarExtension sonar = project.getExtensions().findByType(SonarExtension.class);
+                    if (sonar != null) {
+                        boolean root = project == rootProject;
+                        sonar.properties(p -> ignoreIssuesInTestSources(p, root));
+                    }
+                }));
                 rootProject.getTasks().withType(SonarTask.class).configureEach(t -> t.dependsOn(COVERAGE_REPORT_TASK_NAME));
             } else {
                 rootProject.getLogger().warn("Could not find the sonarqube extension");
+            }
+        }
+    }
+
+    /**
+     * Third-party analyzers such as groovydre apply their rules to every file, test files included,
+     * even though the Sonar plugin already puts the test source directories into {@code sonar.tests}.
+     * The test files stay in {@code sonar.tests}, which coverage needs, but no issue is raised on them.
+     *
+     * @param p the Sonar properties of a project
+     * @param always whether to add the criterion when the project declares no criteria, which only the root needs
+     */
+    private static void ignoreIssuesInTestSources(SonarProperties p, boolean always) {
+        Object declared = p.getProperties().get(MULTICRITERIA);
+        if (declared == null && !always) {
+            return;
+        }
+        Set<String> criteria = new LinkedHashSet<>();
+        if (declared instanceof Iterable<?> iterable) {
+            iterable.forEach(criterion -> addCriteria(criteria, criterion));
+        } else {
+            addCriteria(criteria, declared);
+        }
+        criteria.add(TEST_ISSUES_CRITERION);
+        p.property(MULTICRITERIA, String.join(",", criteria));
+        p.property(MULTICRITERIA + "." + TEST_ISSUES_CRITERION + ".ruleKey", "*");
+        p.property(MULTICRITERIA + "." + TEST_ISSUES_CRITERION + ".resourceKey", "**/src/test/**");
+    }
+
+    private static void addCriteria(Set<String> criteria, Object declared) {
+        if (declared != null) {
+            for (String criterion : declared.toString().split(",")) {
+                if (!criterion.isBlank()) {
+                    criteria.add(criterion.trim());
+                }
             }
         }
     }
