@@ -3,6 +3,7 @@ package io.micronaut.build;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import io.micronaut.build.pom.BomSuppressions;
+import io.micronaut.build.sonarlint.SonarLintExtension;
 import io.micronaut.build.utils.DefaultVersions;
 import org.gradle.api.Action;
 import org.gradle.api.JavaVersion;
@@ -22,6 +23,8 @@ public abstract class MicronautBuildExtension {
 
     private final MicronautCompileOptions compileOptions;
 
+    private final SonarLintExtension sonarLint;
+
     private Closure<?> resolutionStrategy;
 
     @Inject
@@ -31,6 +34,7 @@ public abstract class MicronautBuildExtension {
     public MicronautBuildExtension(final BuildEnvironment buildEnvironment) {
         this.environment = buildEnvironment;
         this.compileOptions = getObjects().newInstance(MicronautCompileOptions.class);
+        this.sonarLint = getObjects().newInstance(SonarLintExtension.class);
 
         getJavaVersion().convention(DEFAULT_JAVA_VERSION);
         getTestJavaVersion().convention(Integer.valueOf(JavaVersion.current().getMajorVersion()));
@@ -48,6 +52,17 @@ public abstract class MicronautBuildExtension {
 
     public MicronautCompileOptions getCompileOptions() {
         return compileOptions;
+    }
+
+    /**
+     * The configuration of the offline SonarLint check, the {@code sonarLint} task.
+     */
+    public SonarLintExtension getSonarLint() {
+        return sonarLint;
+    }
+
+    public void sonarLint(Action<? super SonarLintExtension> spec) {
+        spec.execute(sonarLint);
     }
 
     public Closure<?> getResolutionStrategy() {

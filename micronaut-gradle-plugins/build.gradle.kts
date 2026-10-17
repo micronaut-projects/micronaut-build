@@ -34,6 +34,9 @@ dependencies {
     implementation(libs.tomlj)
     implementation(libs.maven.model.builder)
 
+    // Only on the classpath of the isolated SonarLint worker, resolved in the consuming build
+    compileOnly(libs.sonarlint.analysis.engine)
+
     // We must differentiate the version that we use HERE to test the build plugins, which
     // should use a version of Spock which is compatible with what Gradle uses (Groovy 4)
     // and the version that we will use in Micronaut projects, which is going to be Groovy 5
@@ -83,6 +86,10 @@ micronautBuildPlugin {
     versionsMap.put("logback", libs.versions.logback)
     versionsMap.put("nullaway", libs.versions.nullaway)
     versionsMap.put("error_prone_core", libs.versions.error.prone.core)
+    versionsMap.put("sonarlint_engine", libs.versions.sonarlint.engine)
+    versionsMap.put("sonar_java", libs.versions.sonarlint.java.asProvider())
+    versionsMap.put("sonar_java_symbolic_execution", libs.versions.sonarlint.java.se)
+    versionsMap.put("sonarlint_slf4j", libs.versions.sonarlint.slf4j)
 
     // Project plugins
     definePlugin("aot-module", "io.micronaut.build.aot.MicronautAotModulePlugin")
