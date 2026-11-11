@@ -230,6 +230,7 @@ public class MicronautBinaryCompatibilityPlugin implements Plugin<Project> {
             );
             task.usesService(downloader);
             task.getDownloader().set(downloader);
+            task.getMaxAttempts().convention(providers.gradleProperty("micronaut.build.findBaseline.maxAttempts").map(Integer::parseInt).orElse(FindBaselineTask.DEFAULT_MAX_ATTEMPTS));
             task.getBaseRepository().convention("https://repo1.maven.org/maven2");
             task.getGroupId().convention(providers.provider(() -> project.getGroup().toString()));
             task.getArtifactId().convention(providers.provider(() -> artifactIdOf(project)));

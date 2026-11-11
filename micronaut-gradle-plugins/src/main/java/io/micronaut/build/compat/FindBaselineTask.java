@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,6 +43,8 @@ import java.util.Optional;
 public abstract class FindBaselineTask extends DefaultTask {
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final int CACHE_IN_SECONDS = 3600;
+    public static final int DEFAULT_MAX_ATTEMPTS = 4;
+    public static final Duration DEFAULT_RETRY_BACKOFF = Duration.ofSeconds(2);
 
     @Input
     public abstract Property<String> getBaseRepository();
@@ -70,7 +73,9 @@ public abstract class FindBaselineTask extends DefaultTask {
         return getBaseRepository().zip(artifactPath, (baseUrl, path) -> {
             String url = baseUrl + "/" + path ;
             try {
-                return getDownloader().get().fetchFromURL(new URI(url)).orElse(EMPTY_BYTE_ARRAY);
+                return getDownloader().get()
+                    .fetchFromURL(new URI(url), getMaxAttempts().getOrElse(DEFAULT_MAX_ATTEMPTS), getRetryBackoff().getOrElse(DEFAULT_RETRY_BACKOFF))
+                    .orElse(EMPTY_BYTE_ARRAY);
             } catch (URISyntaxException e) {
                 throw new GradleException("Invalid URI: " + url, e);
             }
@@ -79,6 +84,27 @@ public abstract class FindBaselineTask extends DefaultTask {
 
     @Internal
     abstract Property<ExternalURLService> getDownloader();
+
+    /**
+     * The maximum number of attempts made to download the Maven metadata
+     * when the download fails for another reason than the metadata not
+     * existing (network errors, timeouts, server errors). Defaults to
+     * {@value #DEFAULT_MAX_ATTEMPTS}, or the value of the
+     * {@code micronaut.build.findBaseline.maxAttempts} Gradle property.
+     *
+     * @return the maximum number of attempts
+     */
+    @Internal
+    public abstract Property<Integer> getMaxAttempts();
+
+    /**
+     * How long to wait before retrying a failed download. The wait doubles
+     * after every further failure. Defaults to 2 seconds.
+     *
+     * @return the initial backoff
+     */
+    @Internal
+    public abstract Property<Duration> getRetryBackoff();
 
     @Inject
     protected abstract ProviderFactory getProviders();
