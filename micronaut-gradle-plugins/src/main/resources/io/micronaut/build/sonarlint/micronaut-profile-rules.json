@@ -1,0 +1,4469 @@
+{
+ "organization": "micronaut-projects",
+ "qualityProfile": "AYFHlJjqlBO-fp5MP_nD",
+ "rules": [
+  {
+   "internalKey": null,
+   "key": "java:S100",
+   "name": "Method names should comply with a naming convention",
+   "params": {
+    "format": "^[a-z][a-zA-Z0-9]*$"
+   },
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S101",
+   "name": "Class names should comply with a naming convention",
+   "params": {
+    "format": "^[A-Z][a-zA-Z0-9]*$"
+   },
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S106",
+   "name": "Standard outputs should not be used directly to log anything",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1065",
+   "name": "Unused labels should be removed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1066",
+   "name": "Mergeable \"if\" statements should be combined",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1068",
+   "name": "Unused \"private\" fields should be removed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S107",
+   "name": "Methods should not have too many parameters",
+   "params": {
+    "constructorMax": "7",
+    "max": "7"
+   },
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1075",
+   "name": "URIs should not be hardcoded",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S108",
+   "name": "Nested blocks of code should not be left empty",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S110",
+   "name": "Inheritance tree of classes should not be too deep",
+   "params": {
+    "max": "5"
+   },
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1104",
+   "name": "Class variable fields should not have public accessibility",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1110",
+   "name": "Redundant pairs of parentheses should be removed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1111",
+   "name": "The \"Object.finalize()\" method should not be called",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1113",
+   "name": "The \"Object.finalize()\" method should not be overridden",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1114",
+   "name": "\"super.finalize()\" should be called at the end of \"Object.finalize()\" implementations",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1116",
+   "name": "Empty statements should be removed",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1117",
+   "name": "Local variables should not shadow class fields",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1118",
+   "name": "Utility classes should not have public constructors",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1119",
+   "name": "Labels should not be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S112",
+   "name": "Generic exceptions should never be thrown",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1121",
+   "name": "Assignments should not be made from within sub-expressions",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1123",
+   "name": "Deprecated elements should have both the annotation and the Javadoc tag",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1124",
+   "name": "Modifiers should be declared in the correct order",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1125",
+   "name": "Boolean literals should not be redundant",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1126",
+   "name": "Return of boolean expressions should not be wrapped into an \"if-then-else\" statement",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1128",
+   "name": "Unnecessary imports should be removed",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1130",
+   "name": "Exceptions in \"throws\" clauses should not be superfluous",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1133",
+   "name": "Deprecated code should be removed",
+   "params": {},
+   "severity": "INFO",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1134",
+   "name": "Track uses of \"FIXME\" tags",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1135",
+   "name": "Track uses of \"TODO\" tags",
+   "params": {},
+   "severity": "INFO",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S114",
+   "name": "Interface names should comply with a naming convention",
+   "params": {
+    "format": "^[A-Z][a-zA-Z0-9]*$"
+   },
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1141",
+   "name": "Try-catch blocks should not be nested",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1143",
+   "name": "Jump statements should not occur in \"finally\" blocks",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1144",
+   "name": "Unused \"private\" methods should be removed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1149",
+   "name": "Synchronized classes \"Vector\", \"Hashtable\", \"Stack\" and \"StringBuffer\" should not be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S115",
+   "name": "Constant names should comply with a naming convention",
+   "params": {
+    "format": "^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"
+   },
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1150",
+   "name": "\"Enumeration\" should not be implemented",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1153",
+   "name": "\"String.valueOf()\" should not be appended to a \"String\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1155",
+   "name": "\"Collection.isEmpty()\" should be used to test for emptiness",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1157",
+   "name": "Case insensitive string comparisons should be made without intermediate upper or lower casing",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1158",
+   "name": "Primitive wrappers should not be instantiated only for \"toString\" or \"compareTo\" calls",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S116",
+   "name": "Field names should comply with a naming convention",
+   "params": {
+    "format": "^[a-z][a-zA-Z0-9]*$"
+   },
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1161",
+   "name": "\"@Override\" should be used on overriding and implementing methods",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1163",
+   "name": "Exceptions should not be thrown in finally blocks",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1165",
+   "name": "Exception classes should have final fields",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1168",
+   "name": "Empty arrays and collections should be returned instead of null",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S117",
+   "name": "Local variable and method parameter names should comply with a naming convention",
+   "params": {
+    "format": "^[a-z][a-zA-Z0-9]*$"
+   },
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1170",
+   "name": "Public constants and fields initialized at declaration should be \"static final\" rather than merely \"final\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1171",
+   "name": "Only static class initializers should be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1172",
+   "name": "Unused method parameters should be removed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1174",
+   "name": "\"Object.finalize()\" should remain protected (versus public) when overriding",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1175",
+   "name": "The signature of \"finalize()\" should match that of \"Object.finalize()\"",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1181",
+   "name": "Throwable and Error should not be caught",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1182",
+   "name": "Classes that override \"clone\" should be \"Cloneable\" and call \"super.clone()\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1185",
+   "name": "Overriding methods should do more than simply call the same method in the super class",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1186",
+   "name": "Methods should not be empty",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S119",
+   "name": "Type parameter names should comply with a naming convention",
+   "params": {
+    "format": "^[A-Z][0-9]?$"
+   },
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1190",
+   "name": "Future keywords should not be used as names",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1191",
+   "name": "Classes from \"sun.*\" packages should not be used",
+   "params": {
+    "Exclude": "com.sun.jersey,com.sun.faces"
+   },
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1192",
+   "name": "String literals should not be duplicated",
+   "params": {
+    "minimalLength": "5",
+    "threshold": "3"
+   },
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1193",
+   "name": "Exception types should not be tested using \"instanceof\" in catch blocks",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1195",
+   "name": "Array designators \"[]\" should be located after the type in method signatures",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1197",
+   "name": "Array designators \"[]\" should be on the type, not the variable",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1199",
+   "name": "Nested code blocks should not be used",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S120",
+   "name": "Package names should comply with a naming convention",
+   "params": {
+    "format": "^[a-z_]+(\\.[a-z_][a-z0-9_]*)*$"
+   },
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1201",
+   "name": "\"equals\" method overrides should accept \"Object\" parameters",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1206",
+   "name": "\"equals(Object obj)\" and \"hashCode()\" should be overridden in pairs",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1210",
+   "name": "\"equals(Object obj)\" should be overridden along with the \"compareTo(T obj)\" method",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1214",
+   "name": "Interfaces should not solely consist of constants",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1215",
+   "name": "Execution of the Garbage Collector should be triggered only by the JVM",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1217",
+   "name": "\"Thread.run()\" should not be called directly",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1219",
+   "name": "\"switch\" statements should not contain non-case labels",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1220",
+   "name": "The default unnamed package should not be used",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1221",
+   "name": "Methods should not be named \"tostring\", \"hashcode\" or \"equal\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1223",
+   "name": "Non-constructor methods should not have the same name as the enclosing class",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1226",
+   "name": "Method parameters, caught exceptions and foreach variables' initial values should not be ignored",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S125",
+   "name": "Sections of code should not be commented out",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1264",
+   "name": "A \"while\" loop should be used instead of a \"for\" loop",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S127",
+   "name": "\"for\" loop stop conditions should be invariant",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S128",
+   "name": "Switch cases should end with an unconditional \"break\" statement",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1301",
+   "name": "\"switch\" statements should have at least 3 \"case\" clauses",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S131",
+   "name": "\"switch\" statements should have \"default\" clauses",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1313",
+   "name": "IP addresses should not be hardcoded",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1317",
+   "name": "\"StringBuilder\" and \"StringBuffer\" should not be instantiated with a character",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1319",
+   "name": "Declarations should use Java collection interfaces such as \"List\" rather than specific implementation classes such as \"LinkedList\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S135",
+   "name": "Loops should not contain more than a single \"break\" or \"continue\" statement",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1444",
+   "name": "\"public static\" fields should be constant",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1450",
+   "name": "Private fields only used as local variables in methods should become local variables",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1452",
+   "name": "Generic wildcard types should not be used in return types",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1479",
+   "name": "\"switch\" statements should not have too many \"case\" clauses",
+   "params": {
+    "maximum": "30"
+   },
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1481",
+   "name": "Unused local variables should be removed",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1488",
+   "name": "Local variables should not be declared and then immediately returned or thrown",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1596",
+   "name": "\"Collections.EMPTY_LIST\", \"EMPTY_MAP\", and \"EMPTY_SET\" should not be used",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1598",
+   "name": "Package declaration should match source file directory",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1602",
+   "name": "Lambdas containing only one statement should not nest this statement in a block",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1604",
+   "name": "Anonymous inner classes containing only one method should become lambdas",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1607",
+   "name": "JUnit4 @Ignored and JUnit5 @Disabled annotations should be used to disable tests and should provide a rationale",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1610",
+   "name": "Abstract classes without fields should be converted to interfaces",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1611",
+   "name": "Parentheses should be removed from a single lambda parameter when its type is inferred",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1612",
+   "name": "Lambdas should be replaced with method references",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1640",
+   "name": "Maps with keys that are enum values should use the EnumMap implementation",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1643",
+   "name": "Strings should not be concatenated using '+' in a loop",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1656",
+   "name": "Variables should not be self-assigned",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1659",
+   "name": "Multiple variables should not be declared on the same line",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1700",
+   "name": "A field should not duplicate the name of its containing class",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1710",
+   "name": "Annotation repetitions should not be wrapped",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1751",
+   "name": "Loops with at most one iteration should be refactored",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1764",
+   "name": "Identical expressions should not be used on both sides of a binary operator",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1844",
+   "name": "\"Object.wait\" should not be called on objects that implement \"java.util.concurrent.locks.Condition\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1845",
+   "name": "Methods and field names should not be the same or differ only by capitalization",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1849",
+   "name": "\"Iterator.hasNext()\" should not call \"Iterator.next()\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1854",
+   "name": "Unused assignments should be removed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1858",
+   "name": "\"toString()\" should never be called on a String object",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1860",
+   "name": "Synchronization should not be done on instances of value-based classes",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1862",
+   "name": "Related \"if/else if\" statements should not have the same condition",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1871",
+   "name": "Two branches in a conditional structure should not have exactly the same implementation",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1872",
+   "name": "Classes should not be compared by name",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1874",
+   "name": "\"@Deprecated\" code should not be used",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1905",
+   "name": "Redundant casts should not be used",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1940",
+   "name": "Boolean checks should not be inverted",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1948",
+   "name": "Fields in a \"Serializable\" class should either be transient or serializable",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1989",
+   "name": "Exceptions should not be thrown from servlet methods",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S1994",
+   "name": "\"for\" loop increment clauses should modify the loops' counters",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2053",
+   "name": "Password hashing functions should use an unpredictable salt",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2055",
+   "name": "The non-serializable super class of a \"Serializable\" class should have a no-argument constructor",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2060",
+   "name": "\"Externalizable\" classes should have no-arguments constructors",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2061",
+   "name": "Custom serialization methods should have required signatures",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2062",
+   "name": "\"readResolve\" methods should be inheritable",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2065",
+   "name": "Fields in non-serializable classes should not be \"transient\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2066",
+   "name": "\"Serializable\" inner classes of non-serializable outer classes should be \"static\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2068",
+   "name": "Credentials should not be hard-coded",
+   "params": {
+    "credentialWords": "password,passwd,pwd,passphrase,java.naming.security.credentials"
+   },
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2077",
+   "name": "SQL queries should not be dynamically formatted",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2092",
+   "name": "Cookies should have the \"secure\" flag",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2093",
+   "name": "Try-with-resources should be used",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2094",
+   "name": "Classes should not be empty",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2095",
+   "name": "Resources should be closed",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2097",
+   "name": "\"equals(Object obj)\" should test the argument's type",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2109",
+   "name": "Reflection should not be used to check non-runtime annotations",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2110",
+   "name": "Invalid \"Date\" values should not be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2111",
+   "name": "\"BigDecimal(double)\" should not be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2112",
+   "name": "\"URL.hashCode\" and \"URL.equals\" should be avoided",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2114",
+   "name": "Collections should not be passed as arguments to their own methods",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2115",
+   "name": "A secure password should be used when connecting to a database",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2116",
+   "name": "\"hashCode\" and \"toString\" should not be called on array instances",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2118",
+   "name": "\"writeObject\" argument must implement \"Serializable\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2119",
+   "name": "\"Random\" objects should be reused",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2121",
+   "name": "String operations with predictable outcomes should be avoided",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2122",
+   "name": "\"ScheduledThreadPoolExecutor\" should not have 0 core threads",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2123",
+   "name": "Values should not be uselessly incremented",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2127",
+   "name": "\"Double.longBitsToDouble\" should take \"long\" as argument",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2129",
+   "name": "Constructors should not be used to instantiate \"String\", \"BigInteger\", \"BigDecimal\" and primitive-wrapper classes",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2130",
+   "name": "Parsing should be used to convert \"Strings\" to primitives",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2133",
+   "name": "Objects should not be created only to invoke \"getClass\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2134",
+   "name": "Classes extending java.lang.Thread should provide a specific \"run\" behavior",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2139",
+   "name": "Exceptions should be either logged or rethrown but not both",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2140",
+   "name": "Methods of \"Random\" that return floating point values should not be used in random integer generation",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2142",
+   "name": "\"InterruptedException\" and \"ThreadDeath\" should not be ignored",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2147",
+   "name": "Catches should be combined",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2151",
+   "name": "\"runFinalizersOnExit\" should not be called",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2153",
+   "name": "Unnecessary boxing and unboxing should be avoided",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2154",
+   "name": "Dissimilar primitive wrappers should not be used with the ternary operator without explicit casting",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2157",
+   "name": "\"Cloneables\" should implement \"clone\"",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2159",
+   "name": "Unnecessary equality checks should not be made",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2160",
+   "name": "Subclasses that add fields to classes that override \"equals\" should also override \"equals\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2165",
+   "name": "\"finalize\" should not set fields to \"null\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2166",
+   "name": "Classes named like \"Exception\" should extend \"Exception\" or a subclass",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2167",
+   "name": "\"compareTo\" should not return \"Integer.MIN_VALUE\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2168",
+   "name": "Double-checked locking should not be used",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2175",
+   "name": "Inappropriate \"Collection\" calls should not be made",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2176",
+   "name": "Class names should not shadow interfaces or superclasses",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2177",
+   "name": "Child class methods named for parent class methods should be overrides",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2178",
+   "name": "Short-circuit logic should be used in boolean contexts",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2183",
+   "name": "Ints and longs should not be shifted by zero or more than their number of bits-1",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2184",
+   "name": "Math operands should be cast before assignment",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2185",
+   "name": "Do not perform unnecessary mathematical operations",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2186",
+   "name": "JUnit assertions should not be used in \"run\" methods",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2187",
+   "name": "TestCases should contain tests",
+   "params": {
+    "TestClassNamePattern": ".*(Test|Tests|TestCase)"
+   },
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2188",
+   "name": "JUnit test cases should call super methods",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2189",
+   "name": "Loops should not be infinite",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2200",
+   "name": "\"compareTo\" results should not be checked for specific values",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2201",
+   "name": "Return values from functions without side effects should not be ignored",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2204",
+   "name": "\".equals()\" should not be used to test the values of \"Atomic\" classes",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2209",
+   "name": "\"static\" members should be accessed statically",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2222",
+   "name": "Locks should be released on all paths",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2225",
+   "name": "\"toString()\" and \"clone()\" methods should not return null",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2226",
+   "name": "Servlets should not have mutable instance fields",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2229",
+   "name": "Methods should not call same-class methods with incompatible \"@Transactional\" values",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2230",
+   "name": "Methods with Spring proxying annotations should be public",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2232",
+   "name": "\"ResultSet.isLast()\" should not be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2234",
+   "name": "Parameters should be passed in the correct order",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2235",
+   "name": "\"IllegalMonitorStateException\" should not be caught",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2236",
+   "name": "Methods \"wait(...)\", \"notify()\" and \"notifyAll()\" should not be called on Thread instances",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2245",
+   "name": "Pseudorandom number generators (PRNGs) should not be used in security contexts",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2251",
+   "name": "A \"for\" loop update clause should move the counter in the right direction",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2252",
+   "name": "Loop conditions should be true at least once",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2254",
+   "name": "\"HttpServletRequest.getRequestedSessionId()\" should not be used",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2257",
+   "name": "Custom cryptographic algorithms should not be used",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2272",
+   "name": "\"Iterator.next()\" methods should throw \"NoSuchElementException\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2273",
+   "name": "\"Object.wait()\", \"Object.notify()\" and \"Object.notifyAll()\" should only be called from synchronized code",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2274",
+   "name": "\"Object.wait(...)\" and \"Condition.await(...)\" should be called inside a \"while\" loop",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2275",
+   "name": "Printf-style format strings should not lead to unexpected behavior at runtime",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2276",
+   "name": "\"wait(...)\" should be used instead of \"Thread.sleep(...)\" when a lock is held",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2293",
+   "name": "The diamond operator (\"<>\") should be used",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2326",
+   "name": "Unused type parameters should be removed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2386",
+   "name": "Mutable fields should not be \"public static\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2387",
+   "name": "Child class fields should not shadow parent class fields",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2388",
+   "name": "Inner class calls to super class methods should be unambiguous",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2390",
+   "name": "Classes should not access their own subclasses during class initialization",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2437",
+   "name": "Unnecessary bit operations should not be performed",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2438",
+   "name": "\"Thread\" should not be used where a \"Runnable\" argument is expected",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2440",
+   "name": "Classes with only \"static\" methods should not be instantiated",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2441",
+   "name": "Non-serializable objects should not be stored in \"javax.servlet.http.HttpSession\" instances",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2442",
+   "name": "Synchronizing on a \"java.util.concurrent\" object should be avoided",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2445",
+   "name": "Blocks should be synchronized on \"private final\" fields",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2446",
+   "name": "\"notifyAll()\" should be preferred over \"notify()\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2447",
+   "name": "\"null\" should not be returned from a \"Boolean\" method",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2479",
+   "name": "Whitespace and control characters in literals should be explicit",
+   "params": {
+    "allowTabsInTextBlocks": "false"
+   },
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2583",
+   "name": "Conditionally executed code should be reachable",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2589",
+   "name": "Boolean expressions should not be gratuitous",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2612",
+   "name": "File permissions should not be set to world-accessible values",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2629",
+   "name": "\"Preconditions\" and logging arguments should not require evaluation",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2637",
+   "name": "\"@NonNull\" values should not be set to null",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2638",
+   "name": "Method overrides should not change contracts",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2639",
+   "name": "Inappropriate regular expressions should not be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2647",
+   "name": "Basic authentication should not be used",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2674",
+   "name": "The value returned from a stream read should be checked",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2675",
+   "name": "\"readObject\" should not be \"synchronized\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2676",
+   "name": "\"Math.abs\" and negation should not be used on numbers that could be \"MIN_VALUE\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2677",
+   "name": "\"read\" and \"readLine\" return values should be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2681",
+   "name": "Multiline blocks should be enclosed in curly braces",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2689",
+   "name": "Files opened in append mode should not be used with \"ObjectOutputStream\"",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2692",
+   "name": "\"indexOf\" checks should not be for positive numbers",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2695",
+   "name": "\"PreparedStatement\" and \"ResultSet\" methods should be called with valid indices",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2696",
+   "name": "Instance methods should not write to \"static\" fields",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2699",
+   "name": "Tests should include assertions",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2718",
+   "name": "\"DateUtils.truncate\" from Apache Commons Lang library should not be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2737",
+   "name": "\"catch\" clauses should do more than rethrow",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2755",
+   "name": "XML parsers should not be vulnerable to XXE attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2757",
+   "name": "Non-existent operators like \"=+\" should not be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2761",
+   "name": "Unary prefix operators should not be repeated",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2786",
+   "name": "Nested \"enum\"s should not be declared static",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2789",
+   "name": "\"null\" should not be used with \"Optional\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2864",
+   "name": "\"entrySet()\" should be iterated when both the key and value are needed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2885",
+   "name": "Non-thread-safe fields should not be static",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2886",
+   "name": "Getters and setters should be synchronized in pairs",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2924",
+   "name": "JUnit rules should be used",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2925",
+   "name": "\"Thread.sleep\" should not be used in tests",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2970",
+   "name": "Assertions should be complete",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S2975",
+   "name": "\"clone\" should not be overridden",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3008",
+   "name": "Static non-final field names should comply with a naming convention",
+   "params": {
+    "format": "^[a-z][a-zA-Z0-9]*$"
+   },
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3010",
+   "name": "Static fields should not be updated in constructors",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3011",
+   "name": "Reflection should not be used to increase accessibility of classes, methods, or fields",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3012",
+   "name": "Arrays and lists should not be copied using loops",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3014",
+   "name": "\"ThreadGroup\" should not be used",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3020",
+   "name": "\"Collection.toArray()\" should be passed an array of the proper type",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3034",
+   "name": "Raw byte values should not be used in bitwise operations in combination with shifts",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3038",
+   "name": "Abstract methods should not be redundant",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3039",
+   "name": "Indexes to passed to \"String\" operations should be within the string's bounds",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3042",
+   "name": "\"writeObject\" should not be the only \"synchronized\" code in a class",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3046",
+   "name": "\"wait\" should not be called when multiple locks are held",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3064",
+   "name": "Assignment of lazy-initialized members should be the last step with double-checked locking",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3065",
+   "name": "Min and max used in combination should not always return the same value",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3066",
+   "name": "\"enum\" fields should not be publicly mutable",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3067",
+   "name": "\"getClass\" should not be used for synchronization",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3077",
+   "name": "Non-primitive fields should not be \"volatile\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3078",
+   "name": "\"volatile\" variables should not be used with compound operators",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3252",
+   "name": "\"static\" base class members should not be accessed via derived types",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3305",
+   "name": "Factory method injection should be used in \"@Configuration\" classes",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3329",
+   "name": "Cipher Block Chaining IVs should be unpredictable",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3330",
+   "name": "Cookies should have the \"HttpOnly\" flag",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3346",
+   "name": "Expressions used in \"assert\" should not produce side effects",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3358",
+   "name": "Ternary operators should not be nested",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3398",
+   "name": "\"private\" methods called only by inner classes should be moved to those classes",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3400",
+   "name": "Methods should not return constants",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3415",
+   "name": "Assertion arguments should be passed in the correct order",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3416",
+   "name": "Loggers should be named for their enclosing classes",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3436",
+   "name": "Value-based classes should not be used for locking",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3457",
+   "name": "Format strings should be used correctly",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3516",
+   "name": "Methods returns should not be invariant",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3551",
+   "name": "Overrides should match their parent class methods in synchronization",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3577",
+   "name": "Test classes should comply with a naming convention",
+   "params": {
+    "format": "^((Test|IT)[a-zA-Z0-9_]+|[A-Z][a-zA-Z0-9_]*(Test|Tests|TestCase|IT|ITCase))$"
+   },
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3599",
+   "name": "Double Brace Initialization should not be used",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3626",
+   "name": "Jump statements should not be redundant",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3631",
+   "name": "\"Arrays.stream\" should be used for primitive arrays",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3740",
+   "name": "Raw types should not be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3751",
+   "name": "\"@RequestMapping\" methods should not be \"private\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3752",
+   "name": "HTTP routes should restrict allowed HTTP methods",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3753",
+   "name": "\"@Controller\" classes that use \"@SessionAttributes\" must call \"setComplete\" on their \"SessionStatus\" objects",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3824",
+   "name": "\"Map.get\" and value test should be replaced with single method call",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3864",
+   "name": "\"Stream.peek\" should be used with caution",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3878",
+   "name": "Arrays should not be created for varargs parameters",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3923",
+   "name": "All branches in a conditional structure should not have exactly the same implementation",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3958",
+   "name": "Intermediate Stream methods should not be left unused",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3972",
+   "name": "Conditionals should start on new lines",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3973",
+   "name": "A conditionally executed single line should be denoted by indentation",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3981",
+   "name": "Collection sizes and array length comparisons should make sense",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3984",
+   "name": "Exceptions should not be created without being thrown",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3985",
+   "name": "Unused \"private\" classes should be removed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S3986",
+   "name": "Week Year (\"YYYY\") should not be used for date formatting",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4032",
+   "name": "Packages containing only \"package-info.java\" should be removed",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4034",
+   "name": "\"Stream\" call chains should be simplified when possible",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4036",
+   "name": "OS commands should not rely on PATH resolution",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4042",
+   "name": "\"java.nio.Files#delete\" should be preferred",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4065",
+   "name": "\"ThreadLocal.withInitial\" should be preferred",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4087",
+   "name": "\"close()\" calls should not be redundant",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4143",
+   "name": "Map values should not be replaced unconditionally",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4144",
+   "name": "Methods should not have identical implementations",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4165",
+   "name": "Assignments should not be redundant",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4201",
+   "name": "Null checks should not be used with \"instanceof\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4274",
+   "name": "Asserts should not be used to check the parameters of a public method",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4275",
+   "name": "Getters and setters should access the expected fields",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4276",
+   "name": "Functional Interfaces should be as specialised as possible",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4347",
+   "name": "Secure random number generators should not output predictable values",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4348",
+   "name": "\"iterator\" should not return \"this\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4349",
+   "name": "\"write(byte[],int,int)\" should be overridden",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4351",
+   "name": "\"compareTo\" should not be overloaded",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4423",
+   "name": "Weak SSL/TLS protocols should not be used",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4425",
+   "name": "\"Integer.toHexString\" should not be used to build hexadecimal strings",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4426",
+   "name": "Cryptographic keys should be robust",
+   "params": {
+    "minimumKeySizes": "RSA:2048,DH:2048,DIFFIEHELLMAN:2048,DSA:2048,AES:128,EC:224"
+   },
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4433",
+   "name": "LDAP connections should be authenticated",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4434",
+   "name": "Deserialization of Java objects from LDAP should be disabled",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4449",
+   "name": "Nullness of parameters should be guaranteed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4454",
+   "name": "\"equals\" method parameters should not be marked \"@Nonnull\"",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4488",
+   "name": "Composed \"@RequestMapping\" variants should be preferred",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4502",
+   "name": "CSRF protections should not be disabled",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4507",
+   "name": "Debugging features should not be enabled in production",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4512",
+   "name": "JavaBean properties should not be populated from untrusted input",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4517",
+   "name": "InputSteam.read() implementation should not return a signed byte",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4524",
+   "name": "\"default\" clauses should be last",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4544",
+   "name": "Jackson deserialization should not use unsafe configuration",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4601",
+   "name": "\"HttpSecurity\" URL patterns should be correctly ordered",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4602",
+   "name": "\"@SpringBootApplication\" and \"@ComponentScan\" should not be used in the default package",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4635",
+   "name": "String offset-based methods should be preferred for finding substrings from offsets",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4682",
+   "name": "\"@CheckForNull\" or \"@Nullable\" should not be used on primitive types",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4684",
+   "name": "Database Operations should not be vulnerable to mass assignment",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4719",
+   "name": "\"StandardCharsets\" constants should be preferred",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4738",
+   "name": "Java features should be preferred to Guava",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4790",
+   "name": "Weak hashing algorithms should not be used",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4830",
+   "name": "Server certificates should be verified during SSL/TLS connections",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4838",
+   "name": "An iteration on a Collection should be performed on the type handled by the Collection",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4925",
+   "name": "\"Class.forName()\" should not load JDBC 4.0+ drivers",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4929",
+   "name": "\"read(byte[],int,int)\" should be overridden",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4968",
+   "name": "The upper bound of type variables and wildcards should not be \"final\"",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4970",
+   "name": "Derived exceptions should not hide their parents' catch blocks",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4973",
+   "name": "Strings and Boxed types should be compared using \"equals()\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S4977",
+   "name": "Type parameters should not shadow other type parameters",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5042",
+   "name": "Expanding archive files should not be done without controlling resource consumption",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5122",
+   "name": "Cross-Origin Resource Sharing (CORS) policy should be restricted to trusted origins",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5164",
+   "name": "\"ThreadLocal\" variables should be cleaned up when no longer used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5247",
+   "name": "Auto-escaping in HTML template engines should not be disabled",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5261",
+   "name": "\"else\" statements should be clearly matched with an \"if\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5301",
+   "name": "\"ActiveMQConnectionFactory\" should not be vulnerable to malicious code deserialization",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5320",
+   "name": "Intents should not be broadcast without receiver permissions",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5322",
+   "name": "Android broadcast receivers should not be registered without a permission",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5324",
+   "name": "Sensitive data should not be stored in Android external storage",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5329",
+   "name": "Collection constructors should not be used as java.util.function.Function",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5332",
+   "name": "Clear-text protocols should not be used",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5344",
+   "name": "Passwords should not be stored in plaintext or with a fast hashing algorithm",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5361",
+   "name": "\"String#replace\" should be preferred to \"String#replaceAll\"",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5411",
+   "name": "Avoid using boxed \"Boolean\" types directly in boolean expressions",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5413",
+   "name": "'List.remove()' should not be used in ascending 'for' loops",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5443",
+   "name": "Temporary files should not be created in publicly writable directories",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5445",
+   "name": "Insecure temporary file creation methods should not be used",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5527",
+   "name": "Server hostnames should be verified during SSL/TLS connections",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5542",
+   "name": "Encryption algorithms should be used with secure mode and padding scheme",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5547",
+   "name": "Cipher algorithms should be robust",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5659",
+   "name": "JWT should be signed and verified with strong cipher algorithms",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5663",
+   "name": "Simple string literal should be used for single line strings",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5664",
+   "name": "Whitespace for text block indent should be consistent",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5665",
+   "name": "Escape sequences should not be used in text blocks",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5669",
+   "name": "Vararg method arguments should not be confusing",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5679",
+   "name": "OpenSAML2 should be configured to prevent authentication bypass",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5689",
+   "name": "Web application technologies should not disclose version information",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5693",
+   "name": "HTTP request content length should be limited",
+   "params": {
+    "fileUploadSizeLimit": "8388608"
+   },
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5738",
+   "name": "\"@Deprecated\" code marked for removal should never be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5776",
+   "name": "Exception testing via JUnit ExpectedException rule should not be mixed with other assertions",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5777",
+   "name": "Exception testing via JUnit @Test annotation should be avoided",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5778",
+   "name": "Only one method invocation is expected when testing runtime exceptions",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5779",
+   "name": "Assertion methods should not be used within the try block of a try-catch catching an Error",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5783",
+   "name": "Only one method invocation is expected when testing checked exceptions",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5785",
+   "name": "JUnit assertTrue/assertFalse should be simplified to the corresponding dedicated assertion",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5786",
+   "name": "JUnit5 test methods should have default package visibility",
+   "params": {},
+   "severity": "INFO",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5790",
+   "name": "JUnit5 inner test classes should be annotated with @Nested",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5803",
+   "name": "Class members annotated with \"@VisibleForTesting\" should not be accessed from production code",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5804",
+   "name": "Authentication mechanisms should not permit user enumeration.",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5808",
+   "name": "Authorizations should be based on strong decisions",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5810",
+   "name": "JUnit5 test classes and methods should not be silently ignored",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5826",
+   "name": "Methods setUp() and tearDown() should be correctly annotated starting with JUnit4",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5831",
+   "name": "AssertJ configuration should be applied",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5833",
+   "name": "AssertJ methods setting the assertion context should come before an assertion",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5838",
+   "name": "AssertJ assertions should be simplified to the corresponding dedicated assertion",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5841",
+   "name": "AssertJ assertions \"allMatch\" and \"doesNotContain\" should also test for emptiness",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5842",
+   "name": "Repeated patterns in regular expressions should not match the empty string",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5843",
+   "name": "Regular expressions should not be too complicated",
+   "params": {
+    "maxComplexity": "20"
+   },
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5845",
+   "name": "Assertions comparing incompatible types should not be made",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5846",
+   "name": "Empty lines should not be tested with regex MULTILINE flag",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5850",
+   "name": "Alternatives in regular expressions should be grouped when used with anchors",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5852",
+   "name": "Regular expressions should not cause catastrophic backtracking",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5853",
+   "name": "Consecutive AssertJ \"assertThat\" statements should be chained",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5854",
+   "name": "Regexes containing characters subject to normalization should use the CANON_EQ flag",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5855",
+   "name": "Regex alternatives should not be redundant",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5856",
+   "name": "Regular expressions should be syntactically valid",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5857",
+   "name": "Character classes should be preferred over reluctant quantifiers in regular expressions",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5860",
+   "name": "Names of regular expressions named groups should be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5863",
+   "name": "Assertions should not compare an object to itself",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5866",
+   "name": "Case insensitive Unicode regular expressions should enable the \"UNICODE_CASE\" flag",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5868",
+   "name": "Unicode Grapheme Clusters should be avoided inside regex character classes",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5869",
+   "name": "Character classes in regular expressions should not contain the same character twice",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5876",
+   "name": "A new session should be created during user authentication",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5917",
+   "name": "DateTimeFormatters should not use mismatched year and week numbers",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5958",
+   "name": "AssertJ \"assertThatThrownBy\" should not be used alone",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5960",
+   "name": "Assertions should not be used in production code",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5961",
+   "name": "Test methods should not contain too many assertions",
+   "params": {
+    "MaximumAssertionNumber": "25"
+   },
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5967",
+   "name": "Tests method should not be annotated with competing annotations",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5969",
+   "name": "Mocking all non-private methods of a class should be avoided",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5973",
+   "name": "Tests should be stable",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5976",
+   "name": "Similar tests should be grouped in a single Parameterized test",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5993",
+   "name": "Constructors of an \"abstract\" class should not be declared \"public\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5994",
+   "name": "Regex patterns following a possessive quantifier should not always fail",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5996",
+   "name": "Regex boundaries should not be used in a way that can never be matched",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S5998",
+   "name": "Regular expressions should not overflow the stack",
+   "params": {
+    "maxStackConsumptionFactor": "5.0"
+   },
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6001",
+   "name": "Back references in regular expressions should only refer to capturing groups that are matched before the reference",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6002",
+   "name": "Regex lookahead assertions should not be contradictory",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6019",
+   "name": "Reluctant quantifiers in regular expressions should be followed by an expression that can't match the empty string",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6035",
+   "name": "Single-character alternations in regular expressions should be replaced with character classes",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6068",
+   "name": "Call to Mockito method \"verify\", \"when\" or \"given\" should be simplified",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6070",
+   "name": "The regex escape sequence \\cX should only be used with characters in the @-_ range",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6103",
+   "name": "AssertJ assertions with \"Consumer\" arguments should contain assertion inside consumers",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6104",
+   "name": "Map \"computeIfAbsent()\" and \"computeIfPresent()\" should not be used to add \"null\" values.",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6126",
+   "name": "String multiline concatenation should be replaced with Text Blocks",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6201",
+   "name": "Pattern Matching for \"instanceof\" operator should be used instead of simple \"instanceof\" + cast",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6202",
+   "name": "Operator \"instanceof\" should be used instead of \"A.class.isInstance()\"",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6203",
+   "name": "Text blocks should not be used in complex expressions",
+   "params": {
+    "MaximumNumberOfLines": "5"
+   },
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6204",
+   "name": "\"Stream.toList()\" method should be used instead of \"collectors\" when unmodifiable list needed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6205",
+   "name": "Switch arrow labels should not use redundant keywords",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6206",
+   "name": "Records should be used instead of ordinary classes when representing immutable data structure",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6207",
+   "name": "Redundant constructors/methods should be avoided in records",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6208",
+   "name": "Comma-separated labels should be used in Switch with colon case",
+   "params": {},
+   "severity": "INFO",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6209",
+   "name": "Members ignored during record serialization should not be used",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6213",
+   "name": "Restricted Identifiers should not be used as Identifiers",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6216",
+   "name": "Reflection should not be used to increase accessibility of records' fields",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6217",
+   "name": "Permitted types of a sealed class should be omitted if they are declared in the same file",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6218",
+   "name": "Equals method should be overridden in records containing array fields",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6219",
+   "name": "'serialVersionUID' field should not be set to '0L' in records",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6288",
+   "name": "Android KeyStore keys should require user authentication",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6293",
+   "name": "Biometric authentication should be cryptographically bound",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6301",
+   "name": "Mobile database encryption keys should not be disclosed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6326",
+   "name": "Regular expressions should not contain multiple spaces",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6331",
+   "name": "Regular expressions should not contain empty groups",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6353",
+   "name": "Regular expression quantifiers and character classes should be used concisely",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6355",
+   "name": "Deprecated annotations should include explanations",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6362",
+   "name": "JavaScript support should not be enabled in WebViews unless strictly necessary",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6363",
+   "name": "WebViews should not allow unrestricted file access",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6373",
+   "name": "XML parsers should not allow inclusion of arbitrary files",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6374",
+   "name": "XML parsers should not load external schemas",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6376",
+   "name": "XML parsers should not be vulnerable to Denial of Service attacks",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6377",
+   "name": "XML signatures should be validated securely",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6395",
+   "name": "Non-capturing groups without quantifier should not be used",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6396",
+   "name": "Superfluous curly brace quantifiers should be avoided",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6397",
+   "name": "Character classes in regular expressions should not contain only one character",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "CODE_SMELL"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S6418",
+   "name": "Secrets should not be hard-coded",
+   "params": {
+    "randomnessSensibility": "5.0",
+    "secretWords": "api[_.-]?key,auth,credential,secret,token"
+   },
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "java:S899",
+   "name": "Return values should not be ignored when they contain the operation status code",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "javabugs:S2190",
+   "name": "Recursion should not be infinite",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "javabugs:S2259",
+   "name": "A NULL object should not be accessed",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "javabugs:S3518",
+   "name": "Zero should not be a possible denominator",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "javabugs:S3655",
+   "name": "Optional values should not be accessed when they may be empty",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "javabugs:S3959",
+   "name": "Consumed Stream pipelines should not be reused",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "javabugs:S6416",
+   "name": "Calls to methods should not trigger an exception",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "BUG"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S2076",
+   "name": "OS commands should not be vulnerable to command injection attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S2078",
+   "name": "LDAP queries should not be vulnerable to injection attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S2083",
+   "name": "I/O function calls should not be vulnerable to path injection attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S2091",
+   "name": "XPath expressions should not be vulnerable to injection attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S2631",
+   "name": "Regular expressions should not be vulnerable to Denial of Service attacks",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S3649",
+   "name": "Database queries should not be vulnerable to injection attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S5131",
+   "name": "Endpoints should not be vulnerable to reflected cross-site scripting (XSS) attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S5135",
+   "name": "Deserialization should not be vulnerable to injection attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S5144",
+   "name": "Server-side requests should not be vulnerable to forging attacks",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S5145",
+   "name": "Logging should not be vulnerable to injection attacks",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S5146",
+   "name": "HTTP request redirections should not be open to forging attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S5147",
+   "name": "NoSQL operations should not be vulnerable to injection attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S5334",
+   "name": "Dynamic code execution should not be vulnerable to injection attacks",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S5883",
+   "name": "OS commands should not be vulnerable to argument injection attacks",
+   "params": {},
+   "severity": "MINOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S6096",
+   "name": "Extracting archives should not lead to zip slip vulnerabilities",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S6173",
+   "name": "Reflection should not be vulnerable to injection attacks",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S6287",
+   "name": "Applications should not create session cookies from untrusted input",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S6350",
+   "name": "System command arguments constructed from user input should be validated",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S6384",
+   "name": "Components should not be vulnerable to intent redirection",
+   "params": {},
+   "severity": "BLOCKER",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S6390",
+   "name": "Thread suspensions should not be vulnerable to Denial of Service attacks",
+   "params": {},
+   "severity": "CRITICAL",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S6398",
+   "name": "JSON operations should not be vulnerable to injection attacks",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  },
+  {
+   "internalKey": null,
+   "key": "javasecurity:S6399",
+   "name": "XML operations should not be vulnerable to injection attacks",
+   "params": {},
+   "severity": "MAJOR",
+   "templateKey": null,
+   "type": "VULNERABILITY"
+  }
+ ]
+}
