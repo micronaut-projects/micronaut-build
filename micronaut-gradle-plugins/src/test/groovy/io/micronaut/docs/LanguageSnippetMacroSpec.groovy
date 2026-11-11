@@ -177,6 +177,7 @@ ${includes.join("\n\n")}
 
         then:
         rendered.contains("class Foo")
+        rendered.contains('class="language-scala hljs"')
         !rendered.contains("source.multi-language-sample,java")
 
         cleanup:
