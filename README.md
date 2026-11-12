@@ -174,6 +174,27 @@ The documentation `snippet::` macro looks up Python snippets in `test-suite-pyth
 snippet for Pyronaut next to the Gradle and Maven ones (see the `BuildDependencyMacro` documentation for the
 `pyronautScope` and `pyronaut` attributes).
 
+### TypeScript snippets
+
+The `snippet::` macro looks up TypeScript snippets in `test-suite-typescript/src/test/typescript`, by the whole
+package: `snippet::io.micronaut.docs.Foo` resolves to `test-suite-typescript/src/test/typescript/io/micronaut/docs/Foo.ts`.
+A test written against a TypeScript test runner declares no class and is named by the convention of the runners, so
+where there is no `Foo.ts` the snippet is the test file of that name, `Foo.test.ts` or `Foo.spec.ts`. The `project`,
+`project-base`, `source` and `source-typescript` attributes apply as for the other languages, and the tags of a
+snippet are `// tag::name[]` comments as in Java.
+
+A module that has a project for a language logs a warning for every snippet without a file in that language. While
+the snippets of a language are still being written, name the language in the `snippet-optional-languages` document
+attribute, a list separated by commas, to leave those warnings out:
+
+```groovy
+tasks.withType(PublishGuideTask).configureEach {
+    properties.put("snippet-optional-languages", "typescript")
+}
+```
+
+TypeScript snippets are not highlighted yet: the bundled highlight.js has no grammar for the language.
+
 ## Configuration options
 
 Default values are:

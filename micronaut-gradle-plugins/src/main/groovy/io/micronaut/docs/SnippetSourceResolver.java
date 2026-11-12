@@ -25,9 +25,16 @@ public final class SnippetSourceResolver {
     private static final String LANG_KOTLIN = "kotlin";
     private static final String LANG_PYTHON = "python";
     private static final String LANG_SCALA = "scala";
-    private static final List<String> LANGS = List.of(LANG_JAVA, LANG_PYTHON, LANG_KOTLIN, LANG_GROOVY, LANG_SCALA);
+    private static final String LANG_TYPESCRIPT = "typescript";
+    private static final List<String> LANGS = List.of(LANG_JAVA, LANG_PYTHON, LANG_TYPESCRIPT, LANG_KOTLIN, LANG_GROOVY, LANG_SCALA);
     private static final String DEFAULT_KOTLIN_PROJECT = "test-suite-kotlin";
     private static final String DEFAULT_PYTHON_PROJECT = "test-suite-python";
+    private static final String DEFAULT_TYPESCRIPT_PROJECT = "test-suite-typescript";
+    /**
+     * The suffixes a test file written in TypeScript has before its extension, by the convention of the TypeScript
+     * test runners: {@code BookControllerSpec.test.ts}.
+     */
+    private static final List<String> TYPESCRIPT_TEST_SUFFIXES = List.of("test", "spec");
     private static final String DEFAULT_JAVA_PROJECT = "test-suite";
     private static final String DEFAULT_GROOVY_PROJECT = "test-suite-groovy";
     private static final String DEFAULT_SCALA_PROJECT = "test-suite-scala";
@@ -164,6 +171,11 @@ public final class SnippetSourceResolver {
      * directory of the language's project, where the source set directory is the {@code source-<language>} attribute,
      * else the {@code source} attribute, else {@code test}.
      *
+     * <p>A TypeScript snippet {@code io.micronaut.docs.Foo} is the file {@code io/micronaut/docs/Foo.ts}. Where there
+     * is none, it is the test file of that name, {@code Foo.test.ts} or {@code Foo.spec.ts}: a test written in
+     * TypeScript has no class to be named after, and its file is named by the convention of the TypeScript test
+     * runners.</p>
+     *
      * @param baseDir    The directory containing the snippet projects
      * @param language   The snippet language
      * @param fileName   The snippet target, a class name
@@ -175,11 +187,21 @@ public final class SnippetSourceResolver {
         if (LANG_PYTHON.equals(language) && baseName.startsWith("io" + File.separator)) {
             baseName = baseName.substring(3);
         }
-        return new File(baseDir, projectDir(language, attributes)
+        String sourceDirectory = projectDir(language, attributes)
             + File.separator + "src"
             + File.separator + sourceType(language, attributes)
             + File.separator + language
-            + File.separator + baseName + "." + extension(language));
+            + File.separator;
+        File snippetFile = new File(baseDir, sourceDirectory + baseName + "." + extension(language));
+        if (LANG_TYPESCRIPT.equals(language) && !snippetFile.exists()) {
+            for (String suffix : TYPESCRIPT_TEST_SUFFIXES) {
+                File testFile = new File(baseDir, sourceDirectory + baseName + "." + suffix + "." + extension(language));
+                if (testFile.exists()) {
+                    return testFile;
+                }
+            }
+        }
+        return snippetFile;
     }
 
     private static List<String> splitTargets(String target) {
@@ -259,6 +281,9 @@ public final class SnippetSourceResolver {
         if (LANG_PYTHON.equals(language)) {
             return DEFAULT_PYTHON_PROJECT;
         }
+        if (LANG_TYPESCRIPT.equals(language)) {
+            return DEFAULT_TYPESCRIPT_PROJECT;
+        }
         if (LANG_GROOVY.equals(language)) {
             return DEFAULT_GROOVY_PROJECT;
         }
@@ -283,6 +308,9 @@ public final class SnippetSourceResolver {
         }
         if (LANG_PYTHON.equals(language)) {
             return "py";
+        }
+        if (LANG_TYPESCRIPT.equals(language)) {
+            return "ts";
         }
         return language;
     }

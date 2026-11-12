@@ -81,6 +81,43 @@ snippet::io.micronaut.Sample[project-base=base]
         ) == [customJavaFile, baseJavaFile, basePythonFile, baseKotlinFile, baseGroovyFile, baseScalaFile] as Set
     }
 
+    void "a typescript snippet is a file of the whole package, or the test file of that name"() {
+        given:
+        file("src/main/docs/guide/index.adoc") << """
+snippet::io.micronaut.docs.Book[source=main]
+snippet::io.micronaut.docs.BookSpec,io.micronaut.docs.ShelfSpec,io.micronaut.docs.LibrarySpec[]
+snippet::io.micronaut.docs.Sample[project-base=base]
+""".stripIndent()
+        def source = file("test-suite-typescript/src/main/typescript/io/micronaut/docs/Book.ts")
+        // a test with the annotations of JUnit is a class in a file of its name
+        def classTest = file("test-suite-typescript/src/test/typescript/io/micronaut/docs/BookSpec.ts")
+        file("test-suite-typescript/src/test/typescript/io/micronaut/docs/BookSpec.test.ts")
+        // a test written against a TypeScript test runner is a test file
+        def testFile = file("test-suite-typescript/src/test/typescript/io/micronaut/docs/ShelfSpec.test.ts")
+        def specFile = file("test-suite-typescript/src/test/typescript/io/micronaut/docs/LibrarySpec.spec.ts")
+        def baseFile = file("base-typescript/src/test/typescript/io/micronaut/docs/Sample.ts")
+
+        expect: 'unlike python, the package keeps its first name'
+        SnippetSourceResolver.resolveSnippetFile(testDirectory.toFile(), "typescript", "io.micronaut.docs.Book", [source: "main"]) == source
+        SnippetSourceResolver.resolveSnippetFile(testDirectory.toFile(), "typescript", "io.micronaut.docs.BookSpec", [:]) == classTest
+        SnippetSourceResolver.resolveSnippetFile(testDirectory.toFile(), "typescript", "io.micronaut.docs.ShelfSpec", [:]) == testFile
+        SnippetSourceResolver.resolveSnippetFile(testDirectory.toFile(), "typescript", "io.micronaut.docs.LibrarySpec", [:]) == specFile
+
+        and: 'a snippet without a file is the file of its name, which does not exist'
+        SnippetSourceResolver.resolveSnippetFile(testDirectory.toFile(), "typescript", "io.micronaut.docs.Missing", [:]) ==
+                testDirectory.resolve("test-suite-typescript/src/test/typescript/io/micronaut/docs/Missing.ts").toFile()
+
+        and:
+        SnippetSourceResolver.projectDirectory(testDirectory.toFile(), "typescript", [:]) == testDirectory.resolve("test-suite-typescript").toFile()
+        SnippetSourceResolver.findSnippetSourceFiles(
+                testDirectory.resolve("src/main/docs").toFile(),
+                testDirectory.toFile(),
+                ""
+        ) == [source, classTest, testFile, specFile, baseFile] as Set
+        SnippetSourceResolver.languagesToRender("typescript") == ["typescript"]
+        SnippetSourceResolver.languages.indexOf("typescript") == SnippetSourceResolver.languages.indexOf("python") + 1
+    }
+
     void "honors a per-language source override"() {
         given:
         file("src/main/docs/guide/index.adoc") << """
