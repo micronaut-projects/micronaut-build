@@ -7,6 +7,248 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
     private static final String MODULE = 'io.micronaut.example:micronaut-example-bom'
     private static final String PLATFORM_MODULE = 'io.micronaut.reactor:micronaut-reactor-bom'
 
+    void 'known BOM #notation can use a platform property without a local catalog file'() {
+        given:
+        setupProject('', 'mnReactor')
+        file('gradle/libs.versions.toml').delete()
+        file('gradle').delete()
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog($argument)")
+
+        when:
+        run 'verifyCatalog', '--offline', '-PmicronautPlatformVersion=3.0'
+
+        then:
+        outputContains 'Catalog marker: 4.0'
+
+        where:
+        notation | argument
+        'enum'   | 'io.micronaut.build.MicronautBom.REACTOR'
+        'string' | '"micronaut-reactor"'
+    }
+
+    void 'Data string imports work after all their local BOM declarations are removed'() {
+        given:
+        setupProject('''
+            [versions]
+            micronaut = "5.0"
+            micronaut-platform = "3.0"
+            micronaut-test = "1.0"
+            micronaut-logging = "1.0"
+        ''')
+        publishCatalog('io.micronaut.test:micronaut-test-bom', '1.0', '[libraries]\nmarker = "example:marker:1.0"')
+        publishCatalog('io.micronaut.logging:micronaut-logging-bom', '1.0', '[libraries]\nmarker = "example:marker:1.0"')
+        def imports = [
+            'micronaut-reactor': ['io.micronaut.reactor:micronaut-reactor-bom', 'mnReactor'],
+            'micronaut-rxjava3': ['io.micronaut.rxjava3:micronaut-rxjava3-bom', 'mnRxjava3'],
+            'micronaut-r2dbc': ['io.micronaut.r2dbc:micronaut-r2dbc-bom', 'mnR2dbc'],
+            'micronaut-spring': ['io.micronaut.spring:micronaut-spring-bom', 'mnSpring'],
+            'micronaut-serde': ['io.micronaut.serde:micronaut-serde-bom', 'mnSerde'],
+            'micronaut-sql': ['io.micronaut.sql:micronaut-sql-bom', 'mnSql'],
+            'micronaut-kotlin': ['io.micronaut.kotlin:micronaut-kotlin-bom', 'mnKotlin'],
+            'micronaut-multitenancy': ['io.micronaut.multitenancy:micronaut-multitenancy-bom', 'mnMultitenancy'],
+            'micronaut-testresources': ['io.micronaut.testresources:micronaut-test-resources-bom', 'mnTestResources'],
+            'micronaut-validation': ['io.micronaut.validation:micronaut-validation-bom', 'mnValidation'],
+            'micronaut-mongo': ['io.micronaut.mongodb:micronaut-mongo-bom', 'mnMongo'],
+            'micronaut-flyway': ['io.micronaut.flyway:micronaut-flyway-bom', 'mnFlyway'],
+            'micronaut-coherence': ['io.micronaut.coherence:micronaut-coherence-bom', 'mnCoherence'],
+            'micronaut-sourcegen': ['io.micronaut.sourcegen:micronaut-sourcegen-bom', 'mnSourcegen']
+        ]
+        imports.eachWithIndex { alias, entry, index ->
+            publishCatalog(entry[0], '4.0', '[libraries]\nmarker = "example:marker:4.0"')
+            file('repo/io/micronaut/platform/micronaut-platform/3.0/micronaut-platform-3.0.toml') << """
+                unrelated-$index = { module = "${entry[0]}", version = "4.0" }
+            """
+        }
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+            'importMicronautCatalog()\n' + imports.keySet().collect { "importMicronautCatalog('$it', true)" }.join('\n'))
+        buildFile.text = """
+            plugins { id 'java-library' }
+            def catalogs = extensions.getByType(org.gradle.api.artifacts.VersionCatalogsExtension)
+            def versions = ${imports.values().collect { it[1] }.inspect()}.collectEntries { name ->
+                [name, catalogs.named(name).findLibrary('marker').get().get().versionConstraint.requiredVersion]
+            }
+            def modules = configurations.globalBoms.allDependencies.collect { it.group + ':' + it.name }
+            assert catalogs.find('mn').present
+            tasks.register('verifyCatalog') {
+                inputs.property('versions', versions)
+                inputs.property('modules', modules)
+                doLast {
+                    assert inputs.properties.versions.values().every { it == '4.0' }
+                    assert inputs.properties.modules.containsAll(${imports.values().collect { it[0] }.inspect()})
+                    println 'All 14 Data catalogs and BOMs imported without local declarations'
+                }
+            }
+        """
+
+        when:
+        run 'verifyCatalog', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'All 14 Data catalogs and BOMs imported without local declarations'
+
+        when:
+        run 'verifyCatalog', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Reusing configuration cache.'
+    }
+
+    void 'a known string alias keeps its local #kind override ahead of the platform'() {
+        given:
+        setupProject("""
+            [versions]
+            micronaut-platform = "3.0"
+            [libraries]
+            micronaut-reactor = { module = "$PLATFORM_MODULE", $declaration }
+        """, 'mnReactor')
+        publishCatalog(PLATFORM_MODULE, '1.0', '[libraries]\nmarker = "example:marker:1.0"')
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+            "importMicronautCatalog('micronaut-reactor')")
+
+        when:
+        run 'verifyCatalog', '--offline'
+
+        then:
+        outputContains 'Catalog marker: 1.0'
+
+        where:
+        kind     | declaration
+        'plain'  | 'version = "1.0"'
+        'rich'   | 'version = { require = "1.0", strictly = "1.0", reject = ["4.0"] }'
+    }
+
+    void 'known string aliases remain catalog-only by default and fall back to core'() {
+        given:
+        setupProject('''
+            [versions]
+            micronaut = "5.0"
+        ''', 'mnSql')
+        publishCatalog('io.micronaut.sql:micronaut-sql-bom', '2.0', '[libraries]\nmarker = "example:marker:2.0"')
+        file('repo/io/micronaut/micronaut-core-bom/5.0/micronaut-core-bom-5.0.toml') << '''
+            sql = { module = "io.micronaut.sql:micronaut-sql-bom", version = "2.0" }
+        '''
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+            "importMicronautCatalog('micronaut-sql')")
+        buildFile << "\nassert configurations.findByName('globalBoms') == null\n"
+
+        when:
+        run 'verifyCatalog', '--offline'
+
+        then:
+        outputContains 'Catalog marker: 2.0'
+    }
+
+    void 'known BOM #bom imports #catalogName without a local library declaration'() {
+        given:
+        setupProject('''
+            [versions]
+            micronaut-platform = "3.0"
+        ''', catalogName)
+        publishCatalog(module, '4.0', '[libraries]\nmarker = "example:marker:4.0"')
+        file('repo/io/micronaut/platform/micronaut-platform/3.0/micronaut-platform-3.0.toml') << """
+            arbitrary-alias = { module = "$module", version = "4.0" }
+        """
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+            "importMicronautCatalog(io.micronaut.build.MicronautBom.$bom$argument)")
+        buildFile << """
+            assert !configurations.globalBoms.allDependencies.any {
+                it.group + ':' + it.name == '$module'
+            }
+        """
+
+        when:
+        run 'verifyCatalog', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Catalog marker: 4.0'
+
+        when:
+        run 'verifyCatalog', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Reusing configuration cache.'
+
+        where:
+        bom              | module                                                     | catalogName       | argument
+        'REACTOR'        | PLATFORM_MODULE                                            | 'mnReactor'       | ''
+        'MONGO'          | 'io.micronaut.mongodb:micronaut-mongo-bom'                   | 'mnMongo'         | ', false'
+        'SERDE'          | 'io.micronaut.serde:micronaut-serde-bom'                     | 'mnSerde'         | ''
+        'TEST_RESOURCES' | 'io.micronaut.testresources:micronaut-test-resources-bom'    | 'mnTestResources' | ''
+    }
+
+    void 'known BOM resolves from core when the platform does not manage it'() {
+        given:
+        setupProject('''
+            [versions]
+            micronaut = "5.0"
+            micronaut-platform = "3.0"
+        ''', 'mnSql')
+        publishCatalog('io.micronaut.sql:micronaut-sql-bom', '2.0', '[libraries]\nmarker = "example:marker:2.0"')
+        file('repo/io/micronaut/micronaut-core-bom/5.0/micronaut-core-bom-5.0.toml') << '''
+            unrelated-alias = { module = "io.micronaut.sql:micronaut-sql-bom", version = "2.0" }
+        '''
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+            'importMicronautCatalog(io.micronaut.build.MicronautBom.SQL)')
+
+        when:
+        run 'verifyCatalog', '--offline'
+
+        then:
+        outputContains 'Catalog marker: 2.0'
+    }
+
+    void 'known BOM respects a local #kind override and optionally applies constraints'() {
+        given:
+        setupProject("""
+            [versions]
+            micronaut = "5.0"
+            micronaut-platform = "3.0"
+            reactor = $version
+            [libraries]
+            reactor = { module = "$PLATFORM_MODULE", $declaration }
+        """, 'mnReactor')
+        publishCatalog(PLATFORM_MODULE, '5.0', '[libraries]\nmarker = "example:marker:5.0"', true)
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+            'importMicronautCatalog(io.micronaut.build.MicronautBom.REACTOR, true)')
+        setupBomConsumer(true, true, '5.0', PLATFORM_MODULE)
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Catalog marker: 5.0'
+        outputContains 'BOM included: true'
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Reusing configuration cache.'
+
+        where:
+        kind        | version                                               | declaration
+        'inline'    | '"5.0"'                                               | 'version = "5.0"'
+        'reference' | '"5.0"'                                               | 'version.ref = "reactor"'
+        'rich'      | '{ require = "5.0", strictly = "5.0", reject = ["4.0"] }' | 'version.ref = "reactor"'
+    }
+
+    void 'known BOM missing from both catalogs fails instead of guessing a version'() {
+        given:
+        setupProject('''
+            [versions]
+            micronaut = "5.0"
+            micronaut-platform = "3.0"
+        ''')
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+            'importMicronautCatalog(io.micronaut.build.MicronautBom.SQL)')
+
+        when:
+        fails 'help', '--offline'
+
+        then:
+        errorOutputContains 'do not supply a catalog version for io.micronaut.sql:micronaut-sql-bom'
+    }
+
     void 'existing #kind version takes precedence without resolving core'() {
         given:
         setupProject("""
@@ -521,7 +763,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
         '''.replace('CATALOG', catalogName)
     }
 
-    private void publishCatalog(String module, String version, String content) {
+    private void publishCatalog(String module, String version, String content, boolean managesExample = false) {
         def (group, artifact) = module.split(':')
         String directory = "repo/${group.replace('.', '/')}/$artifact/$version"
         String base = "$artifact-$version"
@@ -544,7 +786,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             ]] + ['java-api', 'java-runtime'].collect { usage -> [
                 name: usage,
                 attributes: ['org.gradle.category': 'platform', 'org.gradle.usage': usage],
-                dependencyConstraints: module in [MODULE, 'io.micronaut.platform:micronaut-platform'] ?
+                dependencyConstraints: managesExample || module in [MODULE, 'io.micronaut.platform:micronaut-platform'] ?
                     [[group: 'example', module: 'managed', version: [requires: version]]] : []
             ] }
         ])

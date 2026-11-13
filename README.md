@@ -43,7 +43,9 @@ micronaut-platform = "5.2.5"
 micronaut-reactor = { module = "io.micronaut.reactor:micronaut-reactor-bom" }
 ```
 
-Keep the library declaration. If neither catalog supplies that module's version,
+Custom aliases still require a library declaration. Known Micronaut BOM names,
+such as `micronaut-reactor`, can omit the entire declaration: the plugin uses the
+known coordinates when the alias is absent locally. If neither catalog supplies that module's version,
 the import fails with an error requesting an explicit local version. Existing
 explicit versions, references, and rich-version handling are unchanged. This
 fallback only selects the imported catalog version; it does not apply additional
@@ -91,6 +93,42 @@ explicit module version overrides alongside the platform baseline. If a platform
 catalog alias is imported explicitly with `true` at the same version, its BOM is
 not added twice. A configured platform may reference the current project's
 published BOM, so verify dependency graphs and publications when enabling it.
+
+### Importing known Micronaut BOMs without local aliases
+
+Use `MicronautBom` to import a known BOM without declaring that BOM in
+`libs.versions.toml`:
+
+```groovy
+import io.micronaut.build.MicronautBom
+
+micronautBuild {
+    importMicronautCatalog(MicronautBom.REACTOR, true)
+    importMicronautCatalog(MicronautBom.SQL, true)
+    importMicronautCatalog(MicronautBom.SERDE)
+}
+```
+
+These imports preserve catalog accessor names such as `mnReactor`, `mnSql`, and
+`mnSerde`. The enum holds Maven coordinates only. A local library declaration
+matching those coordinates takes priority, including explicit and rich versions.
+Otherwise versions come from the configured platform catalog first, then core. Keep the
+platform/core version selectors. The one-argument enum overload is catalog-only;
+pass `true` to also apply that BOM, subject to `enableBom`.
+
+The enum lists the 72 Micronaut BOMs in the
+[published platform 5.2.6 catalog](https://repo.maven.apache.org/maven2/io/micronaut/platform/micronaut-platform/5.2.6/micronaut-platform-5.2.6.toml),
+including `MONGO`, `SERDE`, and `TEST_RESOURCES`. It excludes third-party BOMs,
+which generally do not publish Micronaut version catalogs. Availability depends
+on the selected platform/core version: an absent BOM fails with a lookup error.
+Use the existing string alias API for explicit local overrides or custom BOMs;
+local declarations still take precedence, including rich versions. Existing
+calls such as `importMicronautCatalog("micronaut-reactor", true)` therefore work
+after deleting the corresponding BOM library declaration. The shorthand
+`micronaut-testresources` also remains supported and creates `mnTestResources`.
+The no-argument import continues to provide the core
+`mn` catalog as before (`MicronautBom.CORE` follows the named-import convention,
+creating `mnCore`).
 
 ## Available plugins
 
