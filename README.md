@@ -54,6 +54,44 @@ property. Lookup matches Maven group and artifact, so platform aliases such as
 Keep the `micronaut` version for the standard no-argument `importMicronautCatalog()`;
 this change does not infer the core version from the platform.
 
+To also apply an imported BOM's dependency constraints, explicitly opt in:
+
+```groovy
+micronautBuild {
+    importMicronautCatalog("micronaut-reactor", true)
+}
+```
+
+The one-argument call and an explicit `false` remain catalog-only. The core BOM
+continues to be applied by the common build conventions as before. With `true`,
+the resolved module BOM is added alongside core through `globalBoms`, which feeds
+`implementation`, `annotationProcessor`, and `testAnnotationProcessor`. Standard
+Java test classpaths inherit the implementation constraints. Each project's
+`micronautBuild.enableBom = false` disables included BOMs and the common plugin's
+core management. Manually declared BOMs keep their existing behavior. Projects
+with an existing application `micronautBoms` bucket and the maintainer build
+extension receive the included BOMs there as well. Plain Java projects also receive
+the maintainer extension and a `globalBoms` bucket when needed, covering implementation
+and annotation processors. Catalog-only imports without a configured platform do not
+add this wiring.
+Opting in can change dependency resolution and published platform
+dependencies; existing catalog-only imports keep their behavior.
+
+When `[versions].micronaut-platform` or the `micronautPlatformVersion` Gradle
+property is configured, its platform BOM is included automatically alongside core.
+This supplies the platform's own constraints, such as Lombok, as well as its module
+BOM imports. No platform library alias or explicit platform catalog import is
+required. The selected version remains a bootstrap selector and must be kept.
+The automatic platform respects each project's `micronautBuild.enableBom` setting
+and uses `globalBoms` or the application `micronautBoms` bucket.
+
+Additional module BOMs still require `importMicronautCatalog(alias, true)` to be
+included separately; ordinary one-argument calls remain catalog-only. This permits
+explicit module version overrides alongside the platform baseline. If a platform
+catalog alias is imported explicitly with `true` at the same version, its BOM is
+not added twice. A configured platform may reference the current project's
+published BOM, so verify dependency graphs and publications when enabling it.
+
 ## Available plugins
 
 ### Core plugins
