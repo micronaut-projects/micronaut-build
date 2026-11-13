@@ -15,7 +15,9 @@
  */
 package io.micronaut.build;
 
+import io.micronaut.build.catalogs.internal.BomCatalogCoordinatesSource;
 import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
+import io.micronaut.build.catalogs.internal.Library;
 import io.micronaut.build.catalogs.internal.RichVersion;
 import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
 import io.micronaut.build.catalogs.internal.VersionModel;
@@ -23,6 +25,7 @@ import io.micronaut.build.utils.DefaultVersions;
 import io.micronaut.build.utils.IncludedBuildSupport;
 import me.champeau.gradle.igp.GitIncludeExtension;
 import org.apache.commons.lang3.StringUtils;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.resolve.DependencyResolutionManagement;
@@ -43,9 +46,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -104,11 +110,14 @@ public abstract class MicronautBuildSettingsExtension {
     protected abstract ExecOperations getExecOperations();
 
     private final AtomicBoolean repositoriesAdded = new AtomicBoolean();
+    private final Set<String> includedBoms = new HashSet<>();
     private final Settings settings;
     private final String micronautVersion;
     private final String micronautTestVersion;
     private final String micronautLoggingVersion;
     private final VersionCatalogTomlModel versionCatalogTomlModel;
+    private Configuration coreCatalog;
+    private Configuration platformCatalog;
 
     @Inject
     public MicronautBuildSettingsExtension(ProviderFactory providers, Settings settings) {
@@ -123,6 +132,10 @@ public abstract class MicronautBuildSettingsExtension {
         this.micronautVersion = determineMicronautVersion();
         this.micronautTestVersion = determineMicronautTestVersion();
         this.micronautLoggingVersion = determineMicronautLoggingVersion();
+        String platformVersion = determineMicronautVersion("micronaut-platform", null);
+        if (platformVersion != null) {
+            includeImportedBom("io.micronaut.platform:micronaut-platform:" + platformVersion);
+        }
         settings.getDependencyResolutionManagement().getVersionCatalogs().configureEach(catalog -> {
             var prefix = "override." + catalog.getName() + ".";
             var provider = providers.gradlePropertiesPrefixedBy(prefix);
@@ -160,7 +173,7 @@ public abstract class MicronautBuildSettingsExtension {
         // the micronaut version!
         File catalogsDir = new File(settings.getRootDir(), "gradle");
         if (catalogsDir.exists()) {
-            LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
+            LenientVersionCatalogParser parser = new LenientVersionCatalogParser(true);
             Arrays.stream(catalogsDir.listFiles())
                 .filter(f -> f.getName().endsWith(".versions.toml"))
                 .forEach(f -> {
@@ -268,33 +281,72 @@ public abstract class MicronautBuildSettingsExtension {
     public void importMicronautCatalogFromGAV(String gavCoordinates) {
         settings.dependencyResolutionManagement(mgmt -> {
             configureRepositories(mgmt);
-            List<String> parts = Arrays.asList(gavCoordinates.split(":"));
-            String groupId = parts.get(0);
-            String artifactId = parts.get(1);
-            if (isMicronautPlatform(groupId, artifactId)) {
-                throw new IllegalStateException("Projects must not import the platform BOM or it would create a cyclic dependency. Please use the core BOM instead.");
-            }
-            if (parts.size() == 3) {
-                String name = "mn";
-                if (artifactId.startsWith(MICRONAUT_PROJECT_PREFIX)) {
-                    artifactId = artifactId.substring(MICRONAUT_PROJECT_PREFIX.length());
-                }
-                if (artifactId.endsWith(BOM_PROJECT_SUFFIX)) {
-                    artifactId = artifactId.substring(0, artifactId.length() - 4);
-                }
-                name += Arrays.stream(artifactId.split("-"))
-                    .map(StringUtils::capitalize)
-                    .collect(Collectors.joining());
-                mgmt.getVersionCatalogs().create(name, catalog -> catalog.from(gavCoordinates));
-            } else {
-                throw new IllegalStateException("Invalid version catalog GAV coordinates: " + gavCoordinates + ". Expected format: group:artifact:version");
-            }
+            importCatalog(mgmt, gavCoordinates, false);
         });
+    }
+
+    /**
+     * Imports a known Micronaut BOM's catalog without a local library declaration.
+     * A matching local library declaration takes priority; otherwise its version
+     * is selected from the configured platform first, then core.
+     * Like the alias overload, this method only imports the catalog.
+     *
+     * @param bom the known Micronaut BOM
+     */
+    public void importMicronautCatalog(MicronautBom bom) {
+        importMicronautCatalog(bom, false);
+    }
+
+    /**
+     * Imports a known Micronaut BOM's catalog and optionally applies its constraints.
+     * Local library declarations matching the BOM's Maven coordinates take priority,
+     * including their existing rich-version handling.
+     *
+     * @param bom the known Micronaut BOM
+     * @param includeBOM whether to apply the BOM to project dependencies
+     */
+    public void importMicronautCatalog(MicronautBom bom, boolean includeBOM) {
+        Objects.requireNonNull(bom, "bom");
+        settings.dependencyResolutionManagement(mgmt -> {
+            configureRepositories(mgmt);
+            String coordinates = Optional.ofNullable(versionCatalogTomlModel)
+                .flatMap(model -> model.findLibrary(bom.getGroupId(), bom.getArtifactId()))
+                .map(library -> coordinatesForLibrary(library, bom.name()))
+                .orElseGet(() -> inferredCatalogCoordinates(bom.getGroupId(), bom.getArtifactId(), bom.name()));
+            importCatalog(mgmt, coordinates, includeBOM);
+        });
+    }
+
+    private void importCatalog(DependencyResolutionManagement mgmt, String gavCoordinates, boolean includeBOM) {
+        List<String> parts = Arrays.asList(gavCoordinates.split(":"));
+        String groupId = parts.get(0);
+        String artifactId = parts.get(1);
+        if (isMicronautPlatform(groupId, artifactId) && !includeBOM && determineMicronautVersion("micronaut-platform", null) == null) {
+            throw new IllegalStateException("The platform must be imported using importMicronautCatalog(alias, true).");
+        }
+        if (parts.size() == 3) {
+            String name = "mn";
+            if (artifactId.startsWith(MICRONAUT_PROJECT_PREFIX)) {
+                artifactId = artifactId.substring(MICRONAUT_PROJECT_PREFIX.length());
+            }
+            if (artifactId.endsWith(BOM_PROJECT_SUFFIX)) {
+                artifactId = artifactId.substring(0, artifactId.length() - 4);
+            }
+            name += Arrays.stream(artifactId.split("-"))
+                .map(StringUtils::capitalize)
+                .collect(Collectors.joining());
+            mgmt.getVersionCatalogs().create(name, catalog -> catalog.from(gavCoordinates));
+            if (includeBOM) {
+                includeImportedBom(gavCoordinates);
+            }
+        } else {
+            throw new IllegalStateException("Invalid version catalog GAV coordinates: " + gavCoordinates + ". Expected format: group:artifact:version");
+        }
     }
 
     private static boolean isMicronautPlatform(String groupId, String artifactId) {
         return ("micronaut-bom".equals(groupId) && "micronaut-bom".equals(artifactId)) ||
-               ("micronaut-platform".equals(groupId) && "micronaut-platform".equals(artifactId));
+               (("micronaut-platform".equals(groupId) || "io.micronaut.platform".equals(groupId)) && "micronaut-platform".equals(artifactId));
     }
 
     /**
@@ -304,48 +356,134 @@ public abstract class MicronautBuildSettingsExtension {
      * The name of the catalog is derived from the artifact id in the GAV
      * coordinates. For example, if the artifact id is "micronaut-aws-bom",
      * then the derived catalog name will be "mnAws".
+     * Local declarations take precedence, including explicit and rich versions.
+     * A local library without a version uses the platform/core lookup by Maven
+     * coordinates. When no local alias exists, a known Micronaut BOM name uses
+     * its registered coordinates and the platform/core version lookup instead.
+     * This overload only imports the catalog; additional BOM inclusion is opt-in.
      */
     public void importMicronautCatalog(String alias) {
+        importMicronautCatalog(alias, false);
+    }
+
+    /**
+     * Imports a Micronaut catalog, optionally applying its BOM through the existing
+     * {@code globalBoms} or application {@code micronautBoms} configuration in
+     * projects using the maintainer build extension. Java projects without that
+     * extension receive it and a {@code globalBoms} bucket. These provide implementation and
+     * annotation-processor constraints.
+     * The project's {@code enableBom} setting also controls these BOMs.
+     *
+     * @param alias the known BOM name or local library alias identifying the catalog
+     * @param includeBOM whether to include the imported BOM in dependency management
+     */
+    public void importMicronautCatalog(String alias, boolean includeBOM) {
         settings.dependencyResolutionManagement(mgmt -> {
             configureRepositories(mgmt);
-            String gavCoordinates = versionCatalogTomlModel.getLibrariesTable()
-                .stream()
-                .filter(lib -> lib.getAlias().equals(alias))
-                .findFirst()
-                .map(library -> {
-                    String version;
-                    if (library.getVersion().getReference() != null) {
-                        version = versionCatalogTomlModel.findVersion(library.getVersion().getReference())
-                            .map(VersionModel::getVersion)
-                            .map(RichVersion::getRequire)
-                            .orElse(null);
-                    } else {
-                        version = library.getVersion().getVersion().getRequire();
-                    }
-                    return library.getGroup() + ":" + library.getName() + ":" + version;
-                })
-                .orElseThrow(() -> new IllegalStateException("Version catalog doesn't contain a library with alias: " + alias));
-            List<String> parts = Arrays.asList(gavCoordinates.split(":"));
-            String groupId = parts.get(0);
-            String artifactId = parts.get(1);
-            if (isMicronautPlatform(groupId, artifactId)) {
-                throw new IllegalStateException("Projects must not import the platform BOM or it would create a cyclic dependency. Please use the core BOM instead.");
-            }
-            if (parts.size() == 3) {
-                String name = "mn";
-                if (artifactId.startsWith(MICRONAUT_PROJECT_PREFIX)) {
-                    artifactId = artifactId.substring(MICRONAUT_PROJECT_PREFIX.length());
+            String gavCoordinates = catalogCoordinatesForAlias(alias);
+            importCatalog(mgmt, gavCoordinates, includeBOM);
+        });
+    }
+
+    private String catalogCoordinatesForAlias(String alias) {
+        return Optional.ofNullable(versionCatalogTomlModel).stream()
+            .flatMap(model -> model.getLibrariesTable().stream())
+            .filter(lib -> lib.getAlias().equals(alias))
+            .findFirst()
+            .map(library -> coordinatesForLibrary(library, alias))
+            .orElseGet(() -> MicronautBom.findByAlias(alias)
+                .map(bom -> inferredCatalogCoordinates(bom.getGroupId(), bom.getArtifactId(), alias))
+                .orElseThrow(() -> new IllegalStateException("Version catalog doesn't contain a library with alias: " + alias)));
+    }
+
+    private String coordinatesForLibrary(Library library, String alias) {
+        if (library.getVersion().getReference() == null && library.getVersion().getVersion() == RichVersion.EMPTY) {
+            return inferredCatalogCoordinates(library.getGroup(), library.getName(), alias);
+        }
+        String version;
+        if (library.getVersion().getReference() != null) {
+            version = versionCatalogTomlModel.findVersion(library.getVersion().getReference())
+                .map(VersionModel::getVersion)
+                .map(RichVersion::getRequire)
+                .orElse(null);
+        } else {
+            version = library.getVersion().getVersion().getRequire();
+        }
+        return library.getGroup() + ":" + library.getName() + ":" + version;
+    }
+
+    private void includeImportedBom(String coordinates) {
+        if (!includedBoms.add(coordinates)) {
+            return;
+        }
+        settings.getGradle().beforeProject(project -> {
+            project.getPluginManager().withPlugin("java", javaPlugin -> {
+                project.getPluginManager().apply(MicronautBuildExtensionPlugin.class);
+                var boms = project.getConfigurations().maybeCreate("globalBoms");
+                boms.setCanBeResolved(false);
+                boms.setCanBeConsumed(false);
+                for (String name : Arrays.asList("implementation", "annotationProcessor", "testAnnotationProcessor")) {
+                    project.getConfigurations().getByName(name).extendsFrom(boms);
                 }
-                if (artifactId.endsWith(BOM_PROJECT_SUFFIX)) {
-                    artifactId = artifactId.substring(0, artifactId.length() - 4);
-                }
-                name += Arrays.stream(artifactId.split("-"))
-                    .map(StringUtils::capitalize)
-                    .collect(Collectors.joining());
-                mgmt.getVersionCatalogs().create(name, catalog -> catalog.from(gavCoordinates));
-            } else {
-                throw new IllegalStateException("Invalid version catalog GAV coordinates: " + gavCoordinates + ". Expected format: group:artifact:version");
+            });
+            project.getPlugins().withType(MicronautBuildExtensionPlugin.class).configureEach(unused -> {
+                project.getConfigurations().matching(configuration -> configuration.getName().equals("globalBoms") ||
+                        configuration.getName().equals("micronautBoms"))
+                    .configureEach(configuration -> {
+                        var extension = project.getExtensions().getByType(MicronautBuildExtension.class);
+                        configuration.getDependencies().addAllLater(extension.getEnableBom().map(enabled ->
+                            enabled ? Collections.singletonList(project.getDependencies().platform(coordinates)) : Collections.emptyList()
+                        ));
+                    });
+            });
+        });
+    }
+
+    private String inferredCatalogCoordinates(String group, String artifact, String alias) {
+        String platformVersion = determineMicronautVersion("micronaut-platform", null);
+        if (platformVersion != null) {
+            if (platformCatalog == null) {
+                platformCatalog = catalogConfiguration("io.micronaut.platform:micronaut-platform:" + platformVersion);
             }
+            String coordinates = catalogCoordinates(platformCatalog, group, artifact).getOrNull();
+            if (coordinates != null) {
+                return coordinates;
+            }
+        }
+        if (micronautVersion != null) {
+            if (coreCatalog == null) {
+                coreCatalog = catalogConfiguration("io.micronaut:" + coreBomArtifactId(micronautVersion) + ":" + micronautVersion);
+            }
+            String coordinates = catalogCoordinates(coreCatalog, group, artifact).getOrNull();
+            if (coordinates != null) {
+                return coordinates;
+            }
+        }
+        if (micronautVersion == null && platformVersion == null) {
+            throw new IllegalStateException("No version for catalog '" + alias +
+                "'. Declare its version or configure [versions].micronaut or micronautVersion, " +
+                "or [versions].micronaut-platform or micronautPlatformVersion.");
+        }
+        String searched = platformVersion == null ? "Micronaut core BOM " + micronautVersion :
+            "Micronaut platform BOM " + platformVersion + (micronautVersion == null ? "" : " and core BOM " + micronautVersion);
+        String verb = micronautVersion != null && platformVersion != null ? " do not" : " does not";
+        throw new IllegalStateException(searched + verb + " supply a catalog version for " + group + ":" + artifact +
+            ". Declare an explicit local version.");
+    }
+
+    private Configuration catalogConfiguration(String coordinates) {
+        var script = settings.getBuildscript();
+        settings.getDependencyResolutionManagement().getRepositories().forEach(script.getRepositories()::add);
+        Configuration configuration = script.getConfigurations().detachedConfiguration(script.getDependencies().create(coordinates + "@toml"));
+        configuration.setTransitive(false);
+        return configuration;
+    }
+
+    private Provider<String> catalogCoordinates(Configuration catalog, String group, String artifact) {
+        return getProviders().of(BomCatalogCoordinatesSource.class, spec -> {
+            spec.getParameters().getCatalog().from(catalog);
+            spec.getParameters().getGroup().set(group);
+            spec.getParameters().getArtifact().set(artifact);
         });
     }
 
