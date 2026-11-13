@@ -34,6 +34,17 @@ public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAt
         SnippetSourceResolver.projectDirectory(baseDir(parent), lang, attributes).isDirectory()
     }
 
+    /**
+     * A language whose snippets are still being written is named in the document attribute
+     * {@code snippet-optional-languages}, a list separated by commas. A snippet without a file in such a language
+     * is no warning: the guide of a module that has just started on a language would otherwise log one for every
+     * snippet it has.
+     */
+    private static boolean isOptionalLanguage(StructuralNode parent, String lang) {
+        String optional = parent.document.getAttribute('snippet-optional-languages')
+        optional != null && optional.split(',').any { it.trim().equalsIgnoreCase(lang) }
+    }
+
     @Override
     StructuralNode process(StructuralNode parent, String target, Map<String, Object> attributes) {
         String[] tags = valueAtAttributes("tags", attributes)?.toString()?.split(",")
@@ -62,7 +73,7 @@ public class LanguageSnippetMacro extends BlockMacroProcessor implements ValueAt
             for (fileName in files) {
                 File file = snippetFile(parent, lang, fileName, attributes)
                 if (!file.exists()) {
-                    if (hasLanguageProject(parent, lang, attributes)) {
+                    if (hasLanguageProject(parent, lang, attributes) && !isOptionalLanguage(parent, lang)) {
                         println "!!!! WARNING: NO FILE FOUND MATCHING TARGET PASSED IN AT PATH : $file.path"
                     }
                     continue

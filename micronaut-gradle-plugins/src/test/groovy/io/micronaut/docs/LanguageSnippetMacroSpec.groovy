@@ -209,6 +209,68 @@ ${includes.join("\n\n")}
         asciidoctor.shutdown()
     }
 
+    void "live asciidoctor macro renders a typescript snippet beside the java one"() {
+        given:
+        Asciidoctor asciidoctor = Asciidoctor.Factory.create()
+        asciidoctor.javaExtensionRegistry().blockMacro(new LanguageSnippetMacro("snippet", [:], asciidoctor))
+        String baseDir = "build/live-macro-typescript"
+        file("$baseDir/test-suite/src/test/java/example/BookSpec.java").text = "// tag::test[]\nclass JavaBookSpec {}\n// end::test[]\n"
+        file("$baseDir/test-suite-typescript/src/test/typescript/example/BookSpec.test.ts").text =
+                "// tag::test[]\ndescribe(\"books\", () => {});\n// end::test[]\nconst notShown = 1;\n"
+        Options options = Options.builder()
+                .attributes(Attributes.builder().attribute("sourcedir", new File(baseDir).absolutePath).build())
+                .safe(SafeMode.UNSAFE)
+                .build()
+
+        when:
+        String rendered = asciidoctor.convert('snippet::example.BookSpec[tags="test"]', options)
+
+        then: 'the test file stands for the snippet, and the tags of a comment select from it as they do in java'
+        rendered.contains("JavaBookSpec")
+        rendered.contains('describe("books", () =&gt; {});')
+        rendered.contains('data-lang="typescript"')
+        !rendered.contains("notShown")
+
+        cleanup:
+        asciidoctor.shutdown()
+    }
+
+    void "a snippet without a file is no warning for a language that is named optional"() {
+        given:
+        Asciidoctor asciidoctor = Asciidoctor.Factory.create()
+        asciidoctor.javaExtensionRegistry().blockMacro(new LanguageSnippetMacro("snippet", [:], asciidoctor))
+        String baseDir = "build/live-macro-optional-language"
+        file("$baseDir/test-suite/src/test/java/example/Only.java").text = "class OnlyJava {}"
+        file("$baseDir/test-suite-typescript/src/test/typescript/example/Other.ts").text = "export class Other {}"
+        file("$baseDir/test-suite-python/src/test/python/example/Other.py").text = "class Other: pass"
+        PrintStream original = System.out
+        ByteArrayOutputStream captured = new ByteArrayOutputStream()
+
+        when:
+        System.out = new PrintStream(captured, true)
+        String rendered
+        try {
+            rendered = asciidoctor.convert('snippet::example.Only[]', Options.builder()
+                    .attributes(Attributes.builder()
+                            .attribute("sourcedir", new File(baseDir).absolutePath)
+                            .attribute("snippet-optional-languages", "typescript")
+                            .build())
+                    .safe(SafeMode.UNSAFE)
+                    .build())
+        } finally {
+            System.out = original
+        }
+        String output = captured.toString()
+
+        then: 'both languages have a project and neither has the snippet: only python is warned about'
+        rendered.contains("OnlyJava")
+        output.contains("test-suite-python")
+        !output.contains("test-suite-typescript")
+
+        cleanup:
+        asciidoctor.shutdown()
+    }
+
     private static File file(String path) {
         File f = new File(System.getProperty("user.dir"), path)
         if (!f.parentFile.exists()) {
