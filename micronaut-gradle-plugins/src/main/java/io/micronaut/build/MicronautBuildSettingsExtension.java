@@ -15,6 +15,7 @@
  */
 package io.micronaut.build;
 
+import io.micronaut.build.catalogs.internal.BomCatalogCoordinatesSource;
 import io.micronaut.build.catalogs.internal.LenientVersionCatalogParser;
 import io.micronaut.build.catalogs.internal.RichVersion;
 import io.micronaut.build.catalogs.internal.VersionCatalogTomlModel;
@@ -23,6 +24,7 @@ import io.micronaut.build.utils.DefaultVersions;
 import io.micronaut.build.utils.IncludedBuildSupport;
 import me.champeau.gradle.igp.GitIncludeExtension;
 import org.apache.commons.lang3.StringUtils;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.resolve.DependencyResolutionManagement;
@@ -109,6 +111,8 @@ public abstract class MicronautBuildSettingsExtension {
     private final String micronautTestVersion;
     private final String micronautLoggingVersion;
     private final VersionCatalogTomlModel versionCatalogTomlModel;
+    private Configuration coreCatalog;
+    private Configuration platformCatalog;
 
     @Inject
     public MicronautBuildSettingsExtension(ProviderFactory providers, Settings settings) {
@@ -160,7 +164,7 @@ public abstract class MicronautBuildSettingsExtension {
         // the micronaut version!
         File catalogsDir = new File(settings.getRootDir(), "gradle");
         if (catalogsDir.exists()) {
-            LenientVersionCatalogParser parser = new LenientVersionCatalogParser();
+            LenientVersionCatalogParser parser = new LenientVersionCatalogParser(true);
             Arrays.stream(catalogsDir.listFiles())
                 .filter(f -> f.getName().endsWith(".versions.toml"))
                 .forEach(f -> {
@@ -304,6 +308,10 @@ public abstract class MicronautBuildSettingsExtension {
      * The name of the catalog is derived from the artifact id in the GAV
      * coordinates. For example, if the artifact id is "micronaut-aws-bom",
      * then the derived catalog name will be "mnAws".
+     * If the local library has no version declaration, its version is looked up
+     * by Maven coordinates in the platform catalog when {@code micronaut-platform}
+     * is configured, followed by the catalog published with the configured core BOM.
+     * Explicit version declarations retain their existing interpretation.
      */
     public void importMicronautCatalog(String alias) {
         settings.dependencyResolutionManagement(mgmt -> {
@@ -313,6 +321,9 @@ public abstract class MicronautBuildSettingsExtension {
                 .filter(lib -> lib.getAlias().equals(alias))
                 .findFirst()
                 .map(library -> {
+                    if (library.getVersion().getReference() == null && library.getVersion().getVersion() == RichVersion.EMPTY) {
+                        return inferredCatalogCoordinates(library.getGroup(), library.getName(), alias);
+                    }
                     String version;
                     if (library.getVersion().getReference() != null) {
                         version = versionCatalogTomlModel.findVersion(library.getVersion().getReference())
@@ -346,6 +357,54 @@ public abstract class MicronautBuildSettingsExtension {
             } else {
                 throw new IllegalStateException("Invalid version catalog GAV coordinates: " + gavCoordinates + ". Expected format: group:artifact:version");
             }
+        });
+    }
+
+    private String inferredCatalogCoordinates(String group, String artifact, String alias) {
+        String platformVersion = determineMicronautVersion("micronaut-platform", null);
+        if (platformVersion != null) {
+            if (platformCatalog == null) {
+                platformCatalog = catalogConfiguration("io.micronaut.platform:micronaut-platform:" + platformVersion);
+            }
+            String coordinates = catalogCoordinates(platformCatalog, group, artifact).getOrNull();
+            if (coordinates != null) {
+                return coordinates;
+            }
+        }
+        if (micronautVersion != null) {
+            if (coreCatalog == null) {
+                coreCatalog = catalogConfiguration("io.micronaut:" + coreBomArtifactId(micronautVersion) + ":" + micronautVersion);
+            }
+            String coordinates = catalogCoordinates(coreCatalog, group, artifact).getOrNull();
+            if (coordinates != null) {
+                return coordinates;
+            }
+        }
+        if (micronautVersion == null && platformVersion == null) {
+            throw new IllegalStateException("No version for catalog '" + alias +
+                "'. Declare its version or configure [versions].micronaut or micronautVersion, " +
+                "or [versions].micronaut-platform or micronautPlatformVersion.");
+        }
+        String searched = platformVersion == null ? "Micronaut core BOM " + micronautVersion :
+            "Micronaut platform BOM " + platformVersion + (micronautVersion == null ? "" : " and core BOM " + micronautVersion);
+        String verb = micronautVersion != null && platformVersion != null ? " do not" : " does not";
+        throw new IllegalStateException(searched + verb + " supply a catalog version for " + group + ":" + artifact +
+            ". Declare an explicit local version.");
+    }
+
+    private Configuration catalogConfiguration(String coordinates) {
+        var script = settings.getBuildscript();
+        settings.getDependencyResolutionManagement().getRepositories().forEach(script.getRepositories()::add);
+        Configuration configuration = script.getConfigurations().detachedConfiguration(script.getDependencies().create(coordinates + "@toml"));
+        configuration.setTransitive(false);
+        return configuration;
+    }
+
+    private Provider<String> catalogCoordinates(Configuration catalog, String group, String artifact) {
+        return getProviders().of(BomCatalogCoordinatesSource.class, spec -> {
+            spec.getParameters().getCatalog().from(catalog);
+            spec.getParameters().getGroup().set(group);
+            spec.getParameters().getArtifact().set(artifact);
         });
     }
 
