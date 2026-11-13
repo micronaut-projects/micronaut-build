@@ -26,6 +26,34 @@ buildscript {
 
 Then apply the individual plugins as needed.
 
+### Catalog version fallback
+
+`micronautBuild.importMicronautCatalog("micronaut-reactor")` in settings imports
+the catalog using its local library version, as before. If the library has no
+version declaration, the import looks up its Maven coordinates in the catalog
+published with the selected Micronaut platform BOM, then in the configured core
+catalog if the platform does not supply a version:
+
+```toml
+[versions]
+micronaut = "5.2.22"
+micronaut-platform = "5.2.5"
+
+[libraries]
+micronaut-reactor = { module = "io.micronaut.reactor:micronaut-reactor-bom" }
+```
+
+Keep the library declaration. If neither catalog supplies that module's version,
+the import fails with an error requesting an explicit local version. Existing
+explicit versions, references, and rich-version handling are unchanged. This
+fallback only selects the imported catalog version; it does not apply additional
+BOM constraints to project dependencies. The platform catalog is resolved only
+for versionless imports and can also be selected with the `micronautPlatformVersion` Gradle
+property. Lookup matches Maven group and artifact, so platform aliases such as
+`boms-micronaut-reactor` and version keys such as `managed-micronaut-reactor` work.
+Keep the `micronaut` version for the standard no-argument `importMicronautCatalog()`;
+this change does not infer the core version from the platform.
+
 ## Available plugins
 
 ### Core plugins
