@@ -195,6 +195,296 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
         errorOutputContains "Version catalog doesn't contain a library with alias: example"
     }
 
+    void 'BOM inclusion is #description for common projects'() {
+        given:
+        setupProject("""
+            [versions]
+            micronaut = "5.0"
+            [libraries]
+            example = { module = "$MODULE", version = "1.0" }
+        """)
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example'$argument)")
+        setupBomConsumer(enableBom, included, '1.0')
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Catalog marker: 1.0'
+        outputContains "BOM included: $included"
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Reusing configuration cache.'
+        outputContains "BOM included: $included"
+
+        where:
+        description                  | argument  | enableBom | included
+        'disabled by default'        | ''        | true      | false
+        'explicitly disabled'        | ', false' | true      | false
+        'explicitly enabled'         | ', true'  | true      | true
+        'disabled by project switch' | ', true'  | false     | false
+    }
+
+    void 'BOM inclusion uses the same inferred version as the imported catalog'() {
+        given:
+        setupProject("""
+            [versions]
+            micronaut = "5.0"
+            [libraries]
+            example = { module = "$MODULE" }
+        """)
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example', true)")
+        setupBomConsumer(true, true, '2.0')
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline'
+
+        then:
+        outputContains 'Catalog marker: 2.0'
+        outputContains 'BOM included: true'
+    }
+
+    void 'platform own constraints can be applied explicitly'() {
+        given:
+        setupProject('''
+            [versions]
+            micronaut = "5.0"
+            micronaut-platform = "3.0"
+            [libraries]
+            example = { module = "io.micronaut.platform:micronaut-platform", version.ref = "micronaut-platform" }
+        ''', 'mnPlatform')
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example', true)")
+        setupBomConsumer(true, true, '3.0', 'io.micronaut.platform:micronaut-platform')
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline'
+
+        then:
+        outputContains 'Catalog marker: 3.0'
+        outputContains 'BOM included: true'
+    }
+
+    void 'configured platform is included automatically with enableBom #enabled'() {
+        given:
+        setupProject("""
+            [versions]
+            micronaut = "5.0"
+            micronaut-platform = "3.0"
+            [libraries]
+            example = { module = "$MODULE", version = "1.0" }
+        """)
+        setupBomConsumer(enabled, enabled, '3.0', 'io.micronaut.platform:micronaut-platform')
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Catalog marker: 1.0'
+        outputContains "BOM included: $enabled"
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Reusing configuration cache.'
+
+        where:
+        enabled << [true, false]
+    }
+
+    void 'BOM coverage reaches Java projects with platform #platform enabled #enabled and existing extension #extension'() {
+        given:
+        setupProject("""
+            [versions]
+            micronaut = "5.0"
+            ${platform ? 'micronaut-platform = "3.0"' : ''}
+            [libraries]
+            example = { module = "$MODULE", version = "1.0" }
+        """)
+        if (!platform) {
+            settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example', true)")
+        }
+        setupBomConsumer(enabled, enabled, platform ? '3.0' : '1.0',
+            platform ? 'io.micronaut.platform:micronaut-platform' : MODULE)
+        def consumer = file('consumer/build.gradle')
+        consumer.text = consumer.text.replace("id 'io.micronaut.build.internal.common'",
+            extension ? "id 'java-library'; id 'io.micronaut.build.internal.java-base'" : "id 'java-library'")
+            .replace('inputs.properties.coreEnabled == ' + enabled, 'inputs.properties.coreEnabled == false')
+
+        when:
+        run ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains "BOM included: $enabled"
+
+        when:
+        run ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Reusing configuration cache.'
+
+        where:
+        platform | enabled | extension
+        true     | true    | true
+        true     | false   | true
+        false    | true    | true
+        false    | false   | true
+        true     | true    | false
+        true     | false   | false
+        false    | true    | false
+        false    | false   | false
+    }
+
+    void 'configured platform property is also automatically applied'() {
+        given:
+        setupProject("""
+            [versions]
+            micronaut = "5.0"
+            [libraries]
+            example = { module = "$MODULE", version = "1.0" }
+        """)
+        setupBomConsumer(true, true, '3.0', 'io.micronaut.platform:micronaut-platform')
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline', '-PmicronautPlatformVersion=3.0'
+
+        then:
+        outputContains 'BOM included: true'
+    }
+
+    void 'automatic platform also reaches applications without an explicit platform import'() {
+        given:
+        setupProject("""
+            [versions]
+            micronaut = "5.0"
+            micronaut-platform = "3.0"
+            [libraries]
+            example = { module = "$MODULE", version = "1.0" }
+        """)
+        setupBomConsumer(true, true, '3.0', 'io.micronaut.platform:micronaut-platform', true)
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline'
+
+        then:
+        outputContains 'BOM included: true'
+    }
+
+    void 'unconfigured platform requires explicit true with argument #argument'() {
+        given:
+        setupProject('''
+            [libraries]
+            example = { module = "io.micronaut.platform:micronaut-platform", version = "3.0" }
+        ''', 'mnPlatform')
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example'$argument)")
+
+        when:
+        fails 'help', '--offline'
+
+        then:
+        errorOutputContains 'The platform must be imported using importMicronautCatalog(alias, true).'
+
+        where:
+        argument << ['', ', false']
+    }
+
+    void 'included BOMs also reach the existing application BOM bucket'() {
+        given:
+        setupProject("""
+            [versions]
+            micronaut = "5.0"
+            [libraries]
+            example = { module = "$MODULE", version = "1.0" }
+        """)
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example', true)")
+        setupBomConsumer(true, true, '1.0', MODULE, true)
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'BOM included: true'
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Reusing configuration cache.'
+        outputContains 'BOM included: true'
+    }
+
+    private void setupBomConsumer(boolean enableBom, boolean included, String version,
+                                  String includedModule = MODULE, boolean application = false) {
+        settingsFile << "\ninclude 'consumer'\n"
+        file('gradle.properties').text = 'projectVersion=1.0.0-SNAPSHOT\n'
+        file("repo/example/managed/$version/managed-${version}.pom").text = """
+            <project><modelVersion>4.0.0</modelVersion><groupId>example</groupId>
+            <artifactId>managed</artifactId><version>$version</version></project>
+        """
+        file('consumer/build.gradle').text = '''
+            plugins { id 'io.micronaut.build.internal.common' }
+            repositories { maven { url = rootProject.file('repo') } }
+            micronautBuild {
+                enableBom = ENABLE_BOM
+                enableProcessing = false
+            }
+            dependencies {
+                implementation 'example:managed'
+                annotationProcessor 'example:managed'
+                testImplementation 'example:managed'
+                testAnnotationProcessor 'example:managed'
+            }
+            def probes = ['compileClasspath', 'runtimeClasspath', 'testCompileClasspath',
+                          'testRuntimeClasspath', 'annotationProcessor', 'testAnnotationProcessor']
+                .collectEntries { name -> [name, configurations[name].incoming.resolutionResult.rootComponent] }
+            def coreEnabled = configurations.globalBoms.allDependencies.any {
+                it.group == 'io.micronaut' && it.name == 'micronaut-core-bom'
+            }
+            def extraCount = configurations.globalBoms.allDependencies.count {
+                it.group == 'io.micronaut.example' && it.name == 'micronaut-example-bom'
+            }
+            tasks.register('verifyBom') {
+                inputs.property('coreEnabled', coreEnabled)
+                inputs.property('extraCount', extraCount)
+                doLast {
+                    assert inputs.properties.coreEnabled == ENABLE_BOM
+                    assert inputs.properties.extraCount == (INCLUDED ? 1 : 0)
+                    probes.each { name, root ->
+                        def dependency = root.get().dependencies.find { it.requested.displayName.startsWith('example:managed') }
+                        assert dependency != null: name
+                        if (INCLUDED) {
+                            assert dependency instanceof org.gradle.api.artifacts.result.ResolvedDependencyResult: name
+                            assert dependency.selected.moduleVersion.version == 'EXPECTED_VERSION': name
+                        } else {
+                            assert dependency instanceof org.gradle.api.artifacts.result.UnresolvedDependencyResult: name
+                        }
+                    }
+                    println 'BOM included: INCLUDED'
+                }
+            }
+        '''.replace('ENABLE_BOM', enableBom.toString()).replace('INCLUDED', included.toString()).replace('EXPECTED_VERSION', version)
+        def (bomGroup, bomName) = includedModule.split(':')
+        def consumer = file('consumer/build.gradle')
+        consumer.text = consumer.text.replace('io.micronaut.example', bomGroup).replace('micronaut-example-bom', bomName)
+        if (application) {
+            consumer.text = consumer.text.replace('io.micronaut.build.internal.common', 'io.micronaut.build.internal.java-base')
+                .replace('globalBoms', 'micronautBoms')
+                .replace('micronautBuild {', '''
+                    configurations {
+                        micronautBoms { canBeResolved = false; canBeConsumed = false }
+                        implementation.extendsFrom(micronautBoms)
+                        annotationProcessor.extendsFrom(micronautBoms)
+                        testAnnotationProcessor.extendsFrom(micronautBoms)
+                    }
+                    dependencies { micronautBoms platform('io.micronaut:micronaut-core-bom:5.0') }
+                    micronautBuild {
+                ''')
+        }
+    }
+
     private void setupProject(String catalog, String catalogName = 'mnExample') {
         publishCatalog(MODULE, '1.0', '[libraries]\nmarker = "example:marker:1.0"')
         publishCatalog(MODULE, '2.0', '[libraries]\nmarker = "example:marker:2.0"')
@@ -203,6 +493,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             [versions]
             managed-micronaut-reactor = "4.0"
             [libraries]
+            marker = "example:marker:3.0"
             boms-micronaut-reactor = { module = "$PLATFORM_MODULE", version.ref = "managed-micronaut-reactor" }
         """)
         publishCatalog('io.micronaut:micronaut-core-bom', '5.0', """
@@ -227,7 +518,6 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
                 inputs.property('marker', marker)
                 doLast { println "Catalog marker: ${inputs.properties.marker}" }
             }
-            assert configurations.findByName('globalBoms') == null
         '''.replace('CATALOG', catalogName)
     }
 
@@ -251,7 +541,12 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
                 name: 'versionCatalogElements',
                 attributes: ['org.gradle.category': 'platform', 'org.gradle.usage': 'version-catalog'],
                 files: [[name: "${base}.toml", url: "${base}.toml"]]
-            ]]
+            ]] + ['java-api', 'java-runtime'].collect { usage -> [
+                name: usage,
+                attributes: ['org.gradle.category': 'platform', 'org.gradle.usage': usage],
+                dependencyConstraints: module in [MODULE, 'io.micronaut.platform:micronaut-platform'] ?
+                    [[group: 'example', module: 'managed', version: [requires: version]]] : []
+            ] }
         ])
     }
 }
