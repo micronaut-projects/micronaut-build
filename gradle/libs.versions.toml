@@ -1,6 +1,6 @@
 [versions]
 asciidoctorj = "3.0.1"
-jsoup = "1.23.2"
+jsoup = "1.24.1"
 commons-lang3 = "3.21.0"
 commons-text = "1.15.0"
 japicmp-plugin = "0.4.6"
