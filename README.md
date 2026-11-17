@@ -26,6 +26,98 @@ buildscript {
 
 Then apply the individual plugins as needed.
 
+### Catalog imports and BOMs
+
+Configure the platform version in `gradle/libs.versions.toml`:
+
+```toml
+[versions]
+micronaut-platform = "5.2.5"
+# Optional overrides for the standard catalogs:
+# micronaut = "5.2.22"
+# micronaut-test = "5.1.1"
+# micronaut-logging = "2.1.0"
+```
+
+Then import catalogs in `settings.gradle(.kts)`:
+
+```groovy
+import io.micronaut.build.MicronautBom
+
+micronautBuild {
+    importMicronautCatalog() // mn, mnTest, mnLogging
+    importMicronautCatalog(MicronautBom.REACTOR) // mnReactor + BOM constraints
+    importMicronautCatalog(MicronautBom.SQL, false) // mnSql catalog only
+}
+```
+
+The configured platform is applied automatically; no platform library alias or
+catalog import is required. It can also be selected with the
+`micronautPlatformVersion` Gradle property. No platform version is bundled into
+the plugin, so the consuming project controls platform upgrades.
+
+Named imports apply their BOM by default. Pass `false` for catalog-only access.
+Both string overloads are deprecated: replace
+`importMicronautCatalog("micronaut-sql")` with
+`importMicronautCatalog(MicronautBom.SQL)`, preserving an explicit `false` when
+needed. **Existing one-argument imports now apply their BOM and can change resolved
+dependency versions.** BOMs supply version constraints; they do not add missing
+library dependencies.
+
+### Version selection
+
+For named imports, the enum supplies Maven coordinates, so no local BOM library
+declaration is required. Versions are selected in this order:
+
+1. A local library version matching the BOM's group and artifact, including
+   existing version-reference and rich-version handling.
+2. The BOM version in the configured platform catalog.
+3. The BOM version in the core catalog.
+
+Lookup matches Maven coordinates rather than catalog alias names. If no version
+is found, the import fails and requests an explicit local version. The selected
+version is used for both the catalog and its included BOM.
+
+The no-argument import selects the standard catalogs using these selectors:
+
+| Catalog | Local `[versions]` key | Gradle property |
+| --- | --- | --- |
+| `mn` | `micronaut` | `micronautVersion` |
+| `mnTest` | `micronaut-test` | `micronautTestVersion` |
+| `mnLogging` | `micronaut-logging` | `micronautLoggingVersion` |
+
+Each uses its local key first, then its Gradle property, then the configured
+platform. Without a platform, core requires an explicit version; test and logging
+retain their built-in defaults. A configured platform missing a required entry
+fails unless an explicit override is supplied. Existing manually declared
+`mnTest` and `mnLogging` catalogs are preserved. Their version selectors choose
+catalogs and do not independently enforce test/logging BOM versions.
+
+Enum imports retain accessor names such as `mnReactor`, `mnSql`, and `mnSerde`;
+`MicronautBom.TEST_RESOURCES` creates `mnTestResources`. Use the no-argument call
+for the standard `mn` catalog: `MicronautBom.CORE` creates `mnCore`. The enum lists
+known Micronaut BOMs; inferred versions depend on the selected platform/core.
+Third-party BOMs generally do not publish compatible version catalogs.
+
+### Dependency management
+
+Included BOMs feed implementation, test, and annotation-processor classpaths
+through `globalBoms` or the application's `micronautBoms` bucket. Plain Java
+projects receive the required wiring automatically. Each project's
+`micronautBuild.enableBom = false` disables this management; manually declared
+BOM dependencies remain under the project's control.
+
+An included module BOM's managed versions take precedence over the platform
+baseline, including explicit downgrades. Enforcement is identical for local and
+inferred versions, so removing a matching pin does not change that policy.
+Enforcement applies only to resolvable, non-consumable classpaths inheriting the
+BOM buckets. Published metadata retains normal platform dependencies, and the
+automatically included platform itself is not enforced. Overlapping module BOMs
+must be compatible, including their imported BOM constraints.
+
+The platform can reference the current project's published BOM. Verify dependency
+graphs, compilation, and publications when adopting this management.
+
 ## Available plugins
 
 ### Core plugins

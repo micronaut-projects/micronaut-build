@@ -24,6 +24,6 @@ public abstract class BomSupport {
                 .map(Integer::parseInt)
                 .filter(v -> v <= 3)
                 .map(v -> "micronaut-bom")
-                .orElse("micronaut-core-bom");
+                .orElse(MicronautBom.CORE.getArtifactId());
     }
 }

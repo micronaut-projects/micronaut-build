@@ -42,6 +42,19 @@ public class LenientVersionCatalogParser {
     private static final String VERSIONS_KEY = "versions";
 
     private final VersionCatalogTomlModel model = new VersionCatalogTomlModel();
+    private final boolean includeVersionlessLibraries;
+
+    public LenientVersionCatalogParser() {
+        this(false);
+    }
+
+    /**
+     * @param includeVersionlessLibraries whether to retain versionless libraries
+     *                                  for settings-time catalog imports
+     */
+    public LenientVersionCatalogParser(boolean includeVersionlessLibraries) {
+        this.includeVersionlessLibraries = includeVersionlessLibraries;
+    }
 
     public static List<String> splitToList(String coordinates) {
         List<String> result = new ArrayList<>(3);
@@ -187,6 +200,9 @@ public class LenientVersionCatalogParser {
                     rejectedVersions,
                     rejectAll != null ? rejectAll : false
             ) : null, position);
+        }
+        if (version == null && includeVersionlessLibraries && group != null && name != null) {
+            versionModel = new VersionModel(null, RichVersion.EMPTY, position);
         }
         if (versionModel != null) {
             model.addLibrary(new Library(alias, group, name, versionModel, position));
