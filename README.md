@@ -26,109 +26,97 @@ buildscript {
 
 Then apply the individual plugins as needed.
 
-### Catalog version fallback
+### Catalog imports and BOMs
 
-`micronautBuild.importMicronautCatalog("micronaut-reactor")` in settings imports
-the catalog using its local library version, as before. If the library has no
-version declaration, the import looks up its Maven coordinates in the catalog
-published with the selected Micronaut platform BOM, then in the configured core
-catalog if the platform does not supply a version:
+Configure the platform version in `gradle/libs.versions.toml`:
 
 ```toml
 [versions]
-micronaut = "5.2.22"
 micronaut-platform = "5.2.5"
-
-[libraries]
-micronaut-reactor = { module = "io.micronaut.reactor:micronaut-reactor-bom" }
+# Optional overrides for the standard catalogs:
+# micronaut = "5.2.22"
+# micronaut-test = "5.1.1"
+# micronaut-logging = "2.1.0"
 ```
 
-Custom aliases still require a library declaration. Known Micronaut BOM names,
-such as `micronaut-reactor`, can omit the entire declaration: the plugin uses the
-known coordinates when the alias is absent locally. If neither catalog supplies that module's version,
-the import fails with an error requesting an explicit local version. Existing
-explicit versions, references, and rich-version handling are unchanged. This
-fallback only selects the imported catalog version; it does not apply additional
-BOM constraints to project dependencies. The platform catalog is resolved only
-for versionless imports and can also be selected with the `micronautPlatformVersion` Gradle
-property. Lookup matches Maven group and artifact, so platform aliases such as
-`boms-micronaut-reactor` and version keys such as `managed-micronaut-reactor` work.
-Keep the `micronaut` version for the standard no-argument `importMicronautCatalog()`;
-this change does not infer the core version from the platform.
-
-To also apply an imported BOM's dependency constraints, explicitly opt in:
-
-```groovy
-micronautBuild {
-    importMicronautCatalog("micronaut-reactor", true)
-}
-```
-
-The one-argument call and an explicit `false` remain catalog-only. The core BOM
-continues to be applied by the common build conventions as before. With `true`,
-the resolved module BOM is added alongside core through `globalBoms`, which feeds
-`implementation`, `annotationProcessor`, and `testAnnotationProcessor`. Standard
-Java test classpaths inherit the implementation constraints. Each project's
-`micronautBuild.enableBom = false` disables included BOMs and the common plugin's
-core management. Manually declared BOMs keep their existing behavior. Projects
-with an existing application `micronautBoms` bucket and the maintainer build
-extension receive the included BOMs there as well. Plain Java projects also receive
-the maintainer extension and a `globalBoms` bucket when needed, covering implementation
-and annotation processors. Catalog-only imports without a configured platform do not
-add this wiring.
-Opting in can change dependency resolution and published platform
-dependencies; existing catalog-only imports keep their behavior.
-
-When `[versions].micronaut-platform` or the `micronautPlatformVersion` Gradle
-property is configured, its platform BOM is included automatically alongside core.
-This supplies the platform's own constraints, such as Lombok, as well as its module
-BOM imports. No platform library alias or explicit platform catalog import is
-required. The selected version remains a bootstrap selector and must be kept.
-The automatic platform respects each project's `micronautBuild.enableBom` setting
-and uses `globalBoms` or the application `micronautBoms` bucket.
-
-Additional module BOMs still require `importMicronautCatalog(alias, true)` to be
-included separately; ordinary one-argument calls remain catalog-only. This permits
-explicit module version overrides alongside the platform baseline. If a platform
-catalog alias is imported explicitly with `true` at the same version, its BOM is
-not added twice. A configured platform may reference the current project's
-published BOM, so verify dependency graphs and publications when enabling it.
-
-### Importing known Micronaut BOMs without local aliases
-
-Use `MicronautBom` to import a known BOM without declaring that BOM in
-`libs.versions.toml`:
+Then import catalogs in `settings.gradle(.kts)`:
 
 ```groovy
 import io.micronaut.build.MicronautBom
 
 micronautBuild {
-    importMicronautCatalog(MicronautBom.REACTOR, true)
-    importMicronautCatalog(MicronautBom.SQL, true)
-    importMicronautCatalog(MicronautBom.SERDE)
+    importMicronautCatalog() // mn, mnTest, mnLogging
+    importMicronautCatalog(MicronautBom.REACTOR) // mnReactor + BOM constraints
+    importMicronautCatalog(MicronautBom.SQL, false) // mnSql catalog only
 }
 ```
 
-These imports preserve catalog accessor names such as `mnReactor`, `mnSql`, and
-`mnSerde`. The enum holds Maven coordinates only. A local library declaration
-matching those coordinates takes priority, including explicit and rich versions.
-Otherwise versions come from the configured platform catalog first, then core. Keep the
-platform/core version selectors. The one-argument enum overload is catalog-only;
-pass `true` to also apply that BOM, subject to `enableBom`.
+The configured platform is applied automatically; no platform library alias or
+catalog import is required. It can also be selected with the
+`micronautPlatformVersion` Gradle property. No platform version is bundled into
+the plugin, so the consuming project controls platform upgrades.
 
-The enum lists the 72 Micronaut BOMs in the
-[published platform 5.2.6 catalog](https://repo.maven.apache.org/maven2/io/micronaut/platform/micronaut-platform/5.2.6/micronaut-platform-5.2.6.toml),
-including `MONGO`, `SERDE`, and `TEST_RESOURCES`. It excludes third-party BOMs,
-which generally do not publish Micronaut version catalogs. Availability depends
-on the selected platform/core version: an absent BOM fails with a lookup error.
-Use the existing string alias API for explicit local overrides or custom BOMs;
-local declarations still take precedence, including rich versions. Existing
-calls such as `importMicronautCatalog("micronaut-reactor", true)` therefore work
-after deleting the corresponding BOM library declaration. The shorthand
-`micronaut-testresources` also remains supported and creates `mnTestResources`.
-The no-argument import continues to provide the core
-`mn` catalog as before (`MicronautBom.CORE` follows the named-import convention,
-creating `mnCore`).
+Named imports apply their BOM by default. Pass `false` for catalog-only access.
+Both string overloads are deprecated: replace
+`importMicronautCatalog("micronaut-sql")` with
+`importMicronautCatalog(MicronautBom.SQL)`, preserving an explicit `false` when
+needed. **Existing one-argument imports now apply their BOM and can change resolved
+dependency versions.** BOMs supply version constraints; they do not add missing
+library dependencies.
+
+### Version selection
+
+For named imports, the enum supplies Maven coordinates, so no local BOM library
+declaration is required. Versions are selected in this order:
+
+1. A local library version matching the BOM's group and artifact, including
+   existing version-reference and rich-version handling.
+2. The BOM version in the configured platform catalog.
+3. The BOM version in the core catalog.
+
+Lookup matches Maven coordinates rather than catalog alias names. If no version
+is found, the import fails and requests an explicit local version. The selected
+version is used for both the catalog and its included BOM.
+
+The no-argument import selects the standard catalogs using these selectors:
+
+| Catalog | Local `[versions]` key | Gradle property |
+| --- | --- | --- |
+| `mn` | `micronaut` | `micronautVersion` |
+| `mnTest` | `micronaut-test` | `micronautTestVersion` |
+| `mnLogging` | `micronaut-logging` | `micronautLoggingVersion` |
+
+Each uses its local key first, then its Gradle property, then the configured
+platform. Without a platform, core requires an explicit version; test and logging
+retain their built-in defaults. A configured platform missing a required entry
+fails unless an explicit override is supplied. Existing manually declared
+`mnTest` and `mnLogging` catalogs are preserved. Their version selectors choose
+catalogs and do not independently enforce test/logging BOM versions.
+
+Enum imports retain accessor names such as `mnReactor`, `mnSql`, and `mnSerde`;
+`MicronautBom.TEST_RESOURCES` creates `mnTestResources`. Use the no-argument call
+for the standard `mn` catalog: `MicronautBom.CORE` creates `mnCore`. The enum lists
+known Micronaut BOMs; inferred versions depend on the selected platform/core.
+Third-party BOMs generally do not publish compatible version catalogs.
+
+### Dependency management
+
+Included BOMs feed implementation, test, and annotation-processor classpaths
+through `globalBoms` or the application's `micronautBoms` bucket. Plain Java
+projects receive the required wiring automatically. Each project's
+`micronautBuild.enableBom = false` disables this management; manually declared
+BOM dependencies remain under the project's control.
+
+An included module BOM's managed versions take precedence over the platform
+baseline, including explicit downgrades. Enforcement is identical for local and
+inferred versions, so removing a matching pin does not change that policy.
+Enforcement applies only to resolvable, non-consumable classpaths inheriting the
+BOM buckets. Published metadata retains normal platform dependencies, and the
+automatically included platform itself is not enforced. Overlapping module BOMs
+must be compatible, including their imported BOM constraints.
+
+The platform can reference the current project's published BOM. Verify dependency
+graphs, compilation, and publications when adopting this management.
 
 ## Available plugins
 
