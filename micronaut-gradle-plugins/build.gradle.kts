@@ -36,8 +36,9 @@ dependencies {
 
     // We must differentiate the version that we use HERE to test the build plugins, which
     // should use a version of Spock which is compatible with what Gradle uses (Groovy 4)
-    // and the version that we will use in Micronaut projects, which is going to be Groovy 5
-    var localSpockVersion = libs.versions.spock.get().replace("groovy-5", "groovy-4")
+    // and the version that we will use in Micronaut projects, which uses the Groovy version
+    // declared in the version catalog
+    var localSpockVersion = libs.versions.spock.get().replace(Regex("groovy-\\d+\\.\\d+$"), "groovy-4.0")
 
     testImplementation(platform(libs.spock.bom)) {
         version {
