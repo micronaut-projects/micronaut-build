@@ -122,6 +122,25 @@ public enum MicronautBom {
         return artifactId;
     }
 
+    /**
+     * Returns the BOM's Maven coordinates without a version.
+     *
+     * @return coordinates in {@code groupId:artifactId} format
+     */
+    public String getModuleCoordinates() {
+        return groupId + ":" + artifactId;
+    }
+
+    /**
+     * Returns the BOM's Maven coordinates with the supplied version.
+     *
+     * @param version the BOM version
+     * @return coordinates in {@code groupId:artifactId:version} format
+     */
+    public String getCoordinates(String version) {
+        return getModuleCoordinates() + ":" + version;
+    }
+
     static Optional<MicronautBom> findByAlias(String alias) {
         return Arrays.stream(values()).filter(bom ->
             bom.artifactId.equals(alias + "-bom") ||

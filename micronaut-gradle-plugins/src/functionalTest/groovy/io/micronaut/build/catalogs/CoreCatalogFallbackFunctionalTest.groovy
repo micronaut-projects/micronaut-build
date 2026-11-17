@@ -1,18 +1,315 @@
 package io.micronaut.build.catalogs
 
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
 import io.micronaut.build.AbstractFunctionalTest
 
 class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
     private static final String MODULE = 'io.micronaut.example:micronaut-example-bom'
     private static final String PLATFORM_MODULE = 'io.micronaut.reactor:micronaut-reactor-bom'
 
+    void 'test and logging catalogs use #source versions with optional overrides'() {
+        given:
+        setupProject("""
+            [versions]
+            ${platformProperty == false ? 'micronaut-platform = "3.0"' : ''}
+            $selectors
+        """, 'mn')
+        ['5.0', '6.0', '7.0'].each { v ->
+            publishCatalog('io.micronaut:micronaut-core-bom', v, "[libraries]\nmarker = \"example:marker:$v\"")
+            def metadataFile = file("repo/io/micronaut/micronaut-core-bom/$v/micronaut-core-bom-${v}.module")
+            def metadata = new JsonSlurper().parse(metadataFile)
+            metadata.variants.findAll { it.attributes['org.gradle.usage'] != 'version-catalog' }.each {
+                it.dependencyConstraints = [[group: 'example', module: 'core-library', version: [requires: v]]]
+            }
+            metadataFile.text = JsonOutput.toJson(metadata)
+            file("repo/example/core-library/$v/core-library-${v}.pom").text = """
+                <project><modelVersion>4.0.0</modelVersion><groupId>example</groupId>
+                <artifactId>core-library</artifactId><version>$v</version></project>
+            """
+        }
+        ['1.0', '2.0', '3.0'].each { v ->
+            publishCatalog('io.micronaut.test:micronaut-test-bom', v, "[libraries]\nmarker = \"example:marker:$v\"")
+            publishCatalog('io.micronaut.logging:micronaut-logging-bom', v, "[libraries]\nmarker = \"example:marker:$v\"")
+        }
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)", 'importMicronautCatalog()')
+        settingsFile << "\ninclude 'consumer'\n"
+        file('gradle.properties').text = 'projectVersion=1.0.0-SNAPSHOT\n'
+        file('consumer/build.gradle').text = """
+            plugins { id 'io.micronaut.build.internal.common' }
+            repositories { maven { url = rootProject.file('repo') } }
+            micronautBuild { enableProcessing = false }
+            dependencies { implementation 'example:core-library' }
+            def catalogs = extensions.getByType(org.gradle.api.artifacts.VersionCatalogsExtension)
+            def versions = ['mn', 'mnTest', 'mnLogging'].collectEntries { name ->
+                [name, catalogs.named(name).findLibrary('marker').get().get().versionConstraint.requiredVersion]
+            }
+            def declaredCore = configurations.globalBoms.allDependencies.find { it.name == 'micronaut-core-bom' }.version
+            def effectiveCoreProperty = project.property('micronautVersion')
+            def graph = configurations.compileClasspath.incoming.resolutionResult.rootComponent
+            tasks.register('verifyBaseCatalogs') {
+                inputs.property('catalogs', versions)
+                inputs.property('coreBom', declaredCore)
+                inputs.property('coreProperty', effectiveCoreProperty)
+                doLast {
+                    assert inputs.properties.catalogs == [mn: '$core', mnTest: '$test', mnLogging: '$logging']
+                    assert inputs.properties.coreBom == '$core'
+                    assert inputs.properties.coreProperty == '${properties.find { it.startsWith('-PmicronautVersion=') }?.split('=', 2)?.last() ?: core}'
+                    def library = graph.get().dependencies.find { it.requested.displayName == 'example:core-library' }
+                    assert library instanceof org.gradle.api.artifacts.result.ResolvedDependencyResult
+                    assert library.selected.moduleVersion.version == '$core'
+                    println 'Base catalogs and core conventions verified'
+                }
+            }
+        """
+        def options = ['--offline', '--configuration-cache'] + properties +
+            (platformProperty ? ['-PmicronautPlatformVersion=3.0'] : [])
+
+        when:
+        run(*([':consumer:verifyBaseCatalogs'] + options))
+
+        then:
+        outputContains 'Base catalogs and core conventions verified'
+
+        when:
+        run(*([':consumer:verifyBaseCatalogs'] + options))
+
+        then:
+        outputContains 'Reusing configuration cache.'
+
+        where:
+        source              | platformProperty | selectors                                                                                     | properties                                                                                  | core  | test  | logging
+        'platform only'     | false            | ''                                                                                            | []                                                                                          | '5.0' | '1.0' | '1.0'
+        'platform property only' | true         | ''                                                                                            | []                                                                                          | '5.0' | '1.0' | '1.0'
+        'platform'          | false            | 'micronaut = "5.0"'                                                                                            | []                                                                                          | '5.0' | '1.0' | '1.0'
+        'platform property' | true             | 'micronaut = "5.0"'                                                                                            | []                                                                                          | '5.0' | '1.0' | '1.0'
+        'local selectors'   | false            | 'micronaut = "6.0"\nmicronaut-test = "2.0"\nmicronaut-logging = "2.0"'                          | []                                                                                          | '6.0' | '2.0' | '2.0'
+        'Gradle properties' | false            | ''                                                                                            | ['-PmicronautVersion=6.0', '-PmicronautTestVersion=2.0', '-PmicronautLoggingVersion=2.0']         | '6.0' | '2.0' | '2.0'
+        'TOML precedence'   | false            | 'micronaut = "6.0"\nmicronaut-test = "2.0"\nmicronaut-logging = "2.0"'                          | ['-PmicronautVersion=7.0', '-PmicronautTestVersion=3.0', '-PmicronautLoggingVersion=3.0']         | '6.0' | '2.0' | '2.0'
+        'mixed overrides'   | false            | 'micronaut = "6.0"\nmicronaut-test = "1.0"'                                                                           | []                                                                                          | '6.0' | '1.0' | '1.0'
+        'legacy selectors'  | null             | 'micronaut = "5.0"\nmicronaut-test = "1.0"\nmicronaut-logging = "1.0"'                          | []                                                                                          | '5.0' | '1.0' | '1.0'
+    }
+
+    void 'configured platform missing base BOM #module fails clearly'() {
+        given:
+        setupProject('[versions]\nmicronaut-platform = "3.0"', 'mn')
+        def platform = file('repo/io/micronaut/platform/micronaut-platform/3.0/micronaut-platform-3.0.toml')
+        platform.text = platform.text.readLines().findAll { !it.contains(module) }.join('\n') + '\n'
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)", 'importMicronautCatalog()')
+
+        when:
+        fails 'help', '--offline'
+
+        then:
+        errorOutputContains "does not supply a catalog version for $module"
+        errorOutputContains "Declare [versions].$selector"
+
+        where:
+        module                                             | selector
+        'io.micronaut:micronaut-core-bom'                    | 'micronaut'
+        'io.micronaut.test:micronaut-test-bom'                | 'micronaut-test'
+        'io.micronaut.logging:micronaut-logging-bom'          | 'micronaut-logging'
+    }
+
+    void 'predeclared test and logging catalogs retain their existing versions'() {
+        given:
+        setupProject('[versions]\nmicronaut-platform = "3.0"', 'mnTest')
+        def platform = file('repo/io/micronaut/platform/micronaut-platform/3.0/micronaut-platform-3.0.toml')
+        platform.text = platform.text.readLines().findAll {
+            !it.contains('io.micronaut.test:micronaut-test-bom') && !it.contains('io.micronaut.logging:micronaut-logging-bom')
+        }.join('\n') + '\n'
+        settingsFile.text = settingsFile.text.replace("micronautBuild { importMicronautCatalog('example', false) }", '''
+            dependencyResolutionManagement {
+                versionCatalogs {
+                    create('mnTest') { from('io.micronaut.test:micronaut-test-bom:1.0') }
+                    create('mnLogging') { from('io.micronaut.logging:micronaut-logging-bom:1.0') }
+                }
+            }
+            micronautBuild { importMicronautCatalog() }
+        ''')
+
+        when:
+        run 'verifyCatalog', '--offline'
+
+        then:
+        outputContains 'Catalog marker: 1.0'
+    }
+
+    void 'test and logging retain built-in defaults without a platform'() {
+        given:
+        setupProject('[versions]\nmicronaut = "5.0"', 'mnTest')
+        settingsFile.text = settingsFile.text.replace("micronautBuild { importMicronautCatalog('example', false) }", '''
+            // Publish local fixture catalogs at the generated built-in versions,
+            // without hard-coding release versions or relying on a machine cache.
+            [
+                'io.micronaut.test:micronaut-test-bom': io.micronaut.build.utils.DefaultVersions.MICRONAUT_TEST_VERSION,
+                'io.micronaut.logging:micronaut-logging-bom': io.micronaut.build.utils.DefaultVersions.MICRONAUT_LOGGING_VERSION
+            ].each { module, version ->
+                def (group, artifact) = module.split(':')
+                def base = 'repo/' + group.replace('.', '/') + '/' + artifact
+                def template = new File(settingsDir, base + '/1.0')
+                def target = new File(settingsDir, base + '/' + version)
+                target.mkdirs()
+                template.listFiles().each { input ->
+                    def output = new File(target, input.name.replace('-1.0.', '-' + version + '.'))
+                    output.text = input.name.endsWith('.toml') ? input.text : input.text.replace('1.0', version)
+                }
+            }
+            micronautBuild { importMicronautCatalog() }
+        ''')
+        buildFile << "\nassert mnLogging.marker.get().versionConstraint.requiredVersion == '1.0'\n"
+
+        when:
+        run 'verifyCatalog', '--offline'
+
+        then:
+        outputContains 'Catalog marker: 1.0'
+    }
+
+    void 'BOM precedence #localVersion with #notation include #includeBom enabled #enabled local pin #localPin removal #removal'() {
+        given:
+        setupProject("""
+            [versions]
+            micronaut = "5.0"
+            micronaut-platform = "3.0"
+            reactor = "$localVersion"
+            [libraries]
+            micronaut-reactor = { module = "$PLATFORM_MODULE"${localPin ? ', version.ref = "reactor"' : ''} }
+        """, 'mnReactor')
+        publishCatalog(PLATFORM_MODULE, '4.0', '[libraries]\nmarker = "example:marker:4.0"', true)
+        publishCatalog(PLATFORM_MODULE, localVersion, "[libraries]\nmarker = \"example:marker:$localVersion\"", true)
+        def platformMetadata = file('repo/io/micronaut/platform/micronaut-platform/3.0/micronaut-platform-3.0.module')
+        def metadata = new JsonSlurper().parse(platformMetadata)
+        metadata.variants.findAll { it.attributes['org.gradle.usage'] != 'version-catalog' }.each {
+            // Both the platform's imported BOM and a platform-owned constraint
+            // disagree with a local downgrade. The local override must win both.
+            it.dependencies = [[group: 'io.micronaut.reactor', module: 'micronaut-reactor-bom', version: [requires: '4.0'],
+                                attributes: ['org.gradle.category': 'platform']]]
+        }
+        platformMetadata.text = JsonOutput.toJson(metadata)
+        String argument = notation == 'enum' ? 'io.micronaut.build.MicronautBom.REACTOR' : "'micronaut-reactor'"
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)",
+            "importMicronautCatalog($argument${includeBom == null ? '' : ', ' + includeBom})")
+        settingsFile << "\ninclude 'consumer'\n"
+        file('gradle.properties').text = 'projectVersion=1.0.0-SNAPSHOT\ntitle=Local BOM override fixture\n'
+        String expected = enabled && includeBom != false ? (localPin ? localVersion : '4.0') : '5.0'
+        file("repo/example/managed/$expected/managed-${expected}.pom").text = """
+            <project><modelVersion>4.0.0</modelVersion><groupId>example</groupId>
+            <artifactId>managed</artifactId><version>$expected</version></project>
+        """
+        new java.util.jar.JarOutputStream(new FileOutputStream(file("repo/example/managed/$expected/managed-${expected}.jar"))).close()
+        file('consumer/build.gradle').text = """
+            plugins {
+                id '${application ? 'io.micronaut.build.internal.java-base' : 'io.micronaut.build.internal.common'}'
+                id 'java-library'
+                id 'maven-publish'
+            }
+            group = 'example'
+            version = '1.0'
+            repositories { maven { url = rootProject.file('repo') } }
+            ${application ? '''configurations {
+                micronautBoms { canBeResolved = false; canBeConsumed = false }
+                implementation.extendsFrom(micronautBoms)
+                annotationProcessor.extendsFrom(micronautBoms)
+                testAnnotationProcessor.extendsFrom(micronautBoms)
+            }''' : ''}
+            micronautBuild { enableBom = $enabled; enableProcessing = false }
+            dependencies {
+                implementation 'example:managed:5.0'
+                annotationProcessor 'example:managed:5.0'
+                testImplementation 'example:managed:5.0'
+                testAnnotationProcessor 'example:managed:5.0'
+            }
+            publishing { publications { sample(MavenPublication) { from components.java } } }
+            def probes = ['compileClasspath', 'runtimeClasspath', 'testCompileClasspath',
+                          'testRuntimeClasspath', 'annotationProcessor', 'testAnnotationProcessor']
+                .collectEntries { name -> [name, configurations[name].incoming.resolutionResult.rootComponent] }
+            tasks.register('verifyLocalOverride') {
+                outputs.file(layout.buildDirectory.file('bom-graph.json'))
+                outputs.upToDateWhen { false }
+                doLast {
+                    def snapshot = [:]
+                    probes.each { name, root ->
+                        def dependency = root.get().dependencies.find { it.requested.displayName.startsWith('example:managed') }
+                        assert dependency instanceof org.gradle.api.artifacts.result.ResolvedDependencyResult: name
+                        assert dependency.selected.moduleVersion.version == '$expected': name
+                        def queue = [root.get()]
+                        def components = [] as Set
+                        while (!queue.empty) {
+                            def component = queue.remove(0)
+                            if (components.add(component.id.displayName)) {
+                                queue.addAll(component.dependencies.findAll {
+                                    it instanceof org.gradle.api.artifacts.result.ResolvedDependencyResult
+                                }.collect { it.selected })
+                            }
+                        }
+                        snapshot[name] = components.sort()
+                    }
+                    outputs.files.singleFile.text = groovy.json.JsonOutput.toJson(snapshot)
+                    println 'Local BOM override verified'
+                }
+            }
+        """
+
+        when:
+        run(*([':consumer:verifyLocalOverride'] + (enabled ? [':consumer:generateMetadataFileForSamplePublication'] : []) +
+            ['--offline', '--configuration-cache']))
+
+        then:
+        outputContains 'Local BOM override verified'
+        if (enabled) {
+            def published = new JsonSlurper().parse(file('consumer/build/publications/sample/module.json'))
+            assert published.variants.every { variant ->
+                (variant.dependencies ?: []).every { it.attributes?.get('org.gradle.category') != 'enforced-platform' }
+            }
+        }
+
+        when:
+        run(*([':consumer:verifyLocalOverride'] + (enabled ? [':consumer:generateMetadataFileForSamplePublication'] : []) +
+            ['--offline', '--configuration-cache']))
+
+        then:
+        outputContains 'Reusing configuration cache.'
+
+        when:
+        def beforeRemoval = file('consumer/build/bom-graph.json').text
+        if (removal) {
+            def catalog = file('gradle/libs.versions.toml')
+            catalog.text = removal == 'declaration' ?
+                catalog.text.readLines().findAll { !it.trim().startsWith('micronaut-reactor =') }.join('\n') + '\n' :
+                catalog.text.replace(', version.ref = "reactor"', '')
+            run ':consumer:verifyLocalOverride', '--offline', '--configuration-cache'
+        }
+
+        then:
+        if (removal) {
+            outputContains 'Local BOM override verified'
+            assert file('consumer/build/bom-graph.json').text == beforeRemoval
+        }
+
+        where:
+        localVersion | notation | includeBom | enabled | application | localPin | removal
+        '1.0'        | 'string' | true       | true    | false       | true     | null
+        '5.0'        | 'string' | true       | true    | false       | true     | null
+        '1.0'        | 'enum'   | true       | true    | false       | true     | null
+        '1.0'        | 'string' | false      | true    | false       | true     | null
+        '1.0'        | 'string' | true       | false   | false       | true     | null
+        '1.0'        | 'string' | true       | true    | true        | true     | null
+        '4.0'        | 'string' | true       | true    | false       | false    | null
+        '1.0'        | 'string' | null       | true    | false       | true     | null
+        '1.0'        | 'enum'   | null       | true    | false       | true     | null
+        '4.0'        | 'string' | true       | true    | false       | true     | 'version'
+        '4.0'        | 'string' | true       | true    | false       | true     | 'declaration'
+        '4.0'        | 'enum'   | true       | true    | false       | true     | 'version'
+        '4.0'        | 'enum'   | true       | true    | false       | true     | 'declaration'
+    }
+
     void 'known BOM #notation can use a platform property without a local catalog file'() {
         given:
         setupProject('', 'mnReactor')
         file('gradle/libs.versions.toml').delete()
         file('gradle').delete()
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog($argument)")
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)", "importMicronautCatalog($argument)")
 
         when:
         run 'verifyCatalog', '--offline', '-PmicronautPlatformVersion=3.0'
@@ -59,7 +356,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
                 unrelated-$index = { module = "${entry[0]}", version = "4.0" }
             """
         }
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)",
             'importMicronautCatalog()\n' + imports.keySet().collect { "importMicronautCatalog('$it', true)" }.join('\n'))
         buildFile.text = """
             plugins { id 'java-library' }
@@ -102,7 +399,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             micronaut-reactor = { module = "$PLATFORM_MODULE", $declaration }
         """, 'mnReactor')
         publishCatalog(PLATFORM_MODULE, '1.0', '[libraries]\nmarker = "example:marker:1.0"')
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)",
             "importMicronautCatalog('micronaut-reactor')")
 
         when:
@@ -117,7 +414,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
         'rich'   | 'version = { require = "1.0", strictly = "1.0", reject = ["4.0"] }'
     }
 
-    void 'known string aliases remain catalog-only by default and fall back to core'() {
+    void 'known string aliases can explicitly remain catalog-only and fall back to core'() {
         given:
         setupProject('''
             [versions]
@@ -127,8 +424,8 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
         file('repo/io/micronaut/micronaut-core-bom/5.0/micronaut-core-bom-5.0.toml') << '''
             sql = { module = "io.micronaut.sql:micronaut-sql-bom", version = "2.0" }
         '''
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
-            "importMicronautCatalog('micronaut-sql')")
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)",
+            "importMicronautCatalog('micronaut-sql', false)")
         buildFile << "\nassert configurations.findByName('globalBoms') == null\n"
 
         when:
@@ -148,12 +445,12 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
         file('repo/io/micronaut/platform/micronaut-platform/3.0/micronaut-platform-3.0.toml') << """
             arbitrary-alias = { module = "$module", version = "4.0" }
         """
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)",
             "importMicronautCatalog(io.micronaut.build.MicronautBom.$bom$argument)")
         buildFile << """
-            assert !configurations.globalBoms.allDependencies.any {
+            assert configurations.globalBoms.allDependencies.any {
                 it.group + ':' + it.name == '$module'
-            }
+            } == ${argument != ', false'}
         """
 
         when:
@@ -187,7 +484,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
         file('repo/io/micronaut/micronaut-core-bom/5.0/micronaut-core-bom-5.0.toml') << '''
             unrelated-alias = { module = "io.micronaut.sql:micronaut-sql-bom", version = "2.0" }
         '''
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)",
             'importMicronautCatalog(io.micronaut.build.MicronautBom.SQL)')
 
         when:
@@ -208,7 +505,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             reactor = { module = "$PLATFORM_MODULE", $declaration }
         """, 'mnReactor')
         publishCatalog(PLATFORM_MODULE, '5.0', '[libraries]\nmarker = "example:marker:5.0"', true)
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)",
             'importMicronautCatalog(io.micronaut.build.MicronautBom.REACTOR, true)')
         setupBomConsumer(true, true, '5.0', PLATFORM_MODULE)
 
@@ -239,7 +536,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             micronaut = "5.0"
             micronaut-platform = "3.0"
         ''')
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')",
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)",
             'importMicronautCatalog(io.micronaut.build.MicronautBom.SQL)')
 
         when:
@@ -445,7 +742,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             [libraries]
             example = { module = "$MODULE", version = "1.0" }
         """)
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example'$argument)")
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)", "importMicronautCatalog('example'$argument)")
         setupBomConsumer(enableBom, included, '1.0')
 
         when:
@@ -464,7 +761,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
 
         where:
         description                  | argument  | enableBom | included
-        'disabled by default'        | ''        | true      | false
+        'enabled by default'         | ''        | true      | true
         'explicitly disabled'        | ', false' | true      | false
         'explicitly enabled'         | ', true'  | true      | true
         'disabled by project switch' | ', true'  | false     | false
@@ -478,7 +775,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             [libraries]
             example = { module = "$MODULE" }
         """)
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example', true)")
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)", "importMicronautCatalog('example', true)")
         setupBomConsumer(true, true, '2.0')
 
         when:
@@ -498,7 +795,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             [libraries]
             example = { module = "io.micronaut.platform:micronaut-platform", version.ref = "micronaut-platform" }
         ''', 'mnPlatform')
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example', true)")
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)", "importMicronautCatalog('example', true)")
         setupBomConsumer(true, true, '3.0', 'io.micronaut.platform:micronaut-platform')
 
         when:
@@ -547,7 +844,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             example = { module = "$MODULE", version = "1.0" }
         """)
         if (!platform) {
-            settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example', true)")
+            settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)", "importMicronautCatalog('example', true)")
         }
         setupBomConsumer(enabled, enabled, platform ? '3.0' : '1.0',
             platform ? 'io.micronaut.platform:micronaut-platform' : MODULE)
@@ -615,13 +912,13 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
         outputContains 'BOM included: true'
     }
 
-    void 'unconfigured platform requires explicit true with argument #argument'() {
+    void 'unconfigured platform cannot be imported catalog-only'() {
         given:
         setupProject('''
             [libraries]
             example = { module = "io.micronaut.platform:micronaut-platform", version = "3.0" }
         ''', 'mnPlatform')
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example'$argument)")
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)", "importMicronautCatalog('example', false)")
 
         when:
         fails 'help', '--offline'
@@ -629,8 +926,25 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
         then:
         errorOutputContains 'The platform must be imported using importMicronautCatalog(alias, true).'
 
-        where:
-        argument << ['', ', false']
+    }
+
+    void 'unconfigured platform is included by a one-argument import'() {
+        given:
+        setupProject('''
+            [versions]
+            micronaut = "5.0"
+            [libraries]
+            example = { module = "io.micronaut.platform:micronaut-platform", version = "3.0" }
+        ''', 'mnPlatform')
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)", "importMicronautCatalog('example')")
+        setupBomConsumer(true, true, '3.0', 'io.micronaut.platform:micronaut-platform')
+
+        when:
+        run 'verifyCatalog', ':consumer:verifyBom', '--offline', '--configuration-cache'
+
+        then:
+        outputContains 'Catalog marker: 3.0'
+        outputContains 'BOM included: true'
     }
 
     void 'included BOMs also reach the existing application BOM bucket'() {
@@ -641,7 +955,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             [libraries]
             example = { module = "$MODULE", version = "1.0" }
         """)
-        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example')", "importMicronautCatalog('example', true)")
+        settingsFile.text = settingsFile.text.replace("importMicronautCatalog('example', false)", "importMicronautCatalog('example', true)")
         setupBomConsumer(true, true, '1.0', MODULE, true)
 
         when:
@@ -737,7 +1051,12 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             [libraries]
             marker = "example:marker:3.0"
             boms-micronaut-reactor = { module = "$PLATFORM_MODULE", version.ref = "managed-micronaut-reactor" }
+            different-core-name = { module = "io.micronaut:micronaut-core-bom", version = "5.0" }
+            different-test-name = { module = "io.micronaut.test:micronaut-test-bom", version = "1.0" }
+            different-logging-name = { module = "io.micronaut.logging:micronaut-logging-bom", version = "1.0" }
         """)
+        publishCatalog('io.micronaut.test:micronaut-test-bom', '1.0', '[libraries]\nmarker = "example:marker:1.0"')
+        publishCatalog('io.micronaut.logging:micronaut-logging-bom', '1.0', '[libraries]\nmarker = "example:marker:1.0"')
         publishCatalog('io.micronaut:micronaut-core-bom', '5.0', """
             [versions]
             example = "2.0"
@@ -751,7 +1070,7 @@ class CoreCatalogFallbackFunctionalTest extends AbstractFunctionalTest {
             dependencyResolutionManagement {
                 repositories { maven { url = uri('repo') } }
             }
-            micronautBuild { importMicronautCatalog('example') }
+            micronautBuild { importMicronautCatalog('example', false) }
         '''
         buildFile.text = '''
             plugins { id 'java' }
