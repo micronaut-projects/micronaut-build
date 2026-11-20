@@ -43,6 +43,26 @@ import org.yaml.snakeyaml.constructor.SafeConstructor
 class DocPublisher {
     static final String TOC_FILENAME = "toc.yml"
 
+    /**
+     * The style that shows the text of one language and hides that of the others, as the blocks marked with a role
+     * such as {@code [.lang-python]} carry it. A block marked for several languages is shown when the target is one
+     * of them: the rule that shows the target comes after those that hide the other languages, and overrides them.
+     *
+     * <p>The guide of every language has no such rules: its language selector hides text with the {@code hidden}
+     * class, which a rule that shows a language would override.</p>
+     *
+     * @param language The language the guide is written for, or none for the guide of every language
+     * @return The rules, separated by spaces
+     */
+    static String languageCss(String language) {
+        if (!language) {
+            return ""
+        }
+        List<String> rules = LanguageSnippetMacro.LANGS.findAll { it != language }.collect { ".lang-$it { display: none }" }
+        rules << ".lang-$language { display: block }".toString()
+        return rules.join(" ")
+    }
+
     /** The source directory of the documentation */
     File src
     /** The target directory to publish to */
@@ -283,17 +303,7 @@ class DocPublisher {
                     sections: f.listFiles().findAll { it.name.endsWith(ext) }.sort())
         }
 
-        def extraCss = ""
-        for (final def l in LanguageSnippetMacro.LANGS) {
-            if (language) {
-                // Make everything invisible except the target language.
-                def display = l != language ? "none" : "block"
-                extraCss += ".lang-$l { display: $display }; "
-            } else {
-                // Make everything visible.
-                extraCss += ".lang-$l { display: block }; "
-            }
-        }
+        def extraCss = languageCss(language)
 
         def pathToRoot = ".."
         Map vars = new LinkedHashMap(engineProperties)
