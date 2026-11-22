@@ -34,7 +34,7 @@ logback = "1.6.6"
 checkstyle = "13.11.0"
 kotlin = "2.3.21"
 kotlin-ksp = "2.3.13"
-nullaway = "0.14.3"
+nullaway = "0.14.4"
 
 [libraries]
 asciidoctorj = { module = "org.asciidoctor:asciidoctorj", version.ref = "asciidoctorj" }
