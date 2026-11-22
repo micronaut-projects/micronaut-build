@@ -91,7 +91,9 @@ public class MicronautDevelocityPlugin implements Plugin<Settings> {
             BuildCacheConfiguration buildCache = settings.getBuildCache();
             boolean localEnabled = micronautBuildSettingsExtension.getUseLocalCache().get();
             boolean remoteEnabled = micronautBuildSettingsExtension.getUseRemoteCache().get();
-            boolean push = MicronautBuildSettingsExtension.booleanProvider(providers, "cachePush", isCI).get();
+            // Only CI builds of pushes to release or default branches write to the remote cache by default;
+            // the cachePush property overrides this
+            boolean push = MicronautBuildSettingsExtension.booleanProvider(providers, "cachePush", isCI && ProviderUtils.isTrustedGitHubPush(providers)).get();
             if (isCI) {
                 System.out.println("Build cache     enabled     push");
                 System.out.println("    Local        " + (localEnabled ? "   Y   " : "   N   ") + "     N/A");
@@ -108,12 +110,8 @@ public class MicronautDevelocityPlugin implements Plugin<Settings> {
         buildCache.remote(config.getBuildCache(), remote -> {
             remote.setEnabled(true);
             if (push) {
-                String accessKey = providers.environmentVariable("GRADLE_ENTERPRISE_ACCESS_KEY")
-                    .orElse(providers.environmentVariable("DEVELOCITY_ACCESS_KEY"))
-                    // this one below is weird but for backward compatibility
-                    .orElse(providers.systemProperty("GRADLE_ENTERPRISE_ACCESS_KEY"))
-                    .getOrNull();
-                if (accessKey != null && !accessKey.isEmpty()) {
+                String accessKey = ProviderUtils.findDevelocityAccessKey(providers);
+                if (accessKey != null) {
                     remote.setPush(true);
                 } else {
                     System.err.println("WARNING: Access key missing for remote build cache, cannot configure push!");
