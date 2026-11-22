@@ -1,11 +1,17 @@
 package io.micronaut.build
 
 import groovy.transform.CompileStatic
+import io.micronaut.build.problems.MicronautBuildProblems
+import org.gradle.api.Action
 import io.micronaut.build.utils.DefaultVersions
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
+import org.gradle.api.problems.ProblemSpec
+import org.gradle.api.problems.Problems
+
+import javax.inject.Inject
 
 import static io.micronaut.build.utils.VersionHandling.versionProviderOrDefault
 
@@ -16,6 +22,12 @@ import static io.micronaut.build.utils.VersionHandling.versionProviderOrDefault
  */
 @CompileStatic
 class MicronautModulePlugin implements Plugin<Project> {
+    private final Problems problems
+
+    @Inject
+    MicronautModulePlugin(Problems problems) {
+        this.problems = problems
+    }
 
     @Override
     void apply(Project project) {
@@ -23,7 +35,7 @@ class MicronautModulePlugin implements Plugin<Project> {
         configureStandardDependencies(project)
     }
 
-    private static void configureStandardDependencies(Project project) {
+    private void configureStandardDependencies(Project project) {
         var micronautBuild = project.extensions.getByType(MicronautBuildExtension)
         var deps = project.dependencies
         deps.with {
@@ -44,7 +56,7 @@ class MicronautModulePlugin implements Plugin<Project> {
                                 deps.create(versionProviderOrDefault(project, 'micronaut-test', DefaultVersions.MICRONAUT_TEST_VERSION).map { "io.micronaut.test:micronaut-test-junit5:${it}" }.get())
                         )
                     } else {
-                        throw new GradleException("Unsupported test framework: $it")
+                        return unsupportedTestFramework(it)
                     }
                 }
         )
@@ -58,9 +70,19 @@ class MicronautModulePlugin implements Plugin<Project> {
                                 deps.create(versionProviderOrDefault(project, 'junit6', DefaultVersions.JUNIT6_VERSION).map { "org.junit.jupiter:junit-jupiter-engine:${it}" }.get()),
                         )
                     } else {
-                        throw new GradleException("Unsupported test framework: $it")
+                        return unsupportedTestFramework(it)
                     }
                 }
         )
+    }
+
+    private List<Dependency> unsupportedTestFramework(TestFramework testFramework) {
+        String message = "Unsupported test framework: $testFramework"
+        throw MicronautBuildProblems.throwing(problems, new GradleException(message), MicronautBuildProblems.UNSUPPORTED_TEST_FRAMEWORK, {
+            ProblemSpec spec ->
+                spec.contextualLabel(message)
+                        .details("The Micronaut Build module plugin only supports ${TestFramework.SPOCK} and ${TestFramework.JUNIT6} test framework defaults.")
+                        .solution("Configure micronautBuild.testFramework to ${TestFramework.SPOCK} or ${TestFramework.JUNIT6}.")
+        } as Action<? super ProblemSpec>)
     }
 }
