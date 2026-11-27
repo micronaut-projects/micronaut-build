@@ -1,21 +1,8 @@
 {
   "extends": [
-    "config:recommended"
+    "local>micronaut-projects/micronaut-project-template//.github/renovate-global"
   ],
-  "addLabels": ["dependency-upgrade"],
-  "schedule": [
-    "every weekend"
-  ],
-  "prHourlyLimit": 1,
-  "prConcurrentLimit": 20,
-  "timezone": "Europe/Prague",
-  "packageRules": [
-    {
-      "dependencyDashboardApproval": true,
-      "matchPackageNames": [
-        "/actions.*/"
-      ]
-    }
-  ],
-  "ignorePaths": ["src/functionalTest/gradle-projects/**"]
+  "ignorePaths": [
+    "src/functionalTest/gradle-projects/**"
+  ]
 }
