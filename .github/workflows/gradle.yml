@@ -28,7 +28,7 @@ jobs:
         GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
     - name: Publish Test Report
       if: ${{ always() }}
-      uses: mikepenz/action-junit-report@v6.5.0
+      uses: mikepenz/action-junit-report@v6.7.1
       with:
         check_name: Java CI / Test Report
         report_paths: '**/build/test-results/*/TEST-*.xml'
